@@ -1,13 +1,13 @@
 ---
 name: finishing-a-development-branch
-description: Use when implementation is complete, all tests pass, and you need to decide how to integrate the work - guides completion of development work by presenting structured options for merge, PR, or cleanup
+description: Use when implementation is complete, all tests pass, and you need to decide how to integrate the work - guides completion of a jj work scope by presenting structured options for integration, PR, or cleanup
 ---
 
-# Finishing a Development Branch
+# Finishing a Development Work Scope
 
 ## Overview
 
-Guide completion of development work by presenting clear options and handling chosen workflow.
+Guide completion of development work by presenting clear options and handling the chosen workflow.
 
 **Core principle:** Verify tests → Present options → Execute choice → Clean up.
 
@@ -21,7 +21,7 @@ Guide completion of development work by presenting clear options and handling ch
 
 ```bash
 # Run project's test suite
-npm test / cargo test / pytest / go test ./...
+pnpm run test / cargo test / pytest / go test ./...
 ```
 
 **If tests fail:**
@@ -37,14 +37,20 @@ Stop. Don't proceed to Step 2.
 
 **If tests pass:** Continue to Step 2.
 
-### Step 2: Determine Base Branch
+### Step 2: Identify the Work Scope
+
+Find the scope change and its sub-routes:
 
 ```bash
-# Try common base branches
-git merge-base HEAD main 2>/dev/null || git merge-base HEAD master 2>/dev/null
+jj log -r 'trunk()..@' --no-pager \
+  --template 'change_id.short(8) ++ "  " ++ description.first_line() ++ "\n"'
 ```
 
-Or ask: "This branch split from main - is that correct?"
+Identify:
+- `scope0` — the scope merge change
+- `plan0` — the plan change
+- Any `toreview:` sub-routes — completed implementation changes
+- `temp0` — the temp/handoff change
 
 ### Step 3: Present Options
 
@@ -53,44 +59,29 @@ Present exactly these 4 options:
 ```
 Implementation complete. What would you like to do?
 
-1. Merge back to <base-branch> locally
-2. Push and create a Pull Request
-3. Keep the branch as-is (I'll handle it later)
+1. Create PR — push scope as a branch and open a pull request
+2. Integrate to trunk — fast-forward trunk bookmark to scope
+3. Keep as-is — I'll handle it later
 4. Discard this work
 
 Which option?
 ```
 
-**Don't add explanation** - keep options concise.
+**Don't add explanation** — keep options concise.
 
 ### Step 4: Execute Choice
 
-#### Option 1: Merge Locally
+#### Option 1: Create PR
 
 ```bash
-# Switch to base branch
-git checkout <base-branch>
+# Abandon the temp change first (scratch/handoff files don't belong in the PR)
+jj abandon <temp-id>
 
-# Pull latest
-git pull
+# Create a bookmark at the scope change
+jj bookmark create <feature-name> --revision <scope-id>
 
-# Merge feature branch
-git merge <feature-branch>
-
-# Verify tests on merged result
-<test command>
-
-# If tests pass
-git branch -d <feature-branch>
-```
-
-Then: Cleanup worktree (Step 5)
-
-#### Option 2: Push and Create PR
-
-```bash
-# Push branch
-git push -u origin <feature-branch>
+# Push to remote
+jj git push --bookmark <feature-name>
 
 # Create PR
 gh pr create --title "<title>" --body "$(cat <<'EOF'
@@ -103,22 +94,33 @@ EOF
 )"
 ```
 
-Then: Cleanup worktree (Step 5)
+#### Option 2: Integrate to Trunk
+
+```bash
+# Update trunk bookmark to include scope (only if scope descends cleanly from trunk)
+jj bookmark set main --revision <scope-id>
+
+# Push
+jj git push --bookmark main
+```
+
+Then: Abandon scope structure (Step 5)
 
 #### Option 3: Keep As-Is
 
-Report: "Keeping branch <name>. Worktree preserved at <path>."
+Report: "Keeping work scope `<scope-id>`. No changes made."
 
-**Don't cleanup worktree.**
+**Don't clean up.**
 
 #### Option 4: Discard
 
 **Confirm first:**
 ```
-This will permanently delete:
-- Branch <name>
-- All commits: <commit-list>
-- Worktree at <path>
+This will permanently abandon:
+- Scope change: <scope-id>
+- Plan change: <plan-id>
+- Sub-routes: <list>
+- Temp change: <temp-id>
 
 Type 'discard' to confirm.
 ```
@@ -127,36 +129,50 @@ Wait for exact confirmation.
 
 If confirmed:
 ```bash
-git checkout <base-branch>
-git branch -D <feature-branch>
+# Abandon all scope changes (jj automatically rebases @ to remove them as parents)
+jj abandon <scope-id> <plan-id> <sub-route-ids> <temp-id>
 ```
 
-Then: Cleanup worktree (Step 5)
+### Step 5: Clean Up
 
-### Step 5: Cleanup Worktree
+#### After Option 1 (Create PR)
 
-**For Options 1, 2, 4:**
-
-Check if in worktree:
+Optionally abandon the plan change if it's no longer needed:
 ```bash
-git worktree list | grep $(git branch --show-current)
+jj abandon <plan-id>
 ```
 
-If yes:
+Verify `@` is still correct:
 ```bash
-git worktree remove <worktree-path>
+jj log -r 'trunk()..@' --no-pager
 ```
 
-**For Option 3:** Keep worktree.
+#### After Option 2 (Integrate to Trunk)
+
+Abandon the scope structure:
+```bash
+jj abandon <scope-id> <plan-id> <sub-route-ids> <temp-id>
+```
+
+#### After Option 3 (Keep As-Is)
+
+No cleanup. Work scope stays in DAG.
+
+#### After Option 4 (Discard)
+
+Already abandoned in Step 4. Verify:
+```bash
+jj log -r 'trunk()..@' --no-pager
+```
 
 ## Quick Reference
 
-| Option | Merge | Push | Keep Worktree | Cleanup Branch |
-|--------|-------|------|---------------|----------------|
-| 1. Merge locally | ✓ | - | - | ✓ |
-| 2. Create PR | - | ✓ | ✓ | - |
-| 3. Keep as-is | - | - | ✓ | - |
-| 4. Discard | - | - | - | ✓ (force) |
+| Option | Push | Keep scope | Abandon temp | Abandon all |
+|--------|------|------------|--------------|-------------|
+| 1. Create PR | ✓ (before push) | ✓ | - | - |
+| 2. Integrate | ✓ | - | ✓ | ✓ |
+| 3. Keep as-is | - | ✓ | - | - |
+| 4. Discard | - | - | - | ✓ |
 
 ## Common Mistakes
 
@@ -168,9 +184,9 @@ git worktree remove <worktree-path>
 - **Problem:** "What should I do next?" → ambiguous
 - **Fix:** Present exactly 4 structured options
 
-**Automatic worktree cleanup**
-- **Problem:** Remove worktree when might need it (Option 2, 3)
-- **Fix:** Only cleanup for Options 1 and 4
+**Forgetting to abandon temp change first**
+- **Problem:** Scratch/handoff files end up in the PR
+- **Fix:** Always abandon temp *before* creating the bookmark and pushing (Option 1)
 
 **No confirmation for discard**
 - **Problem:** Accidentally delete work
@@ -180,21 +196,22 @@ git worktree remove <worktree-path>
 
 **Never:**
 - Proceed with failing tests
-- Merge without verifying tests on result
+- Push without verifying tests on result
 - Delete work without confirmation
 - Force-push without explicit request
+- Use `jj edit`, `jj next`, or `jj prev` (moves `@` away from tip)
 
 **Always:**
 - Verify tests before offering options
 - Present exactly 4 options
 - Get typed confirmation for Option 4
-- Clean up worktree for Options 1 & 4 only
+- Abandon temp change before pushing for Option 1
 
 ## Integration
 
 **Called by:**
-- **subagent-driven-development** (Step 7) - After all tasks complete
-- **executing-plans** (Step 5) - After all batches complete
+- **subagent-driven-development** (final step) — after all tasks complete
+- **executing-plans** (final step) — after all batches complete
 
 **Pairs with:**
-- **using-git-worktrees** - Cleans up worktree created by that skill
+- **using-jj-worksets** — cleans up the work scope created by that skill

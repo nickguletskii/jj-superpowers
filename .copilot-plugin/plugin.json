@@ -17,5 +17,7 @@
     "jujutsu",
     "jj",
     "workflows"
-  ]
+  ],
+  "skills": "./skills/",
+  "agents": "./agents/"
 }

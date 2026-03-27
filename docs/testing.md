@@ -35,7 +35,7 @@ cd tests/claude-code
 
 - Must run from the **superpowers plugin directory** (not from temp directories)
 - Claude Code must be installed and available as `claude` command
-- Local dev marketplace must be enabled: `"superpowers@superpowers-dev": true` in `~/.claude/settings.json`
+- Local dev marketplace must be enabled: `"jj-superpowers@jj-superpowers-dev": true` in `~/.claude/settings.json`
 
 ## Integration Test: subagent-driven-development
 
@@ -149,8 +149,8 @@ python3 tests/claude-code/analyze-token-usage.py ~/.claude/projects/<project-dir
 Session transcripts are stored in `~/.claude/projects/` with the working directory path encoded:
 
 ```bash
-# Example for /Users/jesse/Documents/GitHub/superpowers/superpowers
-SESSION_DIR="$HOME/.claude/projects/-Users-jesse-Documents-GitHub-superpowers-superpowers"
+# Example for ~/workspaces/jj-superpowers
+SESSION_DIR="$HOME/.claude/projects/-home-nick-workspaces-jj-superpowers"
 
 # Find recent sessions
 ls -lt "$SESSION_DIR"/*.jsonl | head -5
@@ -183,7 +183,7 @@ ls -lt "$SESSION_DIR"/*.jsonl | head -5
 
 **Solutions**:
 1. Ensure you're running FROM the superpowers directory: `cd /path/to/superpowers && tests/...`
-2. Check `~/.claude/settings.json` has `"superpowers@superpowers-dev": true` in `enabledPlugins`
+2. Check `~/.claude/settings.json` has `"jj-superpowers@jj-superpowers-dev": true` in `enabledPlugins`
 3. Verify skill exists in `skills/` directory
 
 ### Permission Errors

@@ -1,19 +1,19 @@
 {
-  "name": "superpowers-dev",
-  "description": "Development marketplace for Superpowers core skills library",
+  "name": "jj-superpowers-dev",
+  "description": "Development marketplace for jj-superpowers skills library",
   "owner": {
-    "name": "Jesse Vincent",
-    "email": "jesse@fsck.com"
+    "name": "Nick Guletskii",
+    "email": "nick@nickguletskii.com"
   },
   "plugins": [
     {
-      "name": "superpowers",
-      "description": "Core skills library for Claude Code: TDD, debugging, collaboration patterns, and proven techniques",
-      "version": "5.0.6",
+      "name": "jj-superpowers",
+      "description": "jj-focused fork of superpowers: TDD, debugging, collaboration patterns, and jj workflow skills",
+      "version": "1.0.0",
       "source": "./",
       "author": {
-        "name": "Jesse Vincent",
-        "email": "jesse@fsck.com"
+        "name": "Nick Guletskii",
+        "email": "nick@nickguletskii.com"
       }
     }
   ]

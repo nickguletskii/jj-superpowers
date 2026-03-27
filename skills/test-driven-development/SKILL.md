@@ -202,6 +202,29 @@ Next failing test for next feature.
 | **Minimal** | One thing. "and" in name? Split it. | `test('validates email and domain and whitespace')` |
 | **Clear** | Name describes behavior | `test('test1')` |
 | **Shows intent** | Demonstrates desired API | Obscures what code should do |
+| **Tests what the type system can't** | Runtime behavior, side effects, error conditions | Things the compiler already enforces |
+
+## Don't Test What the Type System Already Enforces
+
+If a static type system (TypeScript, Rust, etc.) makes a behavior impossible to violate at compile time, don't write a test confirming it. The compiler is a better test than a test.
+
+**Don't test:**
+- That a function receives the argument types it declares
+- That a function returns the type it declares
+- That required properties exist on a typed object
+- That a typed enum only takes valid values
+
+**Do test:**
+- Runtime behavior: logic, computation, ordering, side effects
+- Error paths and edge cases
+- Interactions between components
+- Things that can go wrong at runtime despite correct types
+
+**Exception — runtime/compile-time type mismatch in TypeScript and Python:**
+
+TypeScript's type system is erased at runtime. Python's type hints are never enforced at runtime. In both languages, data crossing a boundary (API response, user input, `JSON.parse`, `any`-typed value, dynamic import) may not match its declared type at runtime. If there is concrete evidence that a value might violate its declared type at runtime — e.g., an external API that sometimes omits a field, a `JSON.parse` result cast to a typed interface, or a `unknown`/`any` that could carry unexpected shapes — tests confirming the actual runtime shape are appropriate.
+
+The key word is *evidence*: don't write defensive type-checking tests speculatively. Write them when you have a real reason to doubt the runtime type.
 
 ## Why Order Matters
 
@@ -268,6 +291,7 @@ Tests-first force edge case discovery before implementing. Tests-after verify yo
 | "TDD will slow me down" | TDD faster than debugging. Pragmatic = test-first. |
 | "Manual test faster" | Manual doesn't prove edge cases. You'll re-test every change. |
 | "Existing code has no tests" | You're improving it. Add tests for existing code. |
+| "I should test that this field exists / has the right type" | If the type system enforces it, don't. If data crosses a runtime boundary (API, JSON.parse, `any`), test only with concrete evidence of mismatch. |
 
 ## Red Flags - STOP and Start Over
 
