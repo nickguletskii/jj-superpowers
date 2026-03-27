@@ -1,6 +1,6 @@
 {
-  "name": "superpowers",
-  "description": "Core skills library: TDD, debugging, collaboration patterns, and proven techniques",
-  "version": "5.0.6",
+  "name": "jj-superpowers",
+  "description": "jj-focused fork of superpowers: TDD, debugging, collaboration patterns, and jj workflow skills",
+  "version": "1.0.0",
   "contextFileName": "GEMINI.md"
 }

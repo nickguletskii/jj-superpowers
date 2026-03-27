@@ -72,29 +72,25 @@ skills can dispatch named agent types directly.
 
 ## Environment Detection
 
-Skills that create worktrees or finish branches should detect their
-environment with read-only git commands before proceeding:
+Skills that set up work scopes or finish branches should detect whether
+jj is available before proceeding:
 
 ```bash
-GIT_DIR=$(cd "$(git rev-parse --git-dir)" 2>/dev/null && pwd -P)
-GIT_COMMON=$(cd "$(git rev-parse --git-common-dir)" 2>/dev/null && pwd -P)
-BRANCH=$(git branch --show-current)
+# Check if this is a jj repository
+jj root --no-pager 2>/dev/null && echo "jj" || echo "git"
 ```
 
-- `GIT_DIR != GIT_COMMON` → already in a linked worktree (skip creation)
-- `BRANCH` empty → detached HEAD (cannot branch/push/PR from sandbox)
+- If jj: use `using-jj-worksets` / `jj-agentic-dev` workflow
+- If git only: use traditional branch workflow
 
-See `using-git-worktrees` Step 0 and `finishing-a-development-branch`
-Step 1 for how each skill uses these signals.
+For `finishing-a-development-branch` in sandbox environments where push
+is blocked, the agent can still run tests and output suggested bookmark
+names and PR descriptions for the user to copy.
 
 ## Codex App Finishing
 
-When the sandbox blocks branch/push operations (detached HEAD in an
-externally managed worktree), the agent commits all work and informs
-the user to use the App's native controls:
+When the sandbox blocks push operations, the agent commits/squashes all
+work and informs the user to use the App's native controls:
 
-- **"Create branch"** — names the branch, then commit/push/PR via App UI
+- **"Create branch"** — names the bookmark, then push/PR via App UI
 - **"Hand off to local"** — transfers work to the user's local checkout
-
-The agent can still run tests, stage files, and output suggested branch
-names, commit messages, and PR descriptions for the user to copy.

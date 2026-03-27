@@ -1,21 +1,22 @@
 {
-  "name": "superpowers",
-  "displayName": "Superpowers",
-  "description": "Core skills library: TDD, debugging, collaboration patterns, and proven techniques",
-  "version": "5.0.6",
+  "name": "jj-superpowers",
+  "displayName": "jj-Superpowers",
+  "description": "jj-focused fork of superpowers: TDD, debugging, collaboration patterns, and jj workflow skills",
+  "version": "1.0.0",
   "author": {
-    "name": "Jesse Vincent",
-    "email": "jesse@fsck.com"
+    "name": "Nick Guletskii",
+    "email": "nick@nickguletskii.com"
   },
-  "homepage": "https://github.com/obra/superpowers",
-  "repository": "https://github.com/obra/superpowers",
+  "homepage": "https://github.com/nickguletskii/jj-superpowers",
+  "repository": "https://github.com/nickguletskii/jj-superpowers",
   "license": "MIT",
   "keywords": [
     "skills",
     "tdd",
     "debugging",
     "collaboration",
-    "best-practices",
+    "jujutsu",
+    "jj",
     "workflows"
   ],
   "skills": "./skills/",
