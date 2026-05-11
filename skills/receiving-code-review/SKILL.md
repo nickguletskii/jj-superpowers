@@ -110,6 +110,17 @@ FOR multi-item feedback:
   4. Verify no regressions
 ```
 
+## Long Files Are Usually A Design Problem
+
+Treat review feedback about oversized files as architectural feedback, not formatting feedback.
+
+- A touched file over roughly 500 lines should trigger a decomposition check.
+- A touched file at 1000 lines or more is usually unacceptable and should be split unless there is a very strong reason not to.
+- Splitting is not cosmetic: it improves readability, reviewability, and makes agent edits safer because each unit fits in context more easily.
+- Break files apart by responsibility, not by arbitrary line count. Extract logical units with explicit interfaces and self-contained behavior.
+
+If a reviewer flags file size, do not dismiss it with "the code is still clear" or "we can clean it up later." Verify whether the file is mixing multiple concerns and fix that now.
+
 ## When To Push Back
 
 Push back when:
@@ -172,6 +183,7 @@ State the correction factually and move on.
 | Avoiding pushback | Technical correctness > comfort |
 | Partial implementation | Clarify all items first |
 | Can't verify, proceed anyway | State limitation, ask for direction |
+| Treating a 1000+ line file as acceptable | Split into logical units before merge |
 
 ## Real Examples
 

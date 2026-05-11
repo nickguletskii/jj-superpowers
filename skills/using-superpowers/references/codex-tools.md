@@ -4,7 +4,7 @@ Skills use Claude Code tool names. When you encounter these in a skill, use your
 
 | Skill references | Codex equivalent |
 |-----------------|------------------|
-| `Task` tool (dispatch subagent) | `spawn_agent` (see [Named agent dispatch](#named-agent-dispatch)) |
+| `Task` tool (dispatch subagent) | `spawn_agent` with a built-in or custom `agent_type` |
 | Multiple `Task` calls (parallel) | Multiple `spawn_agent` calls |
 | Task returns result | `wait` |
 | Task completes automatically | `close_agent` to free slot |
@@ -13,62 +13,57 @@ Skills use Claude Code tool names. When you encounter these in a skill, use your
 | `Read`, `Write`, `Edit` (files) | Use your native file tools |
 | `Bash` (run commands) | Use your native shell tools |
 
-## Subagent dispatch requires multi-agent support
+## Subagent Dispatch
 
-Add to your Codex config (`~/.codex/config.toml`):
+Current Codex releases enable subagent workflows by default. If your Codex build
+does not expose subagent tools, use the skill's no-subagent fallback path instead
+of pretending dispatch succeeded.
 
-```toml
-[features]
-multi_agent = true
-```
+Codex custom agents live in `.codex/agents/*.toml` for project-scoped agents or
+`~/.codex/agents/*.toml` for personal agents. Each file defines `name`,
+`description`, and `developer_instructions`; optional config such as `model`,
+`model_reasoning_effort`, and `sandbox_mode` may also be set.
 
-This enables `spawn_agent`, `wait`, and `close_agent` for skills like `dispatching-parallel-agents` and `subagent-driven-development`.
+`jj-superpowers` includes Codex agent definitions under `.codex/agents/`. Copy
+or symlink them into a project's `.codex/agents/` or your `~/.codex/agents/`
+when you want named-agent dispatch outside this repository.
 
 ## Named agent dispatch
 
-Claude Code skills reference named agent types like `superpowers:code-reviewer`.
-Codex does not have a named agent registry — `spawn_agent` creates generic agents
-from built-in roles (`default`, `explorer`, `worker`).
-
 When a skill says to dispatch a named agent type:
 
-1. Find the agent's prompt file (e.g., `agents/code-reviewer.md` or the skill's
-   local prompt template like `code-quality-reviewer-prompt.md`)
-2. Read the prompt content
-3. Fill any template placeholders (`{BASE_SHA}`, `{WHAT_WAS_IMPLEMENTED}`, etc.)
-4. Spawn a `worker` agent with the filled content as the `message`
+1. If a matching Codex custom agent exists, spawn that `agent_type`.
+2. Put only dynamic task context in `message`: file paths, node ids, allowed files,
+   reports, and commands.
+3. If no custom agent exists, fall back to the skill's prompt-template wrapping.
 
 | Skill instruction | Codex equivalent |
 |-------------------|------------------|
-| `Task tool (superpowers:code-reviewer)` | `spawn_agent(agent_type="worker", message=...)` with `code-reviewer.md` content |
+| `Task tool (sdd-implementer)` | `spawn_agent(agent_type="sdd-implementer", message=...)` |
+| `Task tool (sdd-spec-reviewer)` | `spawn_agent(agent_type="sdd-spec-reviewer", message=...)` |
+| `Task tool (sdd-verifier)` | `spawn_agent(agent_type="sdd-verifier", message=...)` |
+| `Task tool (sdd-quality-reviewer)` | `spawn_agent(agent_type="sdd-quality-reviewer", message=...)` |
 | `Task tool (general-purpose)` with inline prompt | `spawn_agent(message=...)` with the same prompt |
 
 ### Message framing
 
-The `message` parameter is user-level input, not a system prompt. Structure it
-for maximum instruction adherence:
+When using a custom agent, `message` is the dynamic invocation payload, not the
+role definition. Keep it short and concrete:
 
 ```
-Your task is to perform the following. Follow the instructions below exactly.
-
-<agent-instructions>
-[filled prompt content from the agent's .md file]
-</agent-instructions>
-
-Execute this now. Output ONLY the structured response following the format
-specified in the instructions above.
+Graph node: task_03
+Task file: docs/superpowers/plans/.../task-03.md
+Allowed files:
+- src/foo.ts
+- tests/foo.test.ts
+Context:
+- docs/superpowers/plans/.../context/architecture.md
+Orchestrator notes:
+- ...
 ```
 
-- Use task-delegation framing ("Your task is...") rather than persona framing ("You are...")
-- Wrap instructions in XML tags — the model treats tagged blocks as authoritative
-- End with an explicit execution directive to prevent summarization of the instructions
-
-### When this workaround can be removed
-
-This approach compensates for Codex's plugin system not yet supporting an `agents`
-field in `plugin.json`. When `RawPluginManifest` gains an `agents` field, the
-plugin can symlink to `agents/` (mirroring the existing `skills/` symlink) and
-skills can dispatch named agent types directly.
+If falling back to generic agents without a custom agent, wrap the filled prompt
+template in clear task-delegation framing and XML tags as before.
 
 ## Environment Detection
 
@@ -80,7 +75,7 @@ jj is available before proceeding:
 jj root --no-pager 2>/dev/null && echo "jj" || echo "git"
 ```
 
-- If jj: use `using-jj-worksets` / `jj-agentic-dev` workflow
+- If jj: use `jujutsu` for version-control operations and `using-jj-worksets` / `jj-reorg-changes` for optional post-implementation history organization
 - If git only: use traditional branch workflow
 
 For `finishing-a-development-branch` in sandbox environments where push

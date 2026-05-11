@@ -17,15 +17,22 @@ You are reviewing code changes for production readiness.
 
 {PLAN_REFERENCE}
 
-## Git Range to Review
+## Change to Review
 
-**Base:** {BASE_SHA}
-**Head:** {HEAD_SHA}
+**Change ID:** {CHANGE_ID}
 
 ```bash
-git diff --stat {BASE_SHA}..{HEAD_SHA}
-git diff {BASE_SHA}..{HEAD_SHA}
+jj show -r {CHANGE_ID} --git --stat --no-pager
+jj show -r {CHANGE_ID} --git --no-pager
 ```
+
+`--git` produces unified diff format. `--no-pager` prevents interactive output. `jj show` is read-only and never opens an editor.
+
+## Verification Command Policy
+
+Inspect the diff and the reported verification. Do not rerun the same commands unless inspection gives a concrete reason to believe the report is stale, incomplete, or contradicted by the diff. If you rerun verification, state the specific inspection concern that required it.
+
+For planned `subagent-driven-development` graph execution, the upstream `verify` node owns compile, test, lint, type-check, build, and smoke-test execution for its group. Do not assign that ownership to implementers.
 
 ## Review Checklist
 
@@ -90,6 +97,16 @@ git diff {BASE_SHA}..{HEAD_SHA}
 **Ready to merge?** [Yes/No/With fixes]
 
 **Reasoning:** [Technical assessment in 1-2 sentences]
+
+## Reporting Gaps
+
+**If you encounter a command invocation issue** that could have been prevented by information in a skill, invoke **jj-superpowers:wish-i-knew** to log it — but only if the information was genuinely absent from or unclear in existing skills (not mere forgetting).
+
+**If you find yourself doing something tedious, error-prone, or repetitive** that a reusable tool or script could automate but doesn't exist yet, invoke **jj-superpowers:wish-i-had** to log it.
+
+**If you read multiple files or traced execution across modules** to understand something that a short documentation file could have explained immediately, invoke **jj-superpowers:documentation** to create that document.
+
+Log and continue — do not block the review on this.
 
 ## Critical Rules
 

@@ -1,6 +1,6 @@
-# Testing Superpowers Skills
+# Testing jj-superpowers Skills
 
-This document describes how to test Superpowers skills, particularly the integration tests for complex skills like `subagent-driven-development`.
+This document describes how to test jj-superpowers skills, particularly integration tests for complex skills like `subagent-driven-development`.
 
 ## Overview
 
@@ -21,7 +21,8 @@ tests/
 
 ### Integration Tests
 
-Integration tests execute real Claude Code sessions with actual skills:
+Integration tests execute real Claude Code sessions with actual skills when the
+`tests/claude-code/` harness is present in the checkout:
 
 ```bash
 # Run the subagent-driven-development integration test
@@ -33,7 +34,7 @@ cd tests/claude-code
 
 ### Requirements
 
-- Must run from the **superpowers plugin directory** (not from temp directories)
+- Must run from the **jj-superpowers plugin directory** (not from temp directories)
 - Claude Code must be installed and available as `claude` command
 - Local dev marketplace must be enabled: `"jj-superpowers@jj-superpowers-dev": true` in `~/.claude/settings.json`
 
@@ -44,7 +45,7 @@ cd tests/claude-code
 The integration test verifies the `subagent-driven-development` skill correctly:
 
 1. **Plan Loading**: Reads the plan once at the beginning
-2. **Full Task Text**: Provides complete task descriptions to subagents (doesn't make them read files)
+2. **Task Context Handoff**: Passes task file paths, context docs, allowed file lists, and orchestrator notes to subagents
 3. **Self-Review**: Ensures subagents perform self-review before reporting
 4. **Review Order**: Runs spec compliance review before code quality review
 5. **Review Loops**: Uses review loops when issues are found
@@ -60,7 +61,6 @@ The integration test verifies the `subagent-driven-development` skill correctly:
    - TodoWrite was used for tracking
    - Implementation files were created
    - Tests pass
-   - Git commits show proper workflow
 4. **Token Analysis**: Shows token usage breakdown by subagent
 
 ### Test Output
@@ -182,7 +182,7 @@ ls -lt "$SESSION_DIR"/*.jsonl | head -5
 **Problem**: Skill not found when running headless tests
 
 **Solutions**:
-1. Ensure you're running FROM the superpowers directory: `cd /path/to/superpowers && tests/...`
+1. Ensure you're running FROM the jj-superpowers directory: `cd /path/to/jj-superpowers && tests/...`
 2. Check `~/.claude/settings.json` has `"jj-superpowers@jj-superpowers-dev": true` in `enabledPlugins`
 3. Verify skill exists in `skills/` directory
 
@@ -258,7 +258,7 @@ python3 "$SCRIPT_DIR/analyze-token-usage.py" "$SESSION_FILE"
 1. **Always cleanup**: Use trap to cleanup temp directories
 2. **Parse transcripts**: Don't grep user-facing output - parse the `.jsonl` session file
 3. **Grant permissions**: Use `--permission-mode bypassPermissions` and `--add-dir`
-4. **Run from plugin dir**: Skills only load when running from the superpowers directory
+4. **Run from plugin dir**: Skills only load when running from the jj-superpowers directory
 5. **Show token usage**: Always include token analysis for cost visibility
 6. **Test real behavior**: Verify actual files created, tests passing, commits made
 
