@@ -75,7 +75,7 @@ Skills use Claude Code tool names. When you encounter these in a skill, use your
 
 ## Subagent Dispatch Notes
 
-Copilot CLI's `task` tool dispatches sub-agents similarly to Claude Code's `Task` tool. When a skill references a named agent type like `superpowers:code-reviewer`:
+Copilot CLI's `task` tool dispatches sub-agents similarly to Claude Code's `Task` tool. When a skill references a named agent type like `jj-superpowers:code-reviewer`:
 
 1. Find the agent's prompt file (e.g., `agents/code-reviewer.md` or a skill-local prompt template like `code-quality-reviewer-prompt.md`)
 2. Read and fill any template placeholders (`{BASE_SHA}`, `{WHAT_WAS_IMPLEMENTED}`, etc.)

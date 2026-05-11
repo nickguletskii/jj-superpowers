@@ -1,4 +1,4 @@
-# Installing Superpowers for Codex
+# Installing jj-superpowers for Codex
 
 Enable jj-superpowers skills in Codex via native skill discovery. Just clone and symlink.
 
@@ -25,7 +25,20 @@ Enable jj-superpowers skills in Codex via native skill discovery. Just clone and
    cmd /c mklink /J "$env:USERPROFILE\.agents\skills\jj-superpowers" "$env:USERPROFILE\.codex\jj-superpowers\skills"
    ```
 
-3. **Restart Codex** (quit and relaunch the CLI) to discover the skills.
+3. **Optional: install named subagent roles**
+
+   ```bash
+   mkdir -p ~/.codex/agents
+   ln -s ~/.codex/jj-superpowers/.codex/agents/sdd-implementer.toml ~/.codex/agents/sdd-implementer.toml
+   ln -s ~/.codex/jj-superpowers/.codex/agents/sdd-spec-reviewer.toml ~/.codex/agents/sdd-spec-reviewer.toml
+   ln -s ~/.codex/jj-superpowers/.codex/agents/sdd-verifier.toml ~/.codex/agents/sdd-verifier.toml
+   ln -s ~/.codex/jj-superpowers/.codex/agents/sdd-quality-reviewer.toml ~/.codex/agents/sdd-quality-reviewer.toml
+   ln -s ~/.codex/jj-superpowers/.codex/agents/sdd-jj-coordinator.toml ~/.codex/agents/sdd-jj-coordinator.toml
+   ```
+
+   These custom agents support `subagent-driven-development` named role dispatch.
+
+4. **Restart Codex** (quit and relaunch the CLI) to discover the skills and agents.
 
 ## Migrating from old bootstrap
 
@@ -49,6 +62,12 @@ ls -la ~/.agents/skills/jj-superpowers
 ```
 
 You should see a symlink (or junction on Windows) pointing to your jj-superpowers skills directory.
+
+For named subagent roles, also verify:
+
+```bash
+ls ~/.codex/agents/sdd-implementer.toml
+```
 
 ## Updating
 

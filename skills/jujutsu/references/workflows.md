@@ -1,6 +1,7 @@
 # Core Jujutsu Workflows
 
 > **Note for AI agents**: Some commands below (marked "interactive") require user interaction.
+> Commands such as `jj edit`, `jj next`, `jj prev`, and plain `jj new` also reassign `@`; treat them as manual-only unless the user explicitly wants the working copy moved.
 > See [SKILL.md](../SKILL.md#-critical-non-interactive-commands-only) for non-interactive alternatives.
 
 ## Mental Model: Changes, Not Commits
@@ -78,7 +79,29 @@ jj new
 jj describe -m "Add logging to processor"
 ```
 
-**Non-interactive alternative** (for AI agents): Use `jj new` + `jj restore` — create a sibling change, copy the target files into it, then revert them from the original.
+**Non-interactive alternatives** (for AI agents): choose based on the graph you want.
+
+1. **`@` should keep depending on the extracted change**
+
+```bash
+# Insert a new predecessor before @
+jj new --no-edit -m "Refactor: extracted piece" --insert-after @- --insert-before @
+# note the new change ID from command output, then file content from @ into it
+jj squash --from @ --into <new-change-id> path/to/file1 path/to/file2 -u
+```
+
+2. **The user explicitly wants parallel siblings**
+
+Use `jj-split-parallel` or another sibling-specific workflow. Do not use a sibling-creating rewrite when the working copy should continue to depend on the extracted change.
+
+3. **After any rewrite, verify both content and graph**
+
+```bash
+BEFORE=$(jj log -r @ -T 'commit_id ++ "\n"' --no-graph --no-pager)
+# ... split/rewrite ...
+jj diff --from "$BEFORE" --to @ --no-pager
+jj log -r 'parents(@) | @' --no-graph --no-pager
+```
 
 ### 3. Navigating Your Changes
 
@@ -145,6 +168,21 @@ jj absorb
 # Edit any commit's contents directly (interactive)
 jj diffedit -r <change-id>
 ```
+
+**Non-interactive file-filing from `@` into a named destination** (preferred in agentic workflows):
+
+```bash
+# Move all of @ into a destination, keep @ alive even if it becomes empty
+jj squash --from @ --into <change-id> -u
+
+# Move only specific paths, leave unrelated edits in @
+jj squash --from @ --into <change-id> path/to/file1.rs path/to/file2.rs -u
+
+# Update the destination description without opening an editor
+jj describe -r <change-id> -m "toreview: my description"
+```
+
+`-u` (`--keep-emptied`) prevents `@` from being abandoned when all its content is squashed out — critical when `@` is the fixed DAG tip across multiple filing steps.
 
 ### 6. Rebasing and Updating
 

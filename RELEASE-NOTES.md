@@ -14,7 +14,6 @@ Initial release of jj-superpowers — a personal fork of [superpowers v5.0.6](ht
 
 **jj skill library added**
 - `jj-agentic-dev` — single-worktree agentic development with scope merge DAG (pre-plans full change DAG, squashes work into pre-planned changes)
-- `jj-workspaces` — jj workspace isolation for cases requiring true filesystem isolation
 - `jj-hunk` — programmatic hunk selection via the `jj-hunk` tool (non-interactive alternative to `jj split -i`)
 - `jj-split-parallel` — split one jj change into parallel siblings by file or hunk, with Python automation script
 - `jujutsu` — comprehensive jj reference including daily workflow, revsets, git→jj mapping, and GitLab integration guide

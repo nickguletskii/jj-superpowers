@@ -1,4 +1,4 @@
-# Installing Superpowers for GitHub Copilot CLI
+# Installing jj-superpowers for GitHub Copilot CLI
 
 ## Prerequisites
 
@@ -7,15 +7,15 @@
 
 ## Installation
 
-1. **Clone the superpowers repository:**
+1. **Clone the jj-superpowers repository:**
    ```bash
-   git clone https://github.com/nickguletskii/jj-superpowers.git ~/.config/gh-copilot/superpowers
+   git clone https://github.com/nickguletskii/jj-superpowers.git ~/.config/gh-copilot/jj-superpowers
    ```
 
 2. **Register the plugin** by pointing Copilot CLI to the `.copilot-plugin/` directory:
    ```bash
    # Add to your Copilot CLI plugin configuration
-   gh copilot plugin add ~/.config/gh-copilot/superpowers/.copilot-plugin
+   gh copilot plugin add ~/.config/gh-copilot/jj-superpowers/.copilot-plugin
    ```
 
    Consult the [Copilot CLI plugin docs](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/plugins-creating) for the exact registration mechanism for your version.
@@ -28,8 +28,8 @@ Use the `skill` tool to invoke skills:
 
 ```
 skill brainstorming
-skill superpowers/test-driven-development
-skill superpowers/systematic-debugging
+skill jj-superpowers/test-driven-development
+skill jj-superpowers/systematic-debugging
 ```
 
 ## Tool Mapping
@@ -49,7 +49,7 @@ Key mappings:
 ## Updating
 
 ```bash
-cd ~/.config/gh-copilot/superpowers && git pull
+cd ~/.config/gh-copilot/jj-superpowers && git pull
 ```
 
 ## Getting Help

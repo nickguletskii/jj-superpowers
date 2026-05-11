@@ -47,7 +47,7 @@ Every `jj` command that can open an editor must be made non-interactive:
 | `jj describe` | `jj describe -m "message"` or `jj describe -r <id> -m "message"` |
 | `jj new` | `jj new --no-edit -m "message" --insert-after X --insert-before Y` |
 | `jj commit` | `jj commit -m "message"` |
-| `jj squash -i` | `jj squash --from <id> --into <id> [files]` |
+| `jj squash -i` | `jj squash --from <id> --into <id> [files] -u` |
 | `jj split` | Use `jj-hunk split` via the `jj-hunk` skill instead |
 | `jj resolve` | Edit conflict markers manually in the file |
 | `jj diffedit` | Not usable by agents — edit files directly |
@@ -57,6 +57,24 @@ Always add `--no-pager` to `jj log`, `jj diff`, `jj show`, and `jj op log`.
 **When providing commands for users to execute manually**, offer both versions:
 - **For AI execution**: Non-interactive command
 - **For manual execution**: Interactive command with "(interactive)" label
+
+### 4. Distinguish "insert before `@`" from "create a sibling"
+
+When separating part of `@` into a new change, decide the graph intent first:
+
+- If `@` should still depend on the extracted change, insert the new change before `@`, then file content into it:
+  - `jj new --no-edit -m "message" --insert-after @- --insert-before @`
+  - `jj squash --from @ --into <new-change-id> path/to/file -u`
+- If the user explicitly wants parallel siblings, use `jj-split-parallel` or another sibling-specific workflow.
+- **Never** use `jj split -o @-` as a generic extraction shortcut. For `-r @`, that rewrites the selected content onto `@-` and leaves the remaining working-copy change as a sibling that no longer depends on the extracted change.
+
+### 5. Verify graph shape after any history rewrite
+
+After splitting, rebasing, abandoning, or otherwise rewriting history:
+
+- capture the pre-rewrite working-copy commit ID with `jj log -r @ -T 'commit_id ++ "\n"' --no-graph --no-pager`
+- after the rewrite, run `jj diff --from <old-@-commit-id> --to @ --no-pager` and confirm it is empty when content should be unchanged
+- inspect `jj log -r 'parents(@) | @' --no-graph --no-pager` to confirm the parent/ancestor relationship matches your intent
 
 See [workflows.md](references/workflows.md) for detailed non-interactive patterns.
 
@@ -161,33 +179,27 @@ This project uses **jujutsu (jj)** for version control. Use `jj` commands instea
 
 ```bash
 # View status
-jj st                           # Current working copy status
-jj log                          # View change history
-jj log -r 'ancestors(@, 10)'   # Last 10 changes
+jj st                                           # Current working copy status
+jj log --no-pager                              # View change history
+jj log -r 'ancestors(@, 10)' --no-graph --no-pager
 
-# Create changes
-# (edit files - automatically tracked!)
-jj describe -m "Description"    # Describe current change
-jj new                          # Create fresh working copy
-jj commit -m "Description"      # Shorthand: describe + new
+# Describe the current working-copy change without moving @
+jj describe -m "Description"
 
-# Navigate changes
-jj edit <change-id>            # Set different change as working copy
-jj new <parent-change-id>      # Create change as child of parent
-jj next                         # Move to child change
-jj prev                         # Move to parent change
+# Insert a predecessor change while keeping @ as the working copy
+jj new --no-edit -m "Refactor: helper" --insert-after @- --insert-before @
 
-# Amend changes (non-interactive)
-jj edit <change-id>            # Set as working copy
-# (edit files)
-jj describe -m "Updated"       # Update description
-jj new                          # Return to new working copy
+# File selected paths from @ into an existing destination change
+jj squash --from @ --into <change-id> path/to/file1 path/to/file2 -u
 
-# Rebase
-jj git fetch                   # Fetch from remote
-jj rebase -o 'trunk()'          # Rebase onto main branch (auto-detected)
-jj rebase -s <change> -o <base> # Rebase specific change and descendants
+# Rebase specific changes when needed
+jj git fetch
+jj rebase -o 'trunk()'
+jj rebase -s <change> -o <base>
 ```
+
+For manual stack-navigation workflows such as `jj edit`, `jj next`, or plain `jj new`, see
+`references/workflows.md`. Those commands move `@` and are not the default AI-agent workflow.
 
 ### Viewing Changes and Diffs
 
@@ -267,6 +279,30 @@ jj undo
 jj op log
 ```
 
+### Common Non-Interactive File-Filing Patterns
+
+Use these when working in `@` and filing specific work into a pre-planned destination change without opening an editor.
+
+The `-u` / `--keep-emptied` flag keeps `@` alive even when all its content is squashed out — essential in agentic workflows where `@` is the permanent tip.
+
+```bash
+# Move all of @ into a destination change (keep @ alive)
+jj squash --from @ --into <rev> -u
+
+# Move specific paths from @ into a destination change (leave other edits in @)
+jj squash --from @ --into <rev> path/to/file1.rs path/to/file2.rs -u
+
+# Update the destination's description (never opens editor)
+jj describe -r <rev> -m "toreview: my step"
+
+# Full pattern: write → file → mark done
+# 1. Edit files in @
+# 2. jj squash --from @ --into <rev> <paths> -u
+# 3. jj describe -r <rev> -m "toreview: <description>"
+```
+
+**Why `-u` matters**: without it, squashing all content out of `@` abandons `@`, which may disrupt a multi-step workflow where `@` is expected to remain as the DAG tip.
+
 ### Operation Log and Recovery
 
 The operation log records every jj operation and makes them fully reversible.
@@ -317,7 +353,7 @@ Before any history-rewriting operation (split, squash, rebase, clean-history), s
 
 ```bash
 # Step 1: capture working copy commit ID BEFORE rewriting
-PRE_ID=$(jj log -r @- -T 'commit_id' --no-graph --no-pager)
+PRE_ID=$(jj log -r @ -T 'commit_id' --no-graph --no-pager)
 
 # ... perform history-rewriting operations (jj-hunk split, jj rebase, etc.) ...
 
@@ -328,7 +364,7 @@ jj diff --from "$PRE_ID" --to "$(jj log -r @ -T 'commit_id' --no-graph --no-page
 ```
 
 Use this pattern:
-- Before and after every `jj-hunk split` / `jj-split` operation
+- Before and after every `jj-hunk split` operation or other split-style history rewrite
 - Before and after `jj-clean-history` or `jj rebase` runs
 - Any time the correctness of the working copy is uncertain after DAG manipulation
 
@@ -337,62 +373,44 @@ Use this pattern:
 ### Creating Atomic Changes
 
 ```bash
-# Edit files
+# Edit files in the current working copy
 vim src/feature.rs
 
-# Describe the change
+# Describe the current change without moving @
 jj describe -m "Add feature X"
 
-# Start next change
-jj new
-
-# Or use the shorthand (describe + new in one step):
+# If the user explicitly wants a fresh successor change afterwards:
 jj commit -m "Add feature X"
 ```
 
 ### Splitting Unrelated Changes (Non-Interactive)
 
-When you have multiple unrelated changes in working copy:
+When you have multiple unrelated changes in working copy, do not default to sibling extraction.
+Choose the graph you want first:
 
 ```bash
-# 1. Create new change from parent (sibling of original)
-jj new '@-'
+# Insert a new predecessor before @ when @ should keep depending on it
+jj new --no-edit -m "First change" --insert-after @- --insert-before @
+# note the new change ID from command output, then file selected paths into it
+jj squash --from @ --into <new-change-id> file1.rs file2.rs -u
 
-# 2. Copy specific files to this new change
-jj restore --from <original-change-id> file1.rs file2.rs
-
-# 3. Describe first change (now contains file1.rs, file2.rs)
-jj describe -m "First change"
-
-# 4. Remove these files from the original change
-# Edit the original change
-jj edit <original-change-id>
-# Revert file1.rs and file2.rs to their state in the parent
-jj restore file1.rs file2.rs
-# Update description (now contains only remaining files)
+# Describe the remaining working-copy change once only the second concern remains
 jj describe -m "Second change"
-
-# 5. Return to new working copy
-jj new
 ```
 
-**For users executing manually**: Suggest `jj split` (interactive)
+If the user explicitly wants parallel siblings instead, use `jj-split-parallel` or a sibling-specific workflow.
+For users executing manually, `jj split` remains the interactive option.
 
 ### Updating Change After Review
 
+Prefer keeping `@` in place and filing current edits into the target change:
+
 ```bash
-# Set change as working copy
-jj edit <change-id>
-
-# Make edits
-vim src/fix.rs
-
-# Update description
-jj describe -m "Updated: address review feedback"
-
-# Return to new working copy
-jj new
+jj squash --from @ --into <change-id> path/to/file.rs -u
+jj describe -r <change-id> -m "Updated: address review feedback"
 ```
+
+If direct amendment of another change is required, ask first because `jj edit <change-id>` reassigns `@`.
 
 ### Finding Your Changes
 
@@ -448,13 +466,13 @@ If this is a jj repo but `CLAUDE.md` is missing or doesn't mention jj, follow th
 
 ## Tips for AI Agents
 
-1. **Always check for interactive commands**: If a workflow requires `jj split` or `jj squash -i`, provide non-interactive alternative
-2. **Use revsets for precision**: `jj log -r 'trunk()..@'` shows exactly what needs pushing
-3. **Trust operation log**: If uncertain, `jj op log` shows what happened; `jj undo` reverses it
-4. **Describe changes clearly**: Good descriptions make history readable
-5. **Fetch before rebasing**: `jj git fetch` then `jj rebase -o 'trunk()'`
-7. **Use `jj new` frequently**: Separate concerns into different changes
-8. **Use workspaces for isolation**: Create temporary workspaces to avoid disturbing the user's working copy
+1. **Never run diffs inline**: Do not run `jj show`, `jj diff`, or any diff command to read output into the agent context — this pollutes context with large diffs. Give the user the command to run themselves instead.
+2. **Always check for interactive commands**: If a workflow requires `jj split` or `jj squash -i`, provide non-interactive alternative
+3. **Use revsets for precision**: `jj log -r 'trunk()..@'` shows exactly what needs pushing
+4. **Trust operation log**: If uncertain, `jj op log` shows what happened; `jj undo` reverses it
+5. **Describe changes clearly**: Good descriptions make history readable
+6. **Fetch before rebasing**: `jj git fetch` then `jj rebase -o 'trunk()'`
+7. **Create new changes explicitly**: When you need a new change, prefer `jj new --no-edit --insert-after ... --insert-before ...` with explicit anchors over plain `jj new`.
 
 ## When to Load References
 

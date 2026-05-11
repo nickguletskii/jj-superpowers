@@ -6,11 +6,29 @@ Use this template when dispatching an implementer subagent.
 Task tool (general-purpose):
   description: "Implement Task N: [task name]"
   prompt: |
-    You are implementing Task N: [task name]
+    You are implementing graph task node `[task_node_id]`: Task N: [task name]
 
-    ## Task Description
+    🚨 **CRITICAL CONSTRAINT:** You may only run this jj command form: `jj commit [FILES] -m 'toorg: [description]'` to file completed work into a commit. All other jj commands are forbidden. That includes:
+    - ❌ `jj new`, `jj describe`, `jj squash`, `jj edit`, `jj next`, `jj prev`
+    - ❌ `jj delete`, `jj abandon`
+    - ❌ Any other jj subcommand
 
-    [FULL TEXT of task from plan - paste it here, don't make subagent read file]
+    When you complete a logical unit of work, run: `jj commit [list of files] -m 'toorg: [short description]'`
+    This moves those files out of `@` into a new commit preceding it. File one logical unit at a time — do not dump all files into a single commit.
+
+    ## Your Task
+
+    Read the following files before starting. All paths are relative to `[working directory]`.
+
+    - **Task file:** `[path/to/task-NN-component-name.md]`
+    - **Context:** `[context/tech-stack.md]`, `[context/architecture.md]`
+      (include only the context docs that exist for this plan)
+
+    ## Orchestrator Notes
+
+    [Dynamic annotations from the orchestrator — outputs from prior tasks (e.g. new types,
+    APIs, or files produced), clarifications agreed on during this session, anything not
+    captured in the static files above, any instructions for subagents from the user. Omit this section if there are no annotations.]
 
     ## Context
 
@@ -30,13 +48,45 @@ Task tool (general-purpose):
 
     Once you're clear on requirements:
     1. Implement exactly what the task specifies
-    2. Write tests (following TDD if task says to)
-    3. Verify implementation works
-    4. Commit your work
-    5. Self-review (see below)
-    6. Report back
+    2. Write task-local tests if helpful (following TDD if task says to)
+    3. File completed logical units: `jj commit [files] -m 'toorg: [description]'`
+    4. Self-review (see below)
+    5. Report back
 
     Work from: [directory]
+
+    ## File Scope
+
+    You may only modify the files listed below. Do NOT modify any other file,
+    even if you believe it would improve the result or is required for compilation.
+
+    **Files you may touch:**
+    <FILE_LIST — provided by orchestrator, one path per line>
+
+    If you discover you need to modify a file not on this list:
+    - Do NOT modify it
+    - Stop immediately
+    - Report BLOCKED with SCOPE: related or unrelated (see Report Format below)
+
+    "I wasn't sure which files to touch" is not a valid reason to go off-list.
+    If the task is underspecified, that is a BLOCKED report, not a silent edit.
+
+    ## Verification Boundary
+
+    You may run only the narrow task-local checks named in the task file. Do not run
+    group compile, type-check, build, lint, test-suite, or smoke-test commands.
+
+    `cargo check`, `cargo build`, and `cargo test` are normally verification-node
+    commands even when package-scoped or test-filtered, because they contend on shared
+    target-directory state. Do not run them unless the task file explicitly names the
+    exact command and documents why it is safe and necessary for this task.
+
+    If you run an allowed task-local command, use concise output: quiet flags,
+    structured output, selectors, and filters before full logs.
+
+    Authoritative verification for this graph group is handled later by a `verify`
+    node after spec review passes. If you believe a group verification command is
+    needed before this task can be reviewed, report NEEDS_CONTEXT instead of running it.
 
     **While you work:** If you encounter something unexpected or unclear, **ask questions**.
     It's always OK to pause and clarify. Don't guess or make assumptions.
@@ -93,7 +143,7 @@ Task tool (general-purpose):
     **Testing:**
     - Do tests actually verify behavior (not just mock behavior)?
     - Did I follow TDD if required?
-    - Are tests comprehensive?
+    - Are task-local tests appropriate for this node, without taking over group verification?
 
     If you find issues during self-review, fix them now before reporting.
 
@@ -102,12 +152,47 @@ Task tool (general-purpose):
     When done, report:
     - **Status:** DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT
     - What you implemented (or what you attempted, if blocked)
-    - What you tested and test results
+    - Task-local checks run and results, or "Not run; group verification belongs to verify node"
     - Files changed
     - Self-review findings (if any)
     - Any issues or concerns
 
     Use DONE_WITH_CONCERNS if you completed the work but have doubts about correctness.
-    Use BLOCKED if you cannot complete the task. Use NEEDS_CONTEXT if you need
-    information that wasn't provided. Never silently produce work you're unsure about.
+    Use NEEDS_CONTEXT if you need information that wasn't provided.
+    Never silently produce work you're unsure about.
+
+    **BLOCKED report format** — use when you cannot proceed without touching an out-of-scope
+    file, or when a required dependency is missing:
+
+    ```
+    STATUS: BLOCKED
+    TASK: <task name>
+    MISSING: <what is needed — one sentence>
+    SCOPE: related | unrelated
+    DETAIL: <one paragraph explaining what you discovered>
+    ```
+
+    SCOPE values:
+    - **related**: the missing thing is caused by another task in this plan
+      (e.g. a type a parallel task is adding doesn't exist yet)
+    - **unrelated**: a pre-existing gap outside this work scope
+      (e.g. a utility function that should exist but doesn't)
+
+    ## Reporting Gaps
+
+    **If you encounter a command invocation issue** that could have been prevented by
+    information in a skill, invoke **jj-superpowers:wish-i-knew** to log it — but only if:
+    - the relevant information is genuinely absent from existing skills, OR
+    - a skill has the information but its phrasing or trigger condition wasn't clear
+      enough that you recognised you should use it at the right moment.
+    Do NOT invoke for issues caused by simply forgetting something a skill already documents clearly.
+
+    **If you wish you had a reusable tool or script** to help perform your work,
+    invoke **jj-superpowers:wish-i-had** to log it.
+
+    **If you spent significant effort exploring or reading code** to understand something
+    that a short documentation file could have explained immediately, invoke
+    **jj-superpowers:documentation** to create that document.
+
+    Log and continue — do not block your task on logging.
 ```

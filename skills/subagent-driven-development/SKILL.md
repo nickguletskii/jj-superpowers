@@ -1,41 +1,48 @@
 ---
 name: subagent-driven-development
-description: Use when executing implementation plans with independent tasks in the current session
+description: Use when executing implementation plans that include project-network.dot in the current session
 ---
 
 # Subagent-Driven Development
 
-Execute plan by dispatching fresh subagent per task, with two-stage review after each: spec compliance review first, then code quality review.
+Execute `project-network.dot` from a written plan. Dispatch fresh implementer subagents for ready task nodes, run per-task spec review, batch contended verification commands at verify nodes, then run group-level code-quality review.
 
-**Why subagents:** You delegate tasks to specialized agents with isolated context. By precisely crafting their instructions and context, you ensure they stay focused and succeed at their task. They should never inherit your session's context or history — you construct exactly what they need. This also preserves your own context for coordination work.
-
-**Core principle:** Fresh subagent per task + two-stage review (spec then quality) = high quality, fast iteration
+**Core principle:** task fan-out + per-task spec gates + verification fan-in + group quality review.
 
 ## When to Use
 
 ```dot
 digraph when_to_use {
-    "Have implementation plan?" [shape=diamond];
-    "Tasks mostly independent?" [shape=diamond];
+    "Have plan with project-network.dot?" [shape=diamond];
     "Stay in this session?" [shape=diamond];
     "subagent-driven-development" [shape=box];
     "executing-plans" [shape=box];
     "Manual execution or brainstorm first" [shape=box];
 
-    "Have implementation plan?" -> "Tasks mostly independent?" [label="yes"];
-    "Have implementation plan?" -> "Manual execution or brainstorm first" [label="no"];
-    "Tasks mostly independent?" -> "Stay in this session?" [label="yes"];
-    "Tasks mostly independent?" -> "Manual execution or brainstorm first" [label="no - tightly coupled"];
+    "Have plan with project-network.dot?" -> "Stay in this session?" [label="yes"];
+    "Have plan with project-network.dot?" -> "Manual execution or brainstorm first" [label="no"];
     "Stay in this session?" -> "subagent-driven-development" [label="yes"];
-    "Stay in this session?" -> "executing-plans" [label="no - parallel session"];
+    "Stay in this session?" -> "executing-plans" [label="no"];
 }
 ```
 
-**vs. Executing Plans (parallel session):**
-- Same session (no context switch)
-- Fresh subagent per task (no context pollution)
-- Two-stage review after each task: spec compliance first, then code quality
-- Faster iteration (no human-in-loop between tasks)
+This skill is graph-first. A one-task plan is still executed through the same graph model.
+
+## Graph Contract
+
+Read `plan.md` and `project-network.dot`. Treat the graph as authoritative unless it is invalid or contradicts the task files.
+
+Node kinds:
+
+| Kind | Executor | Gate |
+|------|----------|------|
+| `task` | implementer subagent | files changed and filed |
+| `spec_review` | spec reviewer subagent | task matches its task file |
+| `verify` | verification subagent or orchestrator command runner | commands exit successfully |
+| `quality_review` | code quality reviewer subagent | verified group is maintainable |
+| `final` | orchestrator | all upstream gates passed |
+
+Edges mean "source node must pass before target node may run."
 
 ## The Process
 
@@ -43,235 +50,267 @@ digraph when_to_use {
 digraph process {
     rankdir=TB;
 
-    subgraph cluster_per_task {
-        label="Per Task";
-        "Dispatch implementer subagent (./implementer-prompt.md)" [shape=box];
-        "Implementer subagent asks questions?" [shape=diamond];
-        "Answer questions, provide context" [shape=box];
-        "Implementer subagent implements, tests, commits, self-reviews" [shape=box];
-        "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)" [shape=box];
-        "Spec reviewer subagent confirms code matches spec?" [shape=diamond];
-        "Implementer subagent fixes spec gaps" [shape=box];
-        "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" [shape=box];
-        "Code quality reviewer subagent approves?" [shape=diamond];
-        "Implementer subagent fixes quality issues" [shape=box];
-        "Mark task complete in TodoWrite" [shape=box];
-    }
+    "Read plan.md and project-network.dot" [shape=box];
+    "Validate graph" [shape=box];
+    "Ready task nodes?" [shape=diamond];
+    "Fan-out: emit all ready Agent calls\nin one response" [shape=box];
+    "Fan-in: wait for all results" [shape=box];
+    "Any implementer asks questions\nor blocks?" [shape=diamond];
+    "Answer, amend plan, or re-dispatch" [shape=box];
+    "Task filed as toorg change" [shape=box];
+    "Run task spec review" [shape=box];
+    "Spec review passes?" [shape=diamond];
+    "Return to implementer for task fix" [shape=box];
+    "Ready verify node?" [shape=diamond];
+    "Run batched verification commands" [shape=box];
+    "Verification passes?" [shape=diamond];
+    "Return failures to responsible task nodes" [shape=box];
+    "Run group code-quality review" [shape=box];
+    "Quality review passes?" [shape=diamond];
+    "Return to responsible implementer" [shape=box];
+    "Final node reached?" [shape=diamond];
+    "Use jj-superpowers:finishing-a-development-branch" [shape=box];
 
-    "Read plan, extract all tasks with full text, note context, create TodoWrite" [shape=box];
-    "More tasks remain?" [shape=diamond];
-    "Dispatch final code reviewer subagent for entire implementation" [shape=box];
-    "Use superpowers:finishing-a-development-branch" [shape=box style=filled fillcolor=lightgreen];
-
-    "Read plan, extract all tasks with full text, note context, create TodoWrite" -> "Dispatch implementer subagent (./implementer-prompt.md)";
-    "Dispatch implementer subagent (./implementer-prompt.md)" -> "Implementer subagent asks questions?";
-    "Implementer subagent asks questions?" -> "Answer questions, provide context" [label="yes"];
-    "Answer questions, provide context" -> "Dispatch implementer subagent (./implementer-prompt.md)";
-    "Implementer subagent asks questions?" -> "Implementer subagent implements, tests, commits, self-reviews" [label="no"];
-    "Implementer subagent implements, tests, commits, self-reviews" -> "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)";
-    "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)" -> "Spec reviewer subagent confirms code matches spec?";
-    "Spec reviewer subagent confirms code matches spec?" -> "Implementer subagent fixes spec gaps" [label="no"];
-    "Implementer subagent fixes spec gaps" -> "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)" [label="re-review"];
-    "Spec reviewer subagent confirms code matches spec?" -> "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" [label="yes"];
-    "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" -> "Code quality reviewer subagent approves?";
-    "Code quality reviewer subagent approves?" -> "Implementer subagent fixes quality issues" [label="no"];
-    "Implementer subagent fixes quality issues" -> "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" [label="re-review"];
-    "Code quality reviewer subagent approves?" -> "Mark task complete in TodoWrite" [label="yes"];
-    "Mark task complete in TodoWrite" -> "More tasks remain?";
-    "More tasks remain?" -> "Dispatch implementer subagent (./implementer-prompt.md)" [label="yes"];
-    "More tasks remain?" -> "Dispatch final code reviewer subagent for entire implementation" [label="no"];
-    "Dispatch final code reviewer subagent for entire implementation" -> "Use superpowers:finishing-a-development-branch";
+    "Read plan.md and project-network.dot" -> "Validate graph";
+    "Validate graph" -> "Ready task nodes?";
+    "Ready task nodes?" -> "Fan-out: emit all ready Agent calls\nin one response" [label="yes"];
+    "Fan-out: emit all ready Agent calls\nin one response" -> "Fan-in: wait for all results";
+    "Fan-in: wait for all results" -> "Any implementer asks questions\nor blocks?";
+    "Any implementer asks questions\nor blocks?" -> "Answer, amend plan, or re-dispatch" [label="yes"];
+    "Answer, amend plan, or re-dispatch" -> "Ready task nodes?";
+    "Any implementer asks questions\nor blocks?" -> "Task filed as toorg change" [label="no"];
+    "Task filed as toorg change" -> "Run task spec review";
+    "Run task spec review" -> "Spec review passes?";
+    "Spec review passes?" -> "Return to implementer for task fix" [label="no"];
+    "Return to implementer for task fix" -> "Run task spec review";
+    "Spec review passes?" -> "Ready verify node?" [label="yes"];
+    "Ready verify node?" -> "Run batched verification commands" [label="yes"];
+    "Ready verify node?" -> "Ready task nodes?" [label="no"];
+    "Run batched verification commands" -> "Verification passes?";
+    "Verification passes?" -> "Return failures to responsible task nodes" [label="no"];
+    "Return failures to responsible task nodes" -> "Run task spec review";
+    "Verification passes?" -> "Run group code-quality review" [label="yes"];
+    "Run group code-quality review" -> "Quality review passes?";
+    "Quality review passes?" -> "Return to responsible implementer" [label="no"];
+    "Return to responsible implementer" -> "Run task spec review";
+    "Quality review passes?" -> "Final node reached?" [label="yes"];
+    "Final node reached?" -> "Ready task nodes?" [label="no"];
+    "Final node reached?" -> "Use jj-superpowers:finishing-a-development-branch" [label="yes"];
 }
 ```
 
+## Graph Validation
+
+Before dispatching work, check:
+
+- `plan.md` references `project-network.dot`.
+- Every task node has `kind="task"`, `file`, and `files`.
+- Every task node reaches exactly one downstream `spec_review`.
+- Every `spec_review` reaches a `verify` node before any `quality_review`.
+- Every `quality_review` depends on a successful `verify` node.
+- Every terminal path reaches `final`.
+- No cycles.
+- No ready-to-run parallel task nodes have overlapping file scopes.
+
+If the graph is invalid, fix the plan if the correction is mechanical and obvious. Otherwise ask the user before execution.
+
+## Dispatch Rules
+
+Prefer named role agents when the platform supports them. Pass only dynamic invocation context in the task message: graph node id, task or verification file path, relevant context paths, allowed file list, upstream reports, verification report, and orchestrator notes. Keep durable role behavior in the named agent's system/developer prompt.
+
+**Parallel Dispatch Mechanics:** When multiple task nodes (or spec reviews) are ready and non-conflicting, dispatch them all by making multiple Agent tool calls in a **single response** — not one call per turn. Do not announce dispatch in a text turn and then make Agent calls in subsequent turns; that pattern produces sequential execution regardless of stated intent.
+
+Default to **3–5 concurrent subagents** unless the user specifies otherwise. Maximize parallelism: keep all available slots filled at all times. When a subagent completes and a slot opens, immediately dispatch the next ready task — do not wait for other in-flight agents to finish first. Graph dependencies still govern sequencing: a `verify` node cannot start until all its upstream tasks have passed spec review, but there is no need to hold back dispatch just to form a tidy batch.
+
+**Subagent freshness:** By default, fresh subagents should handle every node — clean context reduces noise. When routing spec review or code-quality failures back to an implementer, dispatch a new subagent with the review report and relevant context rather than reusing the original session.
+
+**Exception — complex tasks:** If a task file flags a node as complex, or if the implementer returns `DONE_WITH_CONCERNS`, retain the session identifier. Route spec review and code-quality failures back to the original session (`SendMessage` in Claude Code) rather than a fresh agent — the original implementer holds design decisions and implementation reasoning that a fresh agent would waste time reconstructing. Switch to a fresh agent anyway when: the original session has grown long or context-heavy; the fix requires a fundamentally different approach; or the session is no longer reachable.
+
+| Graph role | Named agent | Fallback prompt template |
+|------------|-------------|--------------------------|
+| `task` | `sdd-implementer` | `./implementer-prompt.md` |
+| `spec_review` | `sdd-spec-reviewer` | `./spec-reviewer-prompt.md` |
+| `verify` | `sdd-verifier` | `./verification-prompt.md` |
+| `quality_review` | `sdd-quality-reviewer` | `./code-quality-reviewer-prompt.md` |
+| jj filing helper | `sdd-jj-coordinator` | `./jj-coordinator-prompt.md` |
+
+Platform locations:
+
+| Platform | Project/user agent files | Invocation |
+|----------|--------------------------|------------|
+| Claude Code | plugin `agents/*.md`, `.claude/agents/*.md`, or `~/.claude/agents/*.md` | `Task` with the named agent |
+| Codex | `.codex/agents/*.toml` or `~/.codex/agents/*.toml` | `spawn_agent(agent_type="<name>", message=...)` when custom agents are available |
+| OpenCode | plugin-registered agents, `.opencode/agents/*.md`, or `~/.config/opencode/agents/*.md` | `@<name>` or Task tool with the named subagent |
+
+If named agents are unavailable, use the fallback prompt templates exactly as before by filling the dynamic placeholders into the subagent message.
+
+**Task nodes:** Dispatch `sdd-implementer` or fallback `./implementer-prompt.md`. Pass the task file path, relevant context docs, allowed file list from the node's `files` attribute, and any dynamic annotations from upstream completed nodes.
+
+**Spec review nodes:** Dispatch `sdd-spec-reviewer` or fallback `./spec-reviewer-prompt.md` after each task reports `DONE` or `DONE_WITH_CONCERNS`. Spec review is task-local and happens before verification fan-in.
+
+**Verify nodes:** Run the commands from the referenced `verify-*.md` file after all upstream spec reviews pass. Use `sdd-verifier` or fallback `./verification-prompt.md` when logs may be long or when summarization is useful. Most build tools only support one build/test suite at a time, so verification nodes are batched reduction points.
+
+Verification commands and reports should follow `jj-superpowers:tool-output-discipline`: prefer quiet, structured, scoped, or filtered output, and expand only when concise output is insufficient for diagnosis.
+
+**Quality review nodes:** Dispatch `sdd-quality-reviewer` or fallback `./code-quality-reviewer-prompt.md` after the upstream verify node passes. The review scope is the verified task group, not necessarily a single task.
+
+**Final nodes:** After every upstream quality review passes, use `jj-superpowers:finishing-a-development-branch`.
+
+## Verification Ownership
+
+Implementers may run narrow task-local checks only when the task file names them. Implementers do not own group compile, test, lint, type-check, build, or smoke-test verification.
+
+`cargo check`, `cargo build`, and `cargo test` are normally verification-node commands even when package-scoped or test-filtered, because they contend on shared target-directory state. A task file may name one only when it documents why that command is safe and necessary for the task.
+
+When implementers run an allowed task-local command, they should use `jj-superpowers:tool-output-discipline` and report concise results.
+
+Spec reviewers inspect implementation against the task file. They do not run group verification commands.
+
+Verification nodes own the authoritative command results for their upstream group.
+
+Code-quality reviewers inspect the verified group and the verification report. They do not rerun the same commands unless code inspection gives a concrete reason to believe the report is stale, incomplete, or contradicted by the diff.
+
 ## Model Selection
 
-Use the least powerful model that can handle each role to conserve cost and increase speed.
+Use the least powerful model that can handle each role:
 
-**Mechanical implementation tasks** (isolated functions, clear specs, 1-2 files): use a fast, cheap model. Most implementation tasks are mechanical when the plan is well-specified.
-
-**Integration and judgment tasks** (multi-file coordination, pattern matching, debugging): use a standard model.
-
-**Architecture, design, and review tasks**: use the most capable available model.
-
-**Task complexity signals:**
-- Touches 1-2 files with a complete spec → cheap model
-- Touches multiple files with integration concerns → standard model
-- Requires design judgment or broad codebase understanding → most capable model
+- Mechanical implementation tasks with clear files and APIs: fast, cheap model.
+- Integration tasks, ambiguous failures, or cross-file coordination: standard model.
+- Graph repair, design judgment, and code-quality review: strongest available model.
+- Verification summarization with long logs: cheap model if no debugging is needed; stronger model if failure diagnosis is required.
 
 ## Handling Implementer Status
 
-Implementer subagents report one of four statuses. Handle each appropriately:
+Implementer subagents report one of four statuses.
 
-**DONE:** Proceed to spec compliance review.
+**DONE:** Run the task's `spec_review` node.
 
-**DONE_WITH_CONCERNS:** The implementer completed the work but flagged doubts. Read the concerns before proceeding. If the concerns are about correctness or scope, address them before review. If they're observations (e.g., "this file is getting large"), note them and proceed to review.
+**DONE_WITH_CONCERNS:** Read concerns. If they affect correctness or scope, address them before spec review. If they are observations, include them for reviewers and proceed. Retain this session's identifier — the task is now considered complex and review failures should be routed back to it (see Subagent Freshness in Dispatch Rules).
 
-**NEEDS_CONTEXT:** The implementer needs information that wasn't provided. Provide the missing context and re-dispatch.
+**NEEDS_CONTEXT:** Provide missing context and re-dispatch.
 
-**BLOCKED:** The implementer cannot complete the task. Assess the blocker:
-1. If it's a context problem, provide more context and re-dispatch with the same model
-2. If the task requires more reasoning, re-dispatch with a more capable model
-3. If the task is too large, break it into smaller pieces
-4. If the plan itself is wrong, escalate to the human
+**BLOCKED:** Assess the blocker:
 
-**Never** ignore an escalation or force the same model to retry without changes. If the implementer said it's stuck, something needs to change.
+1. If it is a context problem, provide more context and re-dispatch.
+2. If the task requires more reasoning, re-dispatch with a more capable model.
+3. If the task is too large, split it and update `project-network.dot`.
+4. If the plan is wrong, amend the plan if mechanical or ask the user.
+
+Never force the same model to retry without changing instructions, context, or task shape.
+
+## BLOCKED Handling
+
+When an implementer reports `STATUS: BLOCKED`, read `SCOPE`.
+
+### `SCOPE: related`
+
+The blocker is a dependency inside this plan.
+
+1. If another graph node produces the missing thing, add or correct the dependency edge and run the producer first.
+2. If a new task is needed, add a task file, update `plan.md`, and update `project-network.dot`.
+3. If the new work is non-trivial, ask the user before expanding scope.
+
+### `SCOPE: unrelated`
+
+The blocker is a pre-existing gap outside this work scope. Pause and surface options:
+
+> "Implementer for [task] is blocked by a pre-existing issue: [DETAIL].
+> Options:
+> 1. Add a fix to this plan
+> 2. Note it as a separate task for later
+> 3. Provide guidance and unblock manually"
+
+Act on the user's choice and update the plan if execution graph changes.
 
 ## Prompt Templates
 
-- `./implementer-prompt.md` - Dispatch implementer subagent
-- `./spec-reviewer-prompt.md` - Dispatch spec compliance reviewer subagent
-- `./code-quality-reviewer-prompt.md` - Dispatch code quality reviewer subagent
+- `./implementer-prompt.md` - task node implementer
+- `./spec-reviewer-prompt.md` - per-task spec review node
+- `./verification-prompt.md` - verify node command runner
+- `./code-quality-reviewer-prompt.md` - group quality review node
+- `./jj-coordinator-prompt.md` - low-level jj filing helper when needed
 
 ## Example Workflow
 
+```text
+You: I'm using Subagent-Driven Development to execute project-network.dot.
+
+[Read plan.md and project-network.dot]
+[Validate graph: task_01 and task_02 are ready and have disjoint files]
+[Create todos from graph nodes]
+
+[Fan-out: dispatch task_01 + task_02 implementers — both Agent calls in one response]
+
+task_01 implementer: DONE, filed toorg change
+task_02 implementer: DONE_WITH_CONCERNS, filed toorg change
+
+[Read task_02 concern; include in spec_02 message]
+[Fan-out: dispatch spec_01 + spec_02 reviews — both Agent calls in one response]
+
+spec_01: pass
+spec_02: pass
+
+[verify_01 is now ready: run verify-01-api-ui.md commands once]
+verify_01: pass
+
+[Run quality_01 review for task_01 + task_02 group]
+quality_01: important issue in task_02
+
+[Return to task_02 implementer for fix]
+[Run spec_02 again]
+[Run verify_01 again]
+[Run quality_01 again]
+quality_01: approved
+
+[final reached]
+[Use jj-superpowers:finishing-a-development-branch]
 ```
-You: I'm using Subagent-Driven Development to execute this plan.
-
-[Read plan file once: docs/superpowers/plans/feature-plan.md]
-[Extract all 5 tasks with full text and context]
-[Create TodoWrite with all tasks]
-
-Task 1: Hook installation script
-
-[Get Task 1 text and context (already extracted)]
-[Dispatch implementation subagent with full task text + context]
-
-Implementer: "Before I begin - should the hook be installed at user or system level?"
-
-You: "User level (~/.config/superpowers/hooks/)"
-
-Implementer: "Got it. Implementing now..."
-[Later] Implementer:
-  - Implemented install-hook command
-  - Added tests, 5/5 passing
-  - Self-review: Found I missed --force flag, added it
-  - Committed
-
-[Dispatch spec compliance reviewer]
-Spec reviewer: ✅ Spec compliant - all requirements met, nothing extra
-
-[Get git SHAs, dispatch code quality reviewer]
-Code reviewer: Strengths: Good test coverage, clean. Issues: None. Approved.
-
-[Mark Task 1 complete]
-
-Task 2: Recovery modes
-
-[Get Task 2 text and context (already extracted)]
-[Dispatch implementation subagent with full task text + context]
-
-Implementer: [No questions, proceeds]
-Implementer:
-  - Added verify/repair modes
-  - 8/8 tests passing
-  - Self-review: All good
-  - Committed
-
-[Dispatch spec compliance reviewer]
-Spec reviewer: ❌ Issues:
-  - Missing: Progress reporting (spec says "report every 100 items")
-  - Extra: Added --json flag (not requested)
-
-[Implementer fixes issues]
-Implementer: Removed --json flag, added progress reporting
-
-[Spec reviewer reviews again]
-Spec reviewer: ✅ Spec compliant now
-
-[Dispatch code quality reviewer]
-Code reviewer: Strengths: Solid. Issues (Important): Magic number (100)
-
-[Implementer fixes]
-Implementer: Extracted PROGRESS_INTERVAL constant
-
-[Code reviewer reviews again]
-Code reviewer: ✅ Approved
-
-[Mark Task 2 complete]
-
-...
-
-[After all tasks]
-[Dispatch final code-reviewer]
-Final reviewer: All requirements met, ready to merge
-
-Done!
-```
-
-## Advantages
-
-**vs. Manual execution:**
-- Subagents follow TDD naturally
-- Fresh context per task (no confusion)
-- Parallel-safe (subagents don't interfere)
-- Subagent can ask questions (before AND during work)
-
-**vs. Executing Plans:**
-- Same session (no handoff)
-- Continuous progress (no waiting)
-- Review checkpoints automatic
-
-**Efficiency gains:**
-- No file reading overhead (controller provides full text)
-- Controller curates exactly what context is needed
-- Subagent gets complete information upfront
-- Questions surfaced before work begins (not after)
-
-**Quality gates:**
-- Self-review catches issues before handoff
-- Two-stage review: spec compliance, then code quality
-- Review loops ensure fixes actually work
-- Spec compliance prevents over/under-building
-- Code quality ensures implementation is well-built
-
-**Cost:**
-- More subagent invocations (implementer + 2 reviewers per task)
-- Controller does more prep work (extracting all tasks upfront)
-- Review loops add iterations
-- But catches issues early (cheaper than debugging later)
 
 ## Red Flags
 
-**Never:**
-- Start implementation on trunk without explicit user consent
-- Skip reviews (spec compliance OR code quality)
-- Proceed with unfixed issues
-- Dispatch multiple implementation subagents in parallel (conflicts)
-- Make subagent read plan file (provide full text instead)
-- Skip scene-setting context (subagent needs to understand where task fits)
-- Ignore subagent questions (answer before letting them proceed)
-- Accept "close enough" on spec compliance (spec reviewer found issues = not done)
-- Skip review loops (reviewer found issues = implementer fixes = review again)
-- Let implementer self-review replace actual review (both are needed)
-- **Start code quality review before spec compliance is ✅** (wrong order)
-- Move to next task while either review has open issues
+Never:
 
-**If subagent asks questions:**
-- Answer clearly and completely
-- Provide additional context if needed
-- Don't rush them into implementation
+- Execute a graph with cycles, orphan nodes, or missing gates.
+- Dispatch parallel task nodes with overlapping file scopes.
+- Announce dispatch in one response turn and make Agent calls in separate subsequent turns — all Agent calls for a parallel batch must be in the same response.
+- Skip per-task spec review before verification fan-in.
+- Run code-quality review before verification passes.
+- Treat implementer task-local checks as group verification.
+- Let implementers run `cargo check`, `cargo build`, `cargo test`, or other contended group commands unless the task file documents a concrete exception.
+- Dump verbose command output when quiet, structured, scoped, or filtered output would answer the question.
+- Have implementers run jj commands other than `jj commit [FILES] -m 'toorg: [description]'`.
+- Let an implementer silently modify out-of-scope files.
+- Paste full task text into subagent prompts; pass paths and context.
+- Ignore subagent questions or `BLOCKED` reports.
+- Mark a graph node complete while its gate has unresolved issues.
 
-**If reviewer finds issues:**
-- Implementer (same subagent) fixes them
-- Reviewer reviews again
-- Repeat until approved
-- Don't skip the re-review
+## Reporting Gaps
 
-**If subagent fails task:**
-- Dispatch fix subagent with specific instructions
-- Don't try to fix manually (context pollution)
+**If you encounter a command invocation issue** that could have been prevented by information in a skill, invoke **jj-superpowers:wish-i-knew** to log it, but only if the relevant information is genuinely absent or unclear in existing skills.
+
+**If you find yourself doing something tedious, error-prone, or repetitive** that a reusable tool or script could automate but doesn't exist yet, invoke **jj-superpowers:wish-i-had** to log it.
+
+**If you read multiple files or traced execution across modules** to understand something that a short documentation file could have explained immediately, invoke **jj-superpowers:documentation** to create that document.
+
+Log and continue; do not block execution on logging.
 
 ## Integration
 
-**Required workflow skills:**
-- **superpowers:using-jj-worksets** (or **jj-agentic-dev**) - REQUIRED: Set up jj work scope before starting
-- **superpowers:writing-plans** - Creates the plan this skill executes
-- **superpowers:requesting-code-review** - Code review template for reviewer subagents
-- **superpowers:finishing-a-development-branch** - Complete development after all tasks
+Required workflow skills:
 
-**Subagents should use:**
-- **superpowers:test-driven-development** - Subagents follow TDD for each task
+- `jj-superpowers:writing-plans` - creates the plan and `project-network.dot`.
+- `jj-superpowers:requesting-code-review` - code review template for quality reviewers.
+- `jj-superpowers:finishing-a-development-branch` - completes development after final graph node.
 
-**Alternative workflow:**
-- **superpowers:executing-plans** - Use for parallel session instead of same-session execution
+Subagents should use:
+
+- `jj-superpowers:test-driven-development` when their task requires TDD.
+- `jj-superpowers:tool-output-discipline` when running CLI tools with potentially noisy output.
+
+Alternative workflow:
+
+- `jj-superpowers:executing-plans` - use when execution should happen inline or in a separate session.
+
+## Skill Validation
+
+When editing this skill or `writing-plans`, validate behavior with `../writing-plans/project-network-validation-scenarios.md` before deployment.

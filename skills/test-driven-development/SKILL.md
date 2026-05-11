@@ -226,6 +226,12 @@ TypeScript's type system is erased at runtime. Python's type hints are never enf
 
 The key word is *evidence*: don't write defensive type-checking tests speculatively. Write them when you have a real reason to doubt the runtime type.
 
+## What Deserves a Test
+
+Not everything needs a test. If the behavior is obvious from reading the source or the compiler already enforces it, the test adds nothing.
+
+For detailed guidance on distinguishing high-value from low-value tests, read @what-to-test.md.
+
 ## Why Order Matters
 
 **"I'll write tests after to verify it works"**
@@ -259,7 +265,7 @@ The "waste" is keeping code you can't trust. Working code without real tests is 
 **"TDD is dogmatic, being pragmatic means adapting"**
 
 TDD IS pragmatic:
-- Finds bugs before commit (faster than debugging after)
+- Finds bugs before integrating (faster than debugging after)
 - Prevents regressions (tests catch breaks immediately)
 - Documents behavior (tests show how to use code)
 - Enables refactoring (change freely, tests catch breaks)

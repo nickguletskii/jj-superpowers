@@ -1,0 +1,34 @@
+digraph {
+  task_01 [kind="task", file="task-01-readme-catalog.md", files="README.md skills/using-superpowers/references/codex-tools.md"];
+  task_02 [kind="task", file="task-02-executing-plans-graph.md", files="skills/executing-plans/SKILL.md pseudocode/executing-plans.tsx"];
+  task_03 [kind="task", file="task-03-subagent-pseudocode-graph.md", files="pseudocode/subagent-driven-development.tsx"];
+  task_04 [kind="task", file="task-04-requesting-code-review.md", files="skills/requesting-code-review/SKILL.md pseudocode/requesting-code-review.tsx"];
+  task_05 [kind="task", file="task-05-codebase-cleanup-boundary.md", files="skills/codebase-cleanup/SKILL.md pseudocode/codebase-cleanup.tsx"];
+  task_06 [kind="task", file="task-06-jj-clean-history.md", files="skills/jj-clean-history/SKILL.md skills/jujutsu/SKILL.md"];
+  task_07 [kind="task", file="task-07-uv-guide-platforms.md", files="skills/uv-guide/SKILL.md"];
+  task_08 [kind="task", file="task-08-hygiene-maintenance.md", files=".gitignore skills/dot-to-jj-dag/tests/__pycache__/test_dot_to_jj_dag.cpython-314-pytest-9.0.2.pyc docs/superpowers/skill-maintenance-checklist.md"];
+
+  spec_01 [kind="spec_review", task="task_01"];
+  spec_02 [kind="spec_review", task="task_02"];
+  spec_03 [kind="spec_review", task="task_03"];
+  spec_04 [kind="spec_review", task="task_04"];
+  spec_05 [kind="spec_review", task="task_05"];
+  spec_06 [kind="spec_review", task="task_06"];
+  spec_07 [kind="spec_review", task="task_07"];
+  spec_08 [kind="spec_review", task="task_08"];
+
+  verify_01 [kind="verify", file="verify-01-skill-library-modernization.md"];
+  quality_01 [kind="quality_review", scope="task_01 task_02 task_03 task_04 task_05 task_06 task_07 task_08"];
+  final [kind="final"];
+
+  task_01 -> spec_01 -> verify_01;
+  task_02 -> spec_02 -> verify_01;
+  task_03 -> spec_03 -> verify_01;
+  task_04 -> spec_04 -> verify_01;
+  task_05 -> spec_05 -> verify_01;
+  task_06 -> spec_06 -> verify_01;
+  task_07 -> spec_07 -> verify_01;
+  task_08 -> spec_08 -> verify_01;
+
+  verify_01 -> quality_01 -> final;
+}

@@ -1,4 +1,4 @@
-# Installing Superpowers for OpenCode
+# Installing jj-superpowers for OpenCode
 
 ## Prerequisites
 
@@ -14,7 +14,8 @@ Add jj-superpowers to the `plugin` array in your `opencode.json` (global or proj
 }
 ```
 
-Restart OpenCode. That's it — the plugin auto-installs and registers all skills.
+Restart OpenCode. That's it — the plugin auto-installs and registers all skills
+and bundled subagents.
 
 Verify by asking: "Tell me about your jj-superpowers"
 
@@ -46,7 +47,7 @@ use skill tool to load jj-superpowers/brainstorming
 
 ## Updating
 
-Superpowers updates automatically when you restart OpenCode.
+jj-superpowers updates automatically when you restart OpenCode.
 
 To pin a specific version:
 
@@ -73,9 +74,17 @@ To pin a specific version:
 
 When skills reference Claude Code tools:
 - `TodoWrite` → `todowrite`
-- `Task` with subagents → `@mention` syntax
+- `Task` with subagents → `@mention` syntax or Task tool with the named subagent
 - `Skill` tool → OpenCode's native `skill` tool
 - File operations → your native tools
+
+Bundled `subagent-driven-development` roles:
+
+- `@sdd-implementer`
+- `@sdd-spec-reviewer`
+- `@sdd-verifier`
+- `@sdd-quality-reviewer`
+- `@sdd-jj-coordinator`
 
 ## Getting Help
 

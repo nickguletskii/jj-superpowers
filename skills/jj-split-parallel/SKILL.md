@@ -12,6 +12,8 @@ description: >
 
 Split one jj change into N parallel sibling changes, each representing one logical concern.
 
+This skill is only for workflows where the result should be **parallel siblings sharing the same parent**. If the current working copy must continue to depend on the extracted change, do **not** use this skill. Instead, insert a new change before `@` and file content into it, for example with `jj new --no-edit --insert-after @- --insert-before @` followed by `jj squash --from @ --into <new-change-id> ... -u`.
+
 ## ⚠️ Critical: how `jj split --parallel` assigns change IDs
 
 **The SELECTED (split-off) change receives the ORIGINAL change ID. The REMAINING change gets a NEW ID.**
