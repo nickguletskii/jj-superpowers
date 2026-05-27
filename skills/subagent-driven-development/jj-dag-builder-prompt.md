@@ -45,16 +45,16 @@ Task tool (haiku model):
 
     ## Using the Python DAG Builder
 
-    **Recommended approach:** Use the `dot-to-jj-dag` skill.
+    **Recommended approach:** Use the `dot-to-jj-dag.py` script.
 
     This skill provides a Python script that converts DOT digraph specifications to jj DAGs. The script uses PEP 723 inline dependencies and `uv run` for automatic setup.
 
     ```bash
     # Using uv (recommended) — automatically installs dependencies
-    uv run skills/dot-to-jj-dag/dot-to-jj-dag.py <dot_file> --anchor-map <anchor_map_file>
+    uv run skills/jj-organizing-history/resources/dot-to-jj-dag/dot-to-jj-dag.py <dot_file> --anchor-map <anchor_map_file>
 
     # Or with Python directly (requires manual dependency installation)
-    python3 skills/dot-to-jj-dag/dot-to-jj-dag.py <dot_file> --anchor-map <anchor_map_file>
+    python3 skills/jj-organizing-history/resources/dot-to-jj-dag/dot-to-jj-dag.py <dot_file> --anchor-map <anchor_map_file>
     ```
 
     **Anchor map file format** (one per line):
@@ -64,7 +64,8 @@ Task tool (haiku model):
     ```
 
     **See:**
-    - `skills/dot-to-jj-dag/SKILL.md` — Full documentation and testing
+    - `skills/jj-organizing-history/resources/dot-to-jj-dag/dot-to-jj-dag.py` — DAG builder script
+    - `skills/jj-organizing-history/resources/dot-to-jj-dag/README.md` — script usage documentation
     - `skills/uv-guide/SKILL.md` — Comprehensive guide to using `uv`, including sandbox configuration if needed
 
     ## Manual Algorithm (if not using the Python script)

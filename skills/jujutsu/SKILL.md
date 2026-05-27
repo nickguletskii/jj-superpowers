@@ -65,7 +65,7 @@ When separating part of `@` into a new change, decide the graph intent first:
 - If `@` should still depend on the extracted change, insert the new change before `@`, then file content into it:
   - `jj new --no-edit -m "message" --insert-after @- --insert-before @`
   - `jj squash --from @ --into <new-change-id> path/to/file -u`
-- If the user explicitly wants parallel siblings, use `jj-split-parallel` or another sibling-specific workflow.
+- If the user explicitly wants parallel siblings, use `jj-organizing-history` or another sibling-specific workflow.
 - **Never** use `jj split -o @-` as a generic extraction shortcut. For `-r @`, that rewrites the selected content onto `@-` and leaves the remaining working-copy change as a sibling that no longer depends on the extracted change.
 
 ### 5. Verify graph shape after any history rewrite
@@ -365,7 +365,7 @@ jj diff --from "$PRE_ID" --to "$(jj log -r @ -T 'commit_id' --no-graph --no-page
 
 Use this pattern:
 - Before and after every `jj-hunk split` operation or other split-style history rewrite
-- Before and after `jj-clean-history` or `jj rebase` runs
+- Before and after `jj-organizing-history` or `jj rebase` runs
 - Any time the correctness of the working copy is uncertain after DAG manipulation
 
 ## Common Workflows
@@ -398,7 +398,7 @@ jj squash --from @ --into <new-change-id> file1.rs file2.rs -u
 jj describe -m "Second change"
 ```
 
-If the user explicitly wants parallel siblings instead, use `jj-split-parallel` or a sibling-specific workflow.
+If the user explicitly wants parallel siblings instead, use `jj-organizing-history` or a sibling-specific workflow.
 For users executing manually, `jj split` remains the interactive option.
 
 ### Updating Change After Review

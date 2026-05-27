@@ -80,7 +80,7 @@ jj is available before proceeding:
 jj root --no-pager 2>/dev/null && echo "jj" || echo "git"
 ```
 
-- If jj: use `jujutsu` for version-control operations and `using-jj-worksets` / `jj-reorg-changes` for optional post-implementation history organization
+- If jj: use `jujutsu` for version-control operations and `jj-organizing-history` for optional post-implementation history organization
 - If git only: use traditional branch workflow
 
 For `finishing-a-development-branch` in sandbox environments where push

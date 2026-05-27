@@ -133,6 +133,17 @@ function recordCommand(report, source, command, location, limit) {
   );
 }
 
+function claudePermissionSample(filePath, lineNumber, text, recentCommand) {
+  const sample = { file: filePath, line: lineNumber, text: sampleText(text) };
+  if (!recentCommand?.command) return sample;
+  return {
+    ...sample,
+    command: sampleText(recentCommand.command),
+    commandFile: recentCommand.file,
+    commandLine: recentCommand.line,
+  };
+}
+
 function textFromClaudeContent(content) {
   if (typeof content === 'string') return content;
   if (!Array.isArray(content)) return '';
@@ -214,6 +225,7 @@ async function scanClaude(report, root, limit) {
       crlfDelay: Infinity,
     });
     let lineNumber = 0;
+    let recentCommand = null;
     for await (const line of rl) {
       lineNumber += 1;
       report.totals.claudeLines += 1;
@@ -230,6 +242,9 @@ async function scanClaude(report, root, limit) {
           if (block?.type === 'tool_use') {
             const command = block.input?.command ?? block.input?.cmd;
             recordCommand(report, 'claude', command, { file: filePath, line: lineNumber }, limit);
+            if (command) {
+              recentCommand = { command, file: filePath, line: lineNumber };
+            }
           }
           if (block?.type === 'tool_result') {
             const text = textFromClaudeContent([block]);
@@ -238,7 +253,7 @@ async function scanClaude(report, root, limit) {
               addSample(
                 report.samples,
                 'claudePermissionMessages',
-                { file: filePath, line: lineNumber, text: sampleText(text) },
+                claudePermissionSample(filePath, lineNumber, text, recentCommand),
                 limit,
               );
             }
@@ -256,7 +271,7 @@ async function scanClaude(report, root, limit) {
         addSample(
           report.samples,
           'claudePermissionMessages',
-          { file: filePath, line: lineNumber, text: sampleText(text) },
+          claudePermissionSample(filePath, lineNumber, text, recentCommand),
           limit,
         );
       }
@@ -327,7 +342,10 @@ function renderText(report) {
     lines.push('');
     lines.push(`${key} samples:`);
     for (const sample of samples) {
-      lines.push(`- ${sample.file}:${sample.line} ${sample.command ?? sample.text ?? ''}`);
+      const details = [];
+      if (sample.command) details.push(sample.command);
+      if (sample.text) details.push(sample.text);
+      lines.push(`- ${sample.file}:${sample.line} ${details.join(' | ')}`);
     }
   }
   return `${lines.join('\n')}\n`;

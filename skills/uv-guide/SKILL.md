@@ -301,14 +301,14 @@ PEP 723 lets scripts declare their own dependencies without extra files.
 ## Integration with Skills
 
 Skills that provide Python scripts can use `uv run` for:
-- **dot-to-jj-dag** — DAG builder script
+- **dot-to-jj-dag.py** — DAG builder script
 - Any CLI tool requiring dependencies
 - Data processing pipelines
 - Development utilities
 
-**Example from dot-to-jj-dag skill:**
+**Example from the dot-to-jj-dag script:**
 ```bash
-uv run skills/dot-to-jj-dag/dot-to-jj-dag.py example.dot --anchor-map anchors.txt
+uv run skills/jj-organizing-history/resources/dot-to-jj-dag/dot-to-jj-dag.py example.dot --anchor-map anchors.txt
 ```
 
 ## Troubleshooting
@@ -373,5 +373,5 @@ uv run script.py
 
 ## See Also
 
-- **dot-to-jj-dag skill** — Uses `uv run` for programmatic DAG creation
+- **dot-to-jj-dag script** — Uses `uv run` for programmatic DAG creation
 - **Sandboxed agent environments** — Use the platform-specific approval or sandbox controls when network or cache permissions block uv

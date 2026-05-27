@@ -53,10 +53,10 @@ If `toorg:` commits are present, ask:
 
 > "Your `toorg:` commits are visible above. Would you like to organize them into a logical jj DAG before proceeding?
 >
-> - **Yes** — invoke `jj-reorg-changes`, then return here
+> - **Yes** — invoke `jj-organizing-history`, then return here
 > - **No** — proceed as-is (commits will be renamed to semantic descriptions in Step 2.5)"
 
-Wait for user choice. If yes: **REQUIRED SUB-SKILL:** Use jj-superpowers:jj-reorg-changes. Return here after it completes.
+Wait for user choice. If yes: **REQUIRED SUB-SKILL:** Use jj-superpowers:jj-organizing-history. Return here after it completes.
 
 Use the decision-checkpoint pattern from `jj-superpowers:using-superpowers`: present the choices through the harness-native ask/question tool when available.
 
@@ -95,7 +95,7 @@ jj log -r 'trunk()..@' --no-pager \
 
 This will show one of two shapes:
 
-**Organized DAG** (ran `jj-reorg-changes`): identify `scope0` (scope merge), `plan0` (plan change), `toreview:` sub-routes (completed implementation), `temp0` (temp/handoff change).
+**Organized DAG** (ran `jj-organizing-history`): identify `scope0` (scope merge), `plan0` (plan change), `toreview:` sub-routes (completed implementation), `temp0` (temp/handoff change).
 
 **Unorganized** (skipped reorganization): identify `toorg:` commits. Note their IDs for Step 2.5. There is no scope/plan/temp structure.
 
@@ -341,5 +341,4 @@ jj log -r 'trunk()..@' --no-pager
 - **executing-plans** (final step) — after all batches complete
 
 **Pairs with:**
-- **jj-reorg-changes** — optional pre-integration DAG organization step
-- **using-jj-worksets** — overview of jj work scope organization
+- **jj-organizing-history** — optional pre-integration DAG organization and history cleanup

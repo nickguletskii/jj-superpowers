@@ -1,0 +1,75 @@
+---
+name: jj-organizing-history
+description: Use when splitting, cleaning, reorganizing, or preparing jj history for review or integration
+---
+
+# jj Organizing History
+
+Organize jj changes without losing work or moving `@` unexpectedly.
+
+## When to Use
+
+Use this skill for:
+
+- Post-implementation `toorg:` commits that should become a reviewable DAG.
+- Arbitrary committed jj history that needs cleanup before review.
+- Splitting one change into logical pieces.
+- Deciding whether history should be linear, parallel, or left as-is.
+
+Use `jj-superpowers:jj-hunk` for low-level hunk selection. Use `jj-superpowers:jujutsu` for general jj command syntax and safety.
+
+## Safety Rules
+
+- Record the starting operation ID before rewrites: `jj op log --no-graph -T id -n 1 --no-pager`.
+- Never use `jj edit`, `jj next`, `jj prev`, or plain `jj new`.
+- Always use `--no-edit`, `-m`, and `--no-pager` where applicable.
+- Do not target `@` for arbitrary cleanup if it has uncommitted content. File or finish the working copy first.
+- After rewrites, verify graph shape and confirm the working-copy content is unchanged when it should be.
+
+## Choose the Mode
+
+| Situation | Mode |
+|---|---|
+| `toorg:` implementation commits after planned work | Reorganize `toorg:` commits |
+| Existing committed history has mixed concerns | Clean committed history |
+| One change should become independent siblings | Parallel split |
+| One change should become a dependency chain | Sequential/hunk split via `jj-hunk` |
+
+## Reorganize `toorg:` Commits
+
+1. List candidates:
+   ```bash
+   jj log -r 'trunk()..@' --no-pager \
+     --template 'change_id.short(8) ++ "  " ++ description.first_line() ++ "\n"'
+   ```
+2. Inspect each `toorg:` change with `jj show -r <id> --stat --no-pager`.
+3. Group commits by logical concern and dependency.
+4. Present the proposed DAG and assignments to the user using the decision-checkpoint pattern.
+5. Build the DAG using `skills/subagent-driven-development/jj-dag-builder-prompt.md` and the `skills/jj-organizing-history/resources/dot-to-jj-dag/dot-to-jj-dag.py` script.
+6. Move content into target `todo:` nodes with `jj squash --from <toorg-id> --into <target-id> <files> -u`.
+7. Rename completed nodes to `toreview: <label>` and abandon empty `toorg:` commits.
+8. Verify no `toorg:` lines remain, `@` is empty, and no divergent/conflicted changes exist.
+
+## Clean Committed History
+
+Use for arbitrary committed jj history, not raw `toorg:` implementation output.
+
+1. Confirm `@` is empty with `jj diff --no-pager -r @`; refuse cleanup if it is not.
+2. Analyze commits in the selected range for mixed concerns.
+3. Present commits needing splits and wait for user confirmation.
+4. Use `jj-hunk` for dependent or hunk-level extraction.
+5. Use parallel split only when the resulting changes are true siblings.
+6. Verify the working tree state after all splits.
+
+## Parallel Split
+
+Only use parallel split when the result should be sibling changes with the same parent. If the current working copy must depend on the extracted change, insert a predecessor before `@` and squash into it instead.
+
+For scripted file/hunk parallel splits, use `skills/jj-split-parallel/scripts/gen_split.py`. Remember that `jj split --parallel` keeps the selected split on the original change ID and gives the remaining change a new ID.
+
+## Integration
+
+Called from:
+
+- `jj-superpowers:finishing-a-development-branch` before final integration.
+- Direct user requests to split, clean, reorganize, or prepare jj history.

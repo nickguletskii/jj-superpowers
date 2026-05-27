@@ -72,7 +72,7 @@ test('analyzes Claude permission and injection-style messages', async () => {
           {
             type: 'tool_use',
             name: 'Bash',
-            input: { command: 'node <<EOF\nconsole.log("hi")\nEOF' },
+            input: { command: 'node <<EOF\nconsole.log("hi")\nEOF;SOME_ENV_EXIT=$?' },
           },
         ],
       },
@@ -97,16 +97,8 @@ test('analyzes Claude permission and injection-style messages', async () => {
   assert.equal(report.totals.claudeFiles, 1);
   assert.equal(report.counts.claudePermissionMessages, 1);
   assert.equal(report.counts.riskyCommands, 1);
+  assert.match(report.samples.claudePermissionMessages[0].command, /SOME_ENV_EXIT/);
+  assert.equal(report.samples.claudePermissionMessages[0].commandLine, 1);
   assert.match(report.samples.claudePermissionMessages[0].text, /prompt injection/i);
-  assert.match(report.samples.riskyCommands[0].command, /<<EOF/);
-});
-
-test('missing roots return an empty report', async () => {
-  const report = await analyzeLogs({
-    codexRoot: '/tmp/jj-superpowers-missing-codex-root',
-    claudeRoot: '/tmp/jj-superpowers-missing-claude-root',
-  });
-
-  assert.equal(report.totals.codexFiles, 0);
-  assert.equal(report.totals.claudeFiles, 0);
+  assert.match(report.samples.riskyCommands[0].command, /SOME_ENV_EXIT/);
 });

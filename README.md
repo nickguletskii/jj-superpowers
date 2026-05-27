@@ -6,9 +6,9 @@ A personal fork of [superpowers](https://github.com/obra/superpowers) by Jesse V
 
 ## What's different from upstream
 
-- **jj workflow** — keeps one working copy while implementation produces `toorg:` commits; optional organization into a reviewable jj DAG is handled later by `using-jj-worksets` and `jj-reorg-changes`.
+- **jj workflow** — keeps one working copy while implementation produces `toorg:` commits; optional organization into a reviewable jj DAG is handled later by `jj-organizing-history`.
 - **No visual companion** — brainstorming is text-only.
-- **jj skill library** — includes `jj-hunk`, `jj-split-parallel`, `jj-reorg-changes`, and `jujutsu` reference skills.
+- **jj skill library** — includes `jj-hunk`, `jj-organizing-history`, and `jujutsu` reference skills.
 - **GitHub Copilot CLI support** — plugin manifest and tool mapping for Copilot CLI.
 
 ## How it works
@@ -73,7 +73,7 @@ See [`.copilot-plugin/INSTALL.md`](.copilot-plugin/INSTALL.md).
 
 5. **requesting-code-review** - Activates for ad hoc/manual review. Reviews against plan, reports issues by severity. Critical issues block progress.
 
-6. **finishing-a-development-branch** - Activates when tasks complete. Verifies tests, presents options (PR/integrate/keep/discard), and may use `using-jj-worksets` / `jj-reorg-changes` to organize `toorg:` commits into a reviewable jj DAG.
+6. **finishing-a-development-branch** - Activates when tasks complete. Verifies tests, presents options (PR/integrate/keep/discard), and may use `jj-organizing-history` to organize `toorg:` commits into a reviewable jj DAG.
 
 **The agent checks for relevant skills before any task.** Mandatory workflows, not suggestions.
 
@@ -95,14 +95,14 @@ See [`.copilot-plugin/INSTALL.md`](.copilot-plugin/INSTALL.md).
 - **dispatching-parallel-agents** - Ad hoc parallel investigations when subagents are authorized
 - **requesting-code-review** - Pre-review checklist
 - **receiving-code-review** - Responding to feedback
-- **using-jj-worksets** - Post-implementation jj DAG organization entry point
+- **jj-organizing-history** - Post-implementation jj DAG organization and history cleanup
 - **finishing-a-development-branch** - PR/integrate decision workflow
 - **subagent-driven-development** - Fast iteration with two-stage review (spec compliance, then code quality)
+- **capturing-workflow-friction** - Log missing guidance, missing helper tools, and doc gaps without blocking work
 
 **jujutsu**
 - **jj-hunk** - Programmatic hunk selection (jj-hunk tool)
-- **jj-reorg-changes** - Organize `toorg:` implementation commits into a reviewable jj DAG
-- **jj-split-parallel** - Split one change into parallel siblings
+- **jj-organizing-history** - Organize `toorg:` commits, clean jj history, and split changes
 - **jujutsu** - Comprehensive jj reference (daily workflow, revsets, GitLab integration, git→jj mapping)
 
 **Meta**

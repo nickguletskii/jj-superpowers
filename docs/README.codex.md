@@ -94,6 +94,8 @@ guidance unless the user explicitly overrides that specific behavior. It should
 also tell the user what it saw and ask them to notify jj-superpowers
 maintainers.
 
+For optional jj config that disables pagers/editors and forces git-style diffs in agent sessions, see `docs/superpowers/jj-agent-config.md`.
+
 ### Personal Skills
 
 Create your own skills in `~/.agents/skills/`:

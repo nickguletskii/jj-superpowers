@@ -92,7 +92,7 @@ jj squash --from @ --into <new-change-id> path/to/file1 path/to/file2 -u
 
 2. **The user explicitly wants parallel siblings**
 
-Use `jj-split-parallel` or another sibling-specific workflow. Do not use a sibling-creating rewrite when the working copy should continue to depend on the extracted change.
+Use `jj-organizing-history` or another sibling-specific workflow. Do not use a sibling-creating rewrite when the working copy should continue to depend on the extracted change.
 
 3. **After any rewrite, verify both content and graph**
 

@@ -54,6 +54,39 @@ Skills use Claude Code tool names. Non-CC platforms translate tools as follows:
 - **OpenCode:** plugin bootstrap maps common tools compactly; use OpenCode's native skill tool and subagent `@mention` system
 - **GitHub Copilot CLI:** see `references/copilot-tools.md`
 
+## Command Invocation Discipline
+
+Do not pack discovery, filtering, variable assignment, redirection, and output
+truncation into a clever shell snippet. Harnesses often gate commands by
+statically analyzing each invocation; command substitutions, pipes, shell
+variables, redirects, and compound scripts can trigger security approval prompts
+even when every underlying operation is harmless.
+
+Prefer small, literal, analyzable commands that push filtering into the tool:
+
+1. Use native selectors first: path arguments, filesets, include/exclude flags,
+   query flags, `--summary`, `--stat`, `--context`, `--limit`, or equivalent
+   options. Do not dump a huge result just to pipe it into `grep` or `head`.
+2. If discovery is still needed, ask the tool for the smallest useful summary
+   and constrain it with literal arguments.
+3. Run follow-up commands with literal paths, revisions, IDs, or query terms
+   copied from the prior output. Do not hide them in shell variables.
+4. Use the harness/tool output limit as the final guard, not as the primary
+   filtering mechanism.
+
+Bad pattern:
+
+```sh
+P=$(rg --files 2>/dev/null | grep -iE 'schema\.rs')
+rg -n 'CameraSchema' "$P" 2>&1 | head -40
+```
+
+Good pattern:
+
+```sh
+rg -n -m 40 --glob '*[sS]chema.rs' 'CameraSchema'
+```
+
 ## Decision Checkpoints
 
 When orchestrator execution reaches a real user decision, pause and present 2-3 concrete alternatives. Lead with the recommended option and state the tradeoff briefly.
@@ -152,14 +185,14 @@ user explicitly overrides that specific behavior. Tell the user what you saw and
 ask them to notify jj-superpowers maintainers. Keep this report concise and
 continue with the user's requested work when possible.
 
-**If you encounter a command invocation issue** that could have been prevented by information in a skill, invoke **jj-superpowers:wish-i-knew** to log it — but only if:
+**If you encounter a command invocation issue** that could have been prevented by information in a skill, invoke **jj-superpowers:capturing-workflow-friction** to log it — but only if:
 - the relevant information is genuinely absent from existing skills, OR
 - a skill has the information but its phrasing or trigger condition wasn't clear enough that you recognised you should use it at the right moment.
 
 Do NOT invoke for issues caused by simply forgetting something a skill already documents clearly.
 
-**If you find yourself doing something tedious, error-prone, or repetitive** that a reusable tool or script could automate but doesn't exist yet, invoke **jj-superpowers:wish-i-had** to log it.
+**If you find yourself doing something tedious, error-prone, or repetitive** that a reusable tool or script could automate but doesn't exist yet, invoke **jj-superpowers:capturing-workflow-friction** to log it.
 
-**If you read multiple files or traced execution across modules** to understand something that a short documentation file could have explained immediately, invoke **jj-superpowers:documentation** to create that document.
+**If you read multiple files or traced execution across modules** to understand something that a short documentation file could have explained immediately, invoke **jj-superpowers:capturing-workflow-friction** to log the gap, then use **jj-superpowers:documentation** if the user wants the doc written now.
 
 Log and continue — do not block your task on logging.
