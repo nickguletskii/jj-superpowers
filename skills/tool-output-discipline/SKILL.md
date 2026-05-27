@@ -30,6 +30,16 @@ Do not optimize tiny bounded commands.
 4. If that output is insufficient, expand only the failing scope.
 5. If full logs are needed, capture them and report the relevant section.
 
+## Permission-Friendly Commands
+
+Commands that may need network, cache, device, or unsandboxed filesystem permissions must be short, stable, and allowlist-friendly.
+
+- Prefer a direct command or checked-in helper script with named arguments.
+- Avoid inline environment assignments, heredocs, command substitution, subshells, redirection-heavy commands, and chained `&&` / `||` logic for permission-gated work.
+- Avoid opaque `bash -lc` / `sh -c` wrappers when a direct command or helper script can do the job.
+- If a command repeatedly needs approval, create or use a permanent helper script so the harness can whitelist a common prefix.
+- In verification plans, name the helper command directly instead of a one-off shell incantation.
+
 ## Output Patterns
 
 | Need | Prefer | Avoid first |
@@ -91,3 +101,4 @@ If a filter such as `jq` is unavailable, use the tool's built-in filtering or qu
 | Dumping full logs into the response | Save logs and quote/summarize only relevant lines |
 | Filtering after reading everything into context | Filter in the shell before returning output |
 | Treating scoped Cargo as local | `cargo check`, `cargo build`, and `cargo test` usually contend on shared target state; run them at verification gates |
+| Asking users to approve one-off shell tricks | Use a stable helper script or simple command prefix that can be allowlisted |

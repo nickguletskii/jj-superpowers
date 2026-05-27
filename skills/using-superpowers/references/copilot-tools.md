@@ -61,6 +61,7 @@ Skills use Claude Code tool names. When you encounter these in a skill, use your
 | Skill references | Copilot CLI equivalent |
 |-----------------|------------------------|
 | `ExitPlanMode` | `exit_plan_mode` |
+| AskUserQuestion / structured user choice | `ask_user` |
 | — | `report_intent` (report planned actions before executing) |
 | — | `show_file` (display a file prominently in the UI) |
 | — | `task_complete` (signal task done — autopilot mode only) |
@@ -72,6 +73,8 @@ Skills use Claude Code tool names. When you encounter these in a skill, use your
 | `ask_user` | Request input from the user interactively |
 | `sql` | Query session data (experimental) |
 | `lsp` | Language server refactoring (experimental) |
+
+Use `ask_user` for mutually exclusive decisions with 2-3 concrete alternatives. Lead with the recommended option and keep option text short.
 
 ## Subagent Dispatch Notes
 
@@ -88,3 +91,4 @@ Never run commands that open editors or require interactive input. Always use no
 - `jj describe` → `jj describe -r <id> -m "message"`
 - `jj new` → `jj new --no-edit -m "message" ...`
 - Always pass `--no-pager` to log/diff commands
+- For permission-gated commands, prefer a simple direct command or helper script over inline env assignments, heredocs, shell wrappers, or chained command strings.

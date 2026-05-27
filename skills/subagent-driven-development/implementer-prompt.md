@@ -84,12 +84,18 @@ Task tool (general-purpose):
     If you run an allowed task-local command, use concise output: quiet flags,
     structured output, selectors, and filters before full logs.
 
+    For task-local commands likely to need unsandboxed, network, cache, or device
+    permissions, use a short helper script or direct command prefix. Avoid inline env
+    assignments, heredocs, shell wrappers, and chained command strings.
+
     Authoritative verification for this graph group is handled later by a `verify`
     node after spec review passes. If you believe a group verification command is
     needed before this task can be reviewed, report NEEDS_CONTEXT instead of running it.
 
-    **While you work:** If you encounter something unexpected or unclear, **ask questions**.
-    It's always OK to pause and clarify. Don't guess or make assumptions.
+    **While you work:** If you encounter something unexpected or unclear, pause
+    and report `NEEDS_CONTEXT` or `BLOCKED`. Do not use ask/question tools;
+    the orchestrator owns user interaction. Include 2-3 concrete options when
+    a user decision is needed. Don't guess or make assumptions.
 
     ## Code Organization
 

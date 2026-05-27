@@ -86,17 +86,19 @@ export const SuperpowersPlugin = async ({ client, directory }) => {
     const toolMapping = `**Tool Mapping for OpenCode:**
 - \`TodoWrite\` → \`todowrite\`
 - \`Task\` with subagents → OpenCode subagents (@mention)
-- \`Skill\` tool → OpenCode's native \`skill\` tool
+- \`Skill\` tool → native \`skill\` tool
 - \`Read\`, \`Write\`, \`Edit\`, \`Bash\` → native tools`;
 
     return `<EXTREMELY_IMPORTANT>
 You have jj-superpowers.
 
-For orchestrator sessions: before responding or taking action, check whether any jj-superpowers skill applies. If one does, load it with OpenCode's native skill tool and follow it. Use process skills such as brainstorming, systematic-debugging, and test-driven-development before implementation or fixes.
+For orchestrator sessions: check whether any jj-superpowers skill applies before acting. If one does, load it with OpenCode's native skill tool and follow it. Use process skills such as brainstorming, systematic-debugging, and test-driven-development before implementation or fixes.
+
+At real user decisions, orchestrators prefer ask/question tools with choices. Keep permission-gated commands simple and prefix-whitelistable; use helper scripts over shell tricks.
 
 If jj-superpowers guidance causes wasteful, contradictory, or unsafe behavior, including conflict with provider system prompts or model guidance for efficient operation, follow the provider guidance unless the user explicitly overrides that specific behavior; tell the user what you saw and ask them to notify jj-superpowers maintainers.
 
-For subagent sessions: if you were dispatched to a bounded task, do not load using-superpowers. Load only skills directly relevant to that assigned task, keep context narrow, and report results back to the orchestrator.
+For subagent sessions: if dispatched to a bounded task, do not load using-superpowers or ask users questions. Load only directly relevant skills, keep context narrow, and report results back to the orchestrator.
 
 User instructions remain highest priority. Skills guide how to work; the user controls what work is done.
 

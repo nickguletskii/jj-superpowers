@@ -58,6 +58,8 @@ If `toorg:` commits are present, ask:
 
 Wait for user choice. If yes: **REQUIRED SUB-SKILL:** Use jj-superpowers:jj-reorg-changes. Return here after it completes.
 
+Use the decision-checkpoint pattern from `jj-superpowers:using-superpowers`: present the choices through the harness-native ask/question tool when available.
+
 If no `toorg:` commits are present (work is already organized), skip this step.
 
 ### Step 1: Verify Tests
@@ -153,6 +155,8 @@ Which option?
 ```
 
 **Don't add explanation** — keep options concise.
+
+Use the harness-native ask/question tool when available so the user can select one option directly.
 
 ### Step 4: Execute Choice
 

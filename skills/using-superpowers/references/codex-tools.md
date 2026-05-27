@@ -9,9 +9,14 @@ Skills use Claude Code tool names. When you encounter these in a skill, use your
 | Task returns result | `wait` |
 | Task completes automatically | `close_agent` to free slot |
 | `TodoWrite` (task tracking) | `update_plan` |
+| AskUserQuestion / structured user choice | `request_user_input` when available in the active mode; otherwise ask one concise plain-text question |
 | `Skill` tool (invoke a skill) | Skills load natively — just follow the instructions |
 | `Read`, `Write`, `Edit` (files) | Use your native file tools |
 | `Bash` (run commands) | Use your native shell tools |
+
+For mutually exclusive user decisions, prefer `request_user_input` with 2-3 options when the tool is exposed. Keep each option label short and include the tradeoff in the option description.
+
+For commands likely to need escalation, keep the command short and prefix-whitelistable. Avoid inline env assignments, heredocs, shell wrappers, and chained command strings; create a helper script when approval would otherwise repeat.
 
 ## Subagent Dispatch
 

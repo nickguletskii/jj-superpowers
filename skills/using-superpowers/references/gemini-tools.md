@@ -20,6 +20,8 @@ Skills use Claude Code tool names. When you encounter these in a skill, use your
 
 Gemini CLI has no equivalent to Claude Code's `Task` tool. Skills that rely on subagent dispatch (`subagent-driven-development`, `dispatching-parallel-agents`) will fall back to single-session execution via `executing-plans`.
 
+Use `ask_user` for mutually exclusive decisions with 2-3 concrete alternatives. Lead with the recommended option and keep option text short.
+
 ## Additional Gemini CLI tools
 
 These tools are available in Gemini CLI but have no Claude Code equivalent:
@@ -31,3 +33,5 @@ These tools are available in Gemini CLI but have no Claude Code equivalent:
 | `ask_user` | Request structured input from the user |
 | `tracker_create_task` | Rich task management (create, update, list, visualize) |
 | `enter_plan_mode` / `exit_plan_mode` | Switch to read-only research mode before making changes |
+
+For permission-gated commands, prefer a simple direct command or helper script over inline env assignments, heredocs, shell wrappers, or chained command strings.

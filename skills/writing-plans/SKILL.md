@@ -201,6 +201,7 @@ Write verification commands with tool-output discipline:
 - Prefer quiet, structured, scoped, or filtered forms when they answer the verification question.
 - Separate primary pass/fail commands from diagnostic commands when useful; filtered diagnostic pipelines must not be the only pass/fail signal unless they preserve the underlying tool's exit status.
 - Put full-log commands behind an explicit escalation note rather than making them the default.
+- For commands likely to need unsandboxed, network, cache, or device permissions, use a short prefix-whitelistable command. Prefer checked-in helper scripts with named arguments over inline env assignments, heredocs, shell wrappers, or chained command strings.
 - Do not put contended commands such as `cargo check`, `cargo build`, or `cargo test` in task-local checks just because they can be package-scoped or test-filtered; they usually still block shared build state.
 
 ## No Placeholders

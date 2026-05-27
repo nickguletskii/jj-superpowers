@@ -198,6 +198,10 @@ Implementer subagents report one of four statuses.
 
 Never force the same model to retry without changing instructions, context, or task shape.
 
+When asking the user to choose between valid paths, the orchestrator uses the decision-checkpoint pattern from `jj-superpowers:using-superpowers`: present 2-3 concrete alternatives with a recommendation, and use the harness-native ask/question tool when available.
+
+Subagents cannot use ask/question tools. If a subagent needs a user decision, it must report `NEEDS_CONTEXT` or `BLOCKED` with 2-3 concrete options; the orchestrator asks the user and then re-dispatches or amends the plan.
+
 ## BLOCKED Handling
 
 When an implementer reports `STATUS: BLOCKED`, read `SCOPE`.

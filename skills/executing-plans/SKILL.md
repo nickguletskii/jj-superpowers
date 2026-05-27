@@ -35,6 +35,8 @@ Before executing work, confirm:
 
 If validation fails, fix the plan only when the correction is mechanical and obvious. Otherwise stop and ask for clarification.
 
+When asking, use the decision-checkpoint pattern from `jj-superpowers:using-superpowers`: present 2-3 concrete alternatives with a recommendation, and use the harness-native ask/question tool when available.
+
 ### Step 3: Create the Execution List
 
 Create a task list from graph nodes, not from the order of files in the directory. Track each node as pending, in progress, passed, failed, or blocked. Only nodes whose dependencies have passed are ready.
@@ -70,6 +72,8 @@ After the `final` node is reached:
 - The graph cannot reach `final`
 
 **Ask for clarification rather than guessing.**
+
+Use the decision-checkpoint pattern from `jj-superpowers:using-superpowers` for these stops.
 
 ## When to Revisit Earlier Steps
 
