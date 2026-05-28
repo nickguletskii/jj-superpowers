@@ -82,7 +82,33 @@ Cannot proceed with merge/PR until tests pass.
 
 Stop. Don't proceed to Step 2.
 
-**If tests pass:** Continue to Step 2.
+**If tests pass:** Continue to Step 1.5.
+
+### Step 1.5: Spec drift check (when applicable)
+
+If the project has `.agents/layout.yaml`, run `jj-superpowers:spec-drift-detector` in default (diff-scoped) mode against the current branch diff. The detector will:
+
+- Verify frontmatter ↔ `layout.yaml` index consistency **for specs already loaded via `code_map`** (diff-scoped mode does NOT walk all spec frontmatter — `--full-audit` is the authoritative reconciler for `code_map` ↔ frontmatter drift; schedule it weekly or before significant integration milestones, not as part of this step).
+- Spot-check requirements whose `owns:` intersects the diff against the changed code.
+- Verify code-as-spec module hygiene for any touched `spec_code.modules` paths.
+- Report orphan references for spec/plane/glossary/invariant/mdbook items deleted or renamed by this work (targeted grep; not a corpus-wide orphan scan).
+
+Findings are written to `docs/agent-specs/drift-reports/<YYYY-MM-DD>/<HHMM>-<scope>.md` (gitignored). Triage:
+
+- `mismatch` findings — resolve before proceeding (route to `writing-specs` for spec change, or fix code).
+- `suspect`/`unverified` — review with user; either resolve or enqueue in `.agents/tech-debt/docs.md`.
+- Orphan references — either restore the referenced item or update/remove the reference (per `documentation` skill).
+
+Do not skip this step on the theory that the change "doesn't touch specs" — typed-API edits, mdbook citation changes, and deleted files all surface here.
+
+### Step 1.6: Write handoff/blog entry
+
+Per `layout.yaml` `handoffs.enabled` / `agent_blog.enabled`:
+
+- **Handoff** (if work is incomplete OR blocked OR paused mid-decision): write `.agents/handoffs/<YYYY-MM-DD>/<HHMM>-<topic>.md` — short note: what's done, what's blocked, where to resume.
+- **Blog** (only when enabled): write `.agents/blog/<YYYY-MM-DD>/<HHMM>-<topic>.md` — ~10-30 lines summarizing the session, key decisions, links to changes/specs touched, open threads.
+
+Both directories use ISO-date subdirectories with HHMM-prefixed filenames. Drift-detector prunes them per `retention:`.
 
 ### Step 2: Identify the Work
 

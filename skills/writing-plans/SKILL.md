@@ -56,6 +56,15 @@ Rules:
 - Commands that contend on shared build state, such as `cargo`, `bazel`, test suites, type checks, and linters, belong in `verify` nodes, not implementer tasks.
 - **REQUIRED SUB-SKILL:** Use `jj-superpowers:tool-output-discipline` when writing verification commands.
 
+### Agent-spec ecosystem integration
+
+If the project has `.agents/layout.yaml`, every plan that touches source files MUST address spec sync explicitly. Two paths:
+
+1. **Design-time intent** — the brainstorming design doc named a spec amendment. The plan MUST include a `task` node whose file is named `task-NN-spec-update-<topic>.md` and whose work invokes `writing-specs`. This task MUST be scheduled to complete BEFORE any task that implements the corresponding code change (add an edge from the implementing task's `task` node to the spec-update task's `spec_review` node, or earlier).
+2. **Deferred** — the plan explicitly acknowledges that doc updates are deferred to `.agents/tech-debt/docs.md` via `spec-code-sync` during execution. Note this in `plan.md` so reviewers see the intent.
+
+For source-file-touching tasks, `executing-plans` MUST invoke `spec-code-sync` before any edit to run the candidate-spec lookup on touched paths and surface specs likely relevant. Tasks MUST list `files` precisely enough for the lookup to be meaningful — vague file lists defeat the lookup.
+
 One-task graph:
 
 ```dot

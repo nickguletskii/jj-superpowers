@@ -55,8 +55,10 @@ The entire skill creation process follows RED-GREEN-REFACTOR.
 **Don't create for:**
 - One-off solutions
 - Standard practices well-documented elsewhere
-- Project-specific conventions (put in CLAUDE.md)
+- Project-specific conventions (put in AGENTS.md, or register as a **project-specific skill** under `.agents/skills/<name>/` via `jj-superpowers:project-layout` — the projx-frontend pattern)
 - Mechanical constraints (if it's enforceable with regex/validation, automate it—save documentation for judgment calls)
+
+**Project-specific vs. global skills.** This skill governs *global* skills (cross-project techniques, patterns, references). For per-project guidance (a particular UI component library's conventions, a stack-specific code-style guide), use `jj-superpowers:project-layout` to register a skill under the project's `.agents/skills/` directory. Project-layout enforces the anti-keyword-bloat trigger check; this skill governs the body content.
 
 ## Skill Types
 

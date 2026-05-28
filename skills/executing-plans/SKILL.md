@@ -45,6 +45,8 @@ Create a task list from graph nodes, not from the order of files in the director
 
 **Task nodes:** Execute ready `task` nodes locally. Read the node's task file, relevant context docs, and allowed file list from the node's `files` attribute. Follow the task file exactly and run only narrow, non-contended task-local checks named by that task file. Do not run group compile, build, lint, type-check, test-suite, or smoke-test commands here. `cargo check`, `cargo build`, and `cargo test` normally belong at `verify` nodes because they contend on shared target-directory state; run one in a task node only if the task file documents a concrete exception.
 
+**Spec sync (when the project has `.agents/layout.yaml`)**: before editing any source file in a task node, MUST invoke `jj-superpowers:spec-code-sync` to run the candidate-spec lookup (surface specs likely relevant to touched paths), classify the change, and detect code-as-spec edits. The lookup is a hint, not a gate; the skill's findings may still require routing through `jj-superpowers:writing-specs` first.
+
 **Spec review nodes:** After a task node reports done, perform the corresponding task-local spec check before marking its downstream `spec_review` passed. Confirm the implementation matches the task file, stays inside its file scope, and reports task-local checks honestly.
 
 **Verify nodes:** After all upstream `spec_review` nodes pass, run the commands from the referenced `verify-*` file. Group verification commands live in and run from `verify-*` files, not task files. Mark the `verify` node passed only when every command succeeds or when the user explicitly accepts the remaining failure.

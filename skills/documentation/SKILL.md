@@ -11,6 +11,12 @@ Documentation expresses what code and types cannot. If the code or type system a
 
 **Core principle:** No documentation is better than wrong documentation.
 
+## Golden rules (apply throughout)
+
+> **A. Shorter is better.** Shorter docs are easier to read, modify, keep current, and cheaper in agent context. Cut anything that doesn't earn its tokens.
+>
+> **B. Shorter is not an excuse to skip.** If a fact belongs in docs per these rules, write it. Brevity is about *how*, not *whether*.
+
 ## When to Use
 
 - Writing or updating any code documentation
@@ -55,7 +61,33 @@ Redundant, contradictory, or unverifiable documentation MUST be deleted or fixed
 | Temporal ordering constraints | Doc comment |
 | Cross-cutting architectural decisions | ADR |
 
-**Cross-reference:** Express invariants via types first (`jj-superpowers:designing-with-types-and-abstractions`). Only document what types can't capture.
+**Cross-reference:** Express invariants via types first (`jj-superpowers:designing-with-types-and-abstractions`). Only document what types can't capture. For projects with an agent-spec ecosystem (i.e., `.agents/layout.yaml` exists), normative behavior belongs in capability/plane specs (`jj-superpowers:writing-specs`), not in code comments or mdbook — see "Specs vs. mdbook vs. code-as-spec vs. AGENTS.md" below.
+
+## Specs vs. mdbook vs. code-as-spec vs. AGENTS.md
+
+When a project has `.agents/layout.yaml`, doc work is partitioned by audience and register. Each fact has one home.
+
+| Audience | Lives in | Format | Skill |
+|---|---|---|---|
+| Agent (you) | `docs/agent-specs/{capabilities,planes}/<slug>/SPEC.yaml` | RFC2119 prose (KYAML) | `writing-specs` |
+| Downstream dev — typed API guarantees | Code-as-spec modules registered in `layout.yaml` `spec_code.modules` | Native doc format (rustdoc/jsdoc/...) with RFC2119 capitalization | `writing-specs` (sole authoring path; atomic three-artifact rule) |
+| End user | `docs/book/src/users/` | Prose, screenshots, examples | this skill |
+| Downstream dev — narrative | `docs/book/src/developers/` | Prose linking typed API docs | this skill |
+| Operator | `docs/book/src/operators/` + runbooks | Prose, commands | this skill |
+| Contributor (human) | `docs/book/src/contributors/` + ADRs | Prose, decisions | this skill |
+| Layout/conventions | `.agents/layout.yaml` + short `AGENTS.md` | YAML + ~15-line pointer | `project-layout` |
+
+### mdbook ↔ spec policy: orthogonal-with-citation
+
+mdbook and specs are orthogonal: different audiences, different registers. Narrow overlap is governed by:
+
+| Situation | Policy |
+|---|---|
+| Conceptual overview, narrative, tutorial, examples | Hand-written in mdbook; no spec coupling. |
+| Behavior at the level the user/dev needs | "See also: [spec link]" — link only. |
+| Specific numeric/enum value that MUST stay in sync (rare) | Restate with citation `(REQ-VID-001)`. `spec-drift-detector` verifies. |
+| Tight invariant tables (error codes, formats) | mdbook's built-in `{{#include}}` from spec when `spec_include: enabled`. No preprocessor needed. |
+| Spec-internal detail (scaling, MUST-level normative) | Stays in spec only. |
 
 ## Choosing Doc Form
 
