@@ -80,6 +80,9 @@ Use `ask_user` for mutually exclusive decisions with 2-3 concrete alternatives. 
 
 Copilot CLI's `task` tool dispatches sub-agents similarly to Claude Code's `Task` tool. When a skill references a named agent type like `jj-superpowers:code-reviewer`:
 
+Do not emulate missing subagent support by running `claude`, `codex`, `gemini`,
+`opencode`, or another agent harness from the shell.
+
 1. Find the agent's prompt file (e.g., `agents/code-reviewer.md` or a skill-local prompt template like `code-quality-reviewer-prompt.md`)
 2. Read and fill any template placeholders (`{BASE_SHA}`, `{WHAT_WAS_IMPLEMENTED}`, etc.)
 3. Dispatch via `task` with the filled content as the task description

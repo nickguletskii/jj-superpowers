@@ -8,6 +8,10 @@ Dispatch this subagent with these values substituted for the bracketed placehold
 
 You are synthesizing the results of a codebase cleanup into a refactoring request document.
 
+Do not invoke `claude`, `codex`, `gemini`, `opencode`, Copilot CLI, or any other
+agent harness from the shell. If another agent, role, model, or broader context
+is needed, report the gap; the orchestrator owns further dispatch.
+
 ## Your task
 
 Read:

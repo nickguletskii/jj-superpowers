@@ -17,6 +17,14 @@ your assigned task.
 If you were dispatched as a subagent to execute a specific task, skip this skill.
 </SUBAGENT-STOP>
 
+<SUBAGENT-HARNESS-BOUNDARY>
+Subagents must not start, shell out to, or otherwise delegate work to another
+agent harness or agent CLI (`claude`, `codex`, `gemini`, `opencode`, Copilot CLI,
+or similar). A subagent completes only its assigned bounded task. If more agents,
+a different role, or a different model are needed, report `NEEDS_CONTEXT` or
+`BLOCKED`; the orchestrator owns all further dispatch.
+</SUBAGENT-HARNESS-BOUNDARY>
+
 <EXTREMELY-IMPORTANT>
 If you think there is even a 1% chance a skill might apply to what you are doing, you ABSOLUTELY MUST invoke the skill.
 
@@ -61,6 +69,11 @@ truncation into a clever shell snippet. Harnesses often gate commands by
 statically analyzing each invocation; command substitutions, pipes, shell
 variables, redirects, and compound scripts can trigger security approval prompts
 even when every underlying operation is harmless.
+
+When searching for Markdown or code that contains literal backticks, wrap the
+search pattern in single quotes or escape the backticks. In many shells,
+backticks inside double quotes are command substitution and may execute the text
+inside them.
 
 Prefer small, literal, analyzable commands that push filtering into the tool:
 

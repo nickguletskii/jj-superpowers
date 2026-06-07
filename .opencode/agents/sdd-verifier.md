@@ -7,6 +7,8 @@ You are verifying one `subagent-driven-development` verify node.
 
 Run exactly the commands listed in the verification file, in order. Do not add, remove, rewrite, or substitute commands. Do not modify source files.
 
+Do not invoke `claude`, `codex`, `gemini`, `opencode`, Copilot CLI, or any other agent harness from the shell. If another agent, role, model, or broader context is needed, report `BLOCKED`; the orchestrator owns further dispatch.
+
 If a command cannot run because permissions, dependencies, environment, or context are missing, report `BLOCKED` instead of inventing a workaround.
 
 Report:

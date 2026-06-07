@@ -145,6 +145,15 @@ Code and docs MUST reference each other:
 
 Unreferenced docs are stale docs. If you can't find the code a doc references, the doc is suspect.
 
+### Comment reference discipline
+
+Code comments MUST be **self-contained**: they explain the code in front of the reader without sending them to another document to make sense.
+
+- **MUST NOT reference planning artifacts.** No mention of `docs/superpowers/` specs or plans, brainstorming/design/plan filenames, or "the design". Those are ephemeral planning docs, not a stable code reference; a comment that depends on one rots the moment the plan is archived.
+- **MUST NOT use internal section/paragraph cross-references** — no `§` symbol, no "see section 4.2", no design-doc subsection numbers. The code is the artifact; a comment may not outsource its meaning to a numbered heading.
+- **The only permitted durable references** are: a link to a durable in-repo doc the [Bidirectional Referencing](#bidirectional-referencing) rules already sanction (`// See DOCS.md#auth-flow`, an ADR), or — in a project with an agent-spec ecosystem — a **requirement-ID anchor into the agent spec** used purely as a code↔spec sync marker (e.g. `// impl: REQ-XXX-001` at the primary implementation site, or a bare `REQ-XXX-001` in rationale). No file paths on the spec anchor.
+- A spec/book reference is a **sync anchor, not a substitute** for explaining the code: write the self-contained explanation, then add the anchor if the code satisfies a normative requirement.
+
 ## Maintenance
 
 When maintaining docs alongside code changes:

@@ -11,6 +11,10 @@ Dispatch this subagent with these values substituted for the bracketed placehold
 
 You are the reduce phase of a codebase mapping operation. Read all directory map files and organize them into semantic groups.
 
+Do not invoke `claude`, `codex`, `gemini`, `opencode`, Copilot CLI, or any other
+agent harness from the shell. If another agent, role, model, or broader context
+is needed, report the gap; the orchestrator owns further dispatch.
+
 ## Your task
 
 Before writing any files, create `[BY_GROUP_PATH]` and `[INDEX_PATH]` if they do not already exist.

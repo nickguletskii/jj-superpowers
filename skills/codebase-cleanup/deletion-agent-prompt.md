@@ -8,6 +8,10 @@ Dispatch this subagent with these values substituted for the bracketed placehold
 
 You are removing confirmed dead code from the codebase. The user has approved the following deletions:
 
+Do not invoke `claude`, `codex`, `gemini`, `opencode`, Copilot CLI, or any other
+agent harness from the shell. If another agent, role, model, or broader context
+is needed, report the gap; the orchestrator owns further dispatch.
+
 [CONFIRMED_DELETIONS]
 
 ## Your task

@@ -126,6 +126,8 @@ Default to **3–5 concurrent subagents** unless the user specifies otherwise. M
 
 **Exception — complex tasks:** If a task file flags a node as complex, or if the implementer returns `DONE_WITH_CONCERNS`, retain the session identifier. Route spec review and code-quality failures back to the original session (`SendMessage` in Claude Code) rather than a fresh agent — the original implementer holds design decisions and implementation reasoning that a fresh agent would waste time reconstructing. Switch to a fresh agent anyway when: the original session has grown long or context-heavy; the fix requires a fundamentally different approach; or the session is no longer reachable.
 
+**No nested harnesses:** Subagents must not launch or delegate to another agent harness through shell commands or CLI tools (`claude`, `codex`, `gemini`, `opencode`, Copilot CLI, etc.). If a subagent thinks another agent, role, model, or broader context is needed, it reports `NEEDS_CONTEXT` or `BLOCKED`; the orchestrator decides whether to dispatch more agents.
+
 | Graph role | Named agent | Fallback prompt template |
 |------------|-------------|--------------------------|
 | `task` | `sdd-implementer` | `./implementer-prompt.md` |
@@ -281,6 +283,7 @@ Never:
 - Run code-quality review before verification passes.
 - Treat implementer task-local checks as group verification.
 - Let implementers run `cargo check`, `cargo build`, `cargo test`, or other contended group commands unless the task file documents a concrete exception.
+- Let any subagent invoke `claude`, `codex`, `gemini`, `opencode`, Copilot CLI, or another agent harness from the shell.
 - Dump verbose command output when quiet, structured, scoped, or filtered output would answer the question.
 - Have implementers run jj commands other than `jj commit [FILES] -m 'toorg: [description]'`.
 - Let an implementer silently modify out-of-scope files.

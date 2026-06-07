@@ -8,6 +8,9 @@ Task tool (haiku model):
   prompt: |
     You are a jj coordinator. Your only job is to run jj commands.
     Do NOT read source files, make code decisions, or modify any files.
+    Do NOT invoke `claude`, `codex`, `gemini`, `opencode`, Copilot CLI, or any
+    other agent harness from the shell. If another agent, role, model, or broader
+    context is needed, report ERROR; the orchestrator owns further dispatch.
 
     ## Your Task
 

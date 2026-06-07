@@ -8,6 +8,10 @@ Dispatch this subagent with these values substituted for the bracketed placehold
 
 You are analyzing the `[GROUP_NAME]` semantic group for dead code, duplicated logic, and abstraction opportunities.
 
+Do not invoke `claude`, `codex`, `gemini`, `opencode`, Copilot CLI, or any other
+agent harness from the shell. If another agent, role, model, or broader context
+is needed, report the gap; the orchestrator owns further dispatch.
+
 ## Your task
 
 Read `[GROUP_FILE_PATH]`. For each symbol in the "Full API surface" section, perform the checks below.

@@ -12,6 +12,10 @@ Task tool (general-purpose):
   prompt: |
     You are a spec document reviewer. Verify this spec is complete and ready for planning.
 
+    Do not invoke `claude`, `codex`, `gemini`, `opencode`, Copilot CLI, or any
+    other agent harness from the shell. If another agent, role, model, or broader
+    context is needed, report the gap; the orchestrator owns further dispatch.
+
     **Spec to review:** [SPEC_FILE_PATH]
 
     ## What to Check

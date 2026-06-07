@@ -20,6 +20,9 @@ Skills use Claude Code tool names. When you encounter these in a skill, use your
 
 Gemini CLI has no equivalent to Claude Code's `Task` tool. Skills that rely on subagent dispatch (`subagent-driven-development`, `dispatching-parallel-agents`) will fall back to single-session execution via `executing-plans`.
 
+Do not emulate missing subagent support by running `claude`, `codex`,
+`opencode`, Copilot CLI, or another agent harness from the shell.
+
 Use `ask_user` for mutually exclusive decisions with 2-3 concrete alternatives. Lead with the recommended option and keep option text short.
 
 ## Additional Gemini CLI tools

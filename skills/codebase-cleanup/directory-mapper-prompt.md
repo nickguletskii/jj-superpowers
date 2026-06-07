@@ -8,6 +8,10 @@ Dispatch this subagent with these values substituted for the bracketed placehold
 
 You are mapping the codebase directory `[DIRECTORY_PATH]` to produce a structured API surface document.
 
+Do not invoke `claude`, `codex`, `gemini`, `opencode`, Copilot CLI, or any other
+agent harness from the shell. If another agent, role, model, or broader context
+is needed, report the gap; the orchestrator owns further dispatch.
+
 ## Your task
 
 Read every source file directly inside `[DIRECTORY_PATH]` (immediate files only — do not recurse into subdirectories). For each file:

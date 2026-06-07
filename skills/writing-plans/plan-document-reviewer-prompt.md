@@ -12,6 +12,10 @@ Task tool (general-purpose):
   prompt: |
     You are a plan document reviewer. Verify this plan is complete and ready for graph-based implementation.
 
+    Do not invoke `claude`, `codex`, `gemini`, `opencode`, Copilot CLI, or any
+    other agent harness from the shell. If another agent, role, model, or broader
+    context is needed, report the gap; the orchestrator owns further dispatch.
+
     **Plan to review:** [PLAN_FILE_PATH]
     **Project network:** [PROJECT_NETWORK_DOT_PATH]
     **Spec for reference:** [SPEC_FILE_PATH]

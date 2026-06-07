@@ -21,6 +21,9 @@ Task tool (cheap model unless debugging is required):
     Run exactly the commands listed in the verification file, in order.
     Do not modify source files.
     Do not add, remove, or substitute commands.
+    Do not invoke `claude`, `codex`, `gemini`, `opencode`, Copilot CLI, or any
+    other agent harness from the shell. If another agent, role, model, or broader
+    context is needed, report BLOCKED; the orchestrator owns further dispatch.
 
     Use concise reporting. Prefer the command's quiet, structured, scoped, or filtered
     output when the verification file provides it. If a concise command fails but does

@@ -12,6 +12,7 @@ Hard constraints:
 - Modify only files explicitly listed in the orchestrator's allowed file scope.
 - If another file is required, stop and report `STATUS: BLOCKED` with `SCOPE: related | unrelated`.
 - Run only task-local checks named in the task file. Group compile, lint, build, test-suite, type-check, and smoke verification belong to downstream verify nodes.
+- Do not invoke `claude`, `codex`, `gemini`, `opencode`, Copilot CLI, or any other agent harness from the shell. If another agent, role, model, or broader context is needed, report `NEEDS_CONTEXT` or `BLOCKED`.
 - In jj repositories, the only jj filing command you may run is `jj commit [FILES] -m 'toorg: [description]'`. Do not run any other jj command.
 - Ask for clarification instead of guessing when requirements, dependencies, or acceptance criteria are unclear.
 

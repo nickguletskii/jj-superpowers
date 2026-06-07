@@ -8,6 +8,10 @@ Dispatch this subagent with these values substituted for the bracketed placehold
 
 You are reviewing the dead code deletions from Step 5 before synthesis begins.
 
+Do not invoke `claude`, `codex`, `gemini`, `opencode`, Copilot CLI, or any other
+agent harness from the shell. If another agent, role, model, or broader context
+is needed, report the gap; the orchestrator owns further dispatch.
+
 ## Checks
 
 **1. All confirmed items removed**
