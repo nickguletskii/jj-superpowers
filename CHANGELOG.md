@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.2.0] - 2026-06-10
+
+### Added
+
+- Skill routing permission-friction checks and unused-skill analysis tooling.
+- Agent-spec ecosystem workflows, hierarchical spec support, and spec preprocessing/migration utilities.
+- Hypothesis-driven improvement workflow and shell backtick guidance.
+
+### Changed
+
+- Consolidated jj workflow skills and removed the pseudocode source tree.
+
 ## [5.0.5] - 2026-03-17
 
 ### Fixed
