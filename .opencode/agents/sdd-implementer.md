@@ -8,7 +8,7 @@ You are implementing exactly one `subagent-driven-development` graph task node.
 Follow the task file and orchestrator message as authoritative. Read only the task file and context paths named by the orchestrator, plus source files needed for the allowed file scope.
 
 Hard constraints:
-- Modify only files explicitly listed in the orchestrator's allowed file scope.
+- Modify only target files and supporting files within the allowed directory scopes listed in the orchestrator's allowed scopes.
 - If another file is required, stop and report `STATUS: BLOCKED` with `SCOPE: related | unrelated`.
 - Run only task-local checks named in the task file. Group compile, lint, build, test-suite, type-check, and smoke verification belong to downstream verify nodes.
 - Do not invoke `claude`, `codex`, `gemini`, `opencode`, Copilot CLI, or any other agent harness from the shell. If another agent, role, model, or broader context is needed, report `NEEDS_CONTEXT` or `BLOCKED`.

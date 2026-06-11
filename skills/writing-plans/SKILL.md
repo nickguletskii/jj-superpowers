@@ -39,20 +39,23 @@ Create only context docs that multiple tasks would otherwise need to repeat.
 
 Allowed node kinds:
 
-| Kind | Purpose | Required attributes |
-|------|---------|---------------------|
-| `task` | Implementer-owned work | `file`, `files` |
-| `spec_review` | Per-task compliance gate | `task` |
-| `verify` | Batched compile/test/lint/build gate | `file` |
-| `quality_review` | Group-level code quality review after verification | `scope` |
-| `final` | Final completion gate | none |
+| Kind | Purpose | Required attributes | Optional attributes |
+|------|---------|---------------------|---------------------|
+| `task` | Implementer-owned work | `file`, `files` | `scopes` |
+| `spec_review` | Per-task compliance gate | `task` | |
+| `verify` | Batched compile/test/lint/build gate | `file` | |
+| `quality_review` | Group-level code quality review after verification | `scope` | |
+| `final` | Final completion gate | none | |
 
 Rules:
 - Every `task` node has exactly one downstream `spec_review`.
 - A `verify` node may depend on one or more `spec_review` nodes.
 - A `quality_review` node depends on a successful `verify` node.
 - `final` depends on every terminal `quality_review`.
-- Tasks may run in parallel only when their `files` attributes do not overlap.
+- **Target Files & Collision Gate:** `files` represents a space-separated list of primary target files to be created or modified. Tasks may run in parallel only when their `files` attributes do not overlap.
+- **Allowed Directory Scopes:** `scopes` defines a space-separated list of directories/packages where the subagent is permitted to modify supporting files (such as imports, `mod.rs`, `index.ts` re-exports, and local tests) without trigger-blocking file containment rules.
+- **API First / Early Stubbing:** The earliest task node(s) in the graph MUST establish the new public API surfaces, types, schemas, interfaces, or traits as empty/stubbed implementations (returning `todo!()`, `throw new Error("Not implemented")`, or mock structures). This allows subsequent parallel tasks to compile/type-check immediately and prevents downstream blockage on missing symbols.
+- **Cleanup / Dead Code Check:** If the plan refactors existing code, modifies internal structures, or deprecates any functionality, it MUST include a dedicated cleanup `task` node (e.g. `task-cleanup.md`) at the end of the implementation phase (before verification). This cleanup task explicitly checks for and removes any pre-existing code that was made dead, obsolete tests, or unused imports, requesting user confirmation before performing deletions.
 - Commands that contend on shared build state, such as `cargo`, `bazel`, test suites, type checks, and linters, belong in `verify` nodes, not implementer tasks.
 - **REQUIRED SUB-SKILL:** Use `jj-superpowers:tool-output-discipline` when writing verification commands.
 
@@ -155,14 +158,17 @@ Each task gets its own file at the plan root: `task-NN-component-name.md`.
 ````markdown
 # Task N: [Component Name]
 
-**Files:**
+**Target Files:**
 - Create: `exact/path/to/file.rs`
 - Modify: `exact/path/to/existing.rs`
 
+**Allowed Directory Scopes:**
+- `exact/path/to/` (gives implementer permission to touch/create supporting files in this directory, e.g. imports, mod.rs, index.ts, local tests)
+
 **Purpose:** [What this task changes and why.]
 
-**Interfaces and invariants:**
-- Define `MyTrait` in `exact/path/to/file.rs`:
+**Interfaces and Invariants (API / Signature Only):**
+- Define `MyTrait` in `exact/path/to/file.rs`. Define ONLY public types, interfaces, traits, and function signatures. Do NOT pre-write implementation code or function bodies:
 
   ```rust
   trait MyTrait {
@@ -173,7 +179,7 @@ Each task gets its own file at the plan root: `task-NN-component-name.md`.
 - Invariant: `foo` must not mutate persisted state on error.
 
 **Subtasks:**
-- [ ] Add the `MyTrait` definition and documentation.
+- [ ] Add the `MyTrait` definition and documentation (stubbed/mocked).
 - [ ] Update `MyStruct` to implement `MyTrait`.
 - [ ] Add tests covering success and error behavior.
 
@@ -213,7 +219,7 @@ Write verification commands with tool-output discipline:
 - For commands likely to need unsandboxed, network, cache, or device permissions, use a short prefix-whitelistable command. Prefer checked-in helper scripts with named arguments over inline env assignments, heredocs, shell wrappers, or chained command strings.
 - Do not put contended commands such as `cargo check`, `cargo build`, or `cargo test` in task-local checks just because they can be package-scoped or test-filtered; they usually still block shared build state.
 
-## No Placeholders
+## No Placeholders & No Code Bodies
 
 Every step must contain the actual information an engineer needs. These are plan failures:
 
@@ -224,8 +230,18 @@ Every step must contain the actual information an engineer needs. These are plan
 - Steps that describe what to do without enough design guidance to act
 - References to types, functions, or methods not defined in this task or an upstream graph dependency
 - Legacy compatibility shims or backward compatibility re-exports unless the user explicitly asked for compatibility
+- **Writing full implementation bodies:** Pre-writing function/method bodies, component rendering code, styling details, or full algorithm logic is strictly forbidden.
 
-You are writing a plan, not performing the implementation. Provide complete APIs, invariants, algorithms, helper choices, acceptance checks, and commands. Do not pre-write full implementation bodies unless that is the clearest way to remove ambiguity.
+You are writing a plan, not performing the implementation. Provide complete public signatures, type definitions, invariants, high-level algorithms, helper choices, and commands. You MUST NOT pre-write implementation code/bodies; implementation details belong strictly in the implementation subagent's scope.
+
+## Common Mistakes
+
+| Mistake | Prevention |
+|---------|------------|
+| Writing implementation code in plans | Never write function/method bodies, JSX rendering code, CSS definitions, or complete logic loops. Provide only traits, types, interfaces, signature stubs, and plain text invariants. |
+| Narrow file scopes blocking agents | Specify a directory scope (using `scopes` attribute in the graph, and `Allowed Directory Scopes` in task files) to allow minor edits (imports, mod.rs, tests) without causing BLOCKED status. |
+| Sequential blockages on missing APIs | Designate the first task node as an "API & Interface Stubs" node, committing all public interfaces first so parallel consumer tasks compile immediately. |
+| Forgetting codebase cleanup | If refactoring or replacing code, always include a dedicated cleanup task node at the end of the implementation phase to check for and delete dead code/unused imports. |
 
 ## Self-Review
 

@@ -67,3 +67,31 @@ Expected behavior:
 - Each task receives spec review before the verification node runs.
 - Code-quality review runs only after verification passes.
 - Failed verification routes work back to responsible task nodes and repeats spec review before verification reruns.
+
+## 8. API-First / Early Stubbing
+
+Prompt: "Write a plan for a new module with multiple parallel consumers."
+
+Expected behavior:
+- The graph defines a Task 1 dedicated to establishing and committing the public API interfaces, traits, or types as stubs.
+- Downstream tasks depend on Task 1's spec review, allowing them to compile immediately.
+- Downstream tasks are scheduled to run in parallel once the API stub task is completed.
+
+## 9. Core Target Files + Allowed Directory Scopes
+
+Prompt: "Write a plan where Task 1 modifies `src/parser.rs` and needs to update local re-exports and add a test."
+
+Expected behavior:
+- Task 1 lists `src/parser.rs` in `Target Files`.
+- Task 1 lists `src/` or `src/parser/` in `Allowed Directory Scopes`.
+- Graph collision check runs only on `Target Files`, allowing other parallel tasks to touch disjoint target files even if they share the same directory scope for supporting updates (e.g. imports, re-exports).
+- The implementer is permitted to edit/create supporting files within `Allowed Directory Scopes` without scope blockage.
+
+## 10. No Code Bodies in Tasks
+
+Prompt: "Write task details for implementing a complex function."
+
+Expected behavior:
+- Task file defines only the public function signature and behavioral invariants/contract.
+- Task file does NOT pre-write the function body or implementation logic blocks.
+- The implementer subagent is solely responsible for writing the implementation code.

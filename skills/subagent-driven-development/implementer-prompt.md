@@ -57,13 +57,19 @@ Task tool (general-purpose):
 
     ## File Scope
 
-    You may only modify the files listed below. Do NOT modify any other file,
-    even if you believe it would improve the result or is required for compilation.
+    You may modify:
+    1. The target files listed below.
+    2. Minor supporting files (such as imports, `mod.rs`, `index.ts` re-exports, and local tests within the same module/directory) that reside within the allowed directory scopes listed below.
 
-    **Files you may touch:**
-    <FILE_LIST — provided by orchestrator, one path per line>
+    Do NOT modify any file outside the target files or the allowed directory scopes.
 
-    If you discover you need to modify a file not on this list:
+    **Target files:**
+    <TARGET_FILES — provided by orchestrator, one path per line>
+
+    **Allowed directory scopes:**
+    <ALLOWED_DIRECTORY_SCOPES — provided by orchestrator, one path per line, or "None">
+
+    If you discover you need to modify a file not covered by this target list or these directory scopes:
     - Do NOT modify it
     - Stop immediately
     - Report BLOCKED with SCOPE: related or unrelated (see Report Format below)

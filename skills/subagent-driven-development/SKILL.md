@@ -104,19 +104,19 @@ digraph process {
 Before dispatching work, check:
 
 - `plan.md` references `project-network.dot`.
-- Every task node has `kind="task"`, `file`, and `files`.
+- Every task node has `kind="task"`, `file`, `files`, and optionally `scopes`.
 - Every task node reaches exactly one downstream `spec_review`.
 - Every `spec_review` reaches a `verify` node before any `quality_review`.
 - Every `quality_review` depends on a successful `verify` node.
 - Every terminal path reaches `final`.
 - No cycles.
-- No ready-to-run parallel task nodes have overlapping file scopes.
+- No ready-to-run parallel task nodes have overlapping `files` attributes (Target Files conflict check).
 
 If the graph is invalid, fix the plan if the correction is mechanical and obvious. Otherwise ask the user before execution.
 
 ## Dispatch Rules
 
-Prefer named role agents when the platform supports them. Pass only dynamic invocation context in the task message: graph node id, task or verification file path, relevant context paths, allowed file list, upstream reports, verification report, and orchestrator notes. Keep durable role behavior in the named agent's system/developer prompt.
+Prefer named role agents when the platform supports them. Pass only dynamic invocation context in the task message: graph node id, task or verification file path, relevant context paths, target file list, allowed directory scopes, upstream reports, verification report, and orchestrator notes. Keep durable role behavior in the named agent's system/developer prompt.
 
 **Parallel Dispatch Mechanics:** When multiple task nodes (or spec reviews) are ready and non-conflicting, dispatch them all by making multiple Agent tool calls in a **single response** — not one call per turn. Do not announce dispatch in a text turn and then make Agent calls in subsequent turns; that pattern produces sequential execution regardless of stated intent.
 
@@ -146,7 +146,7 @@ Platform locations:
 
 If named agents are unavailable, use the fallback prompt templates exactly as before by filling the dynamic placeholders into the subagent message.
 
-**Task nodes:** Dispatch `sdd-implementer` or fallback `./implementer-prompt.md`. Pass the task file path, relevant context docs, allowed file list from the node's `files` attribute, and any dynamic annotations from upstream completed nodes.
+**Task nodes:** Dispatch `sdd-implementer` or fallback `./implementer-prompt.md`. Pass the task file path, relevant context docs, target file list from the node's `files` attribute, allowed directory scopes from the node's `scopes` attribute (if any), and any dynamic annotations from upstream completed nodes.
 
 **Spec review nodes:** Dispatch `sdd-spec-reviewer` or fallback `./spec-reviewer-prompt.md` after each task reports `DONE` or `DONE_WITH_CONCERNS`. Spec review is task-local and happens before verification fan-in.
 
