@@ -293,13 +293,11 @@ Never:
 
 ## Reporting Gaps
 
-**If you encounter a command invocation issue** that could have been prevented by information in a skill, invoke **jj-superpowers:capturing-workflow-friction** to log it, but only if the relevant information is genuinely absent or unclear in existing skills.
+If you read multiple files or traced execution across modules to understand something
+that a short documentation file could have explained immediately, invoke
+**jj-superpowers:documentation** to create that document.
 
-**If you find yourself doing something tedious, error-prone, or repetitive** that a reusable tool or script could automate but doesn't exist yet, invoke **jj-superpowers:capturing-workflow-friction** to log it.
-
-**If you read multiple files or traced execution across modules** to understand something that a short documentation file could have explained immediately, invoke **jj-superpowers:documentation** to create that document.
-
-Log and continue; do not block execution on logging.
+Continue with execution; do not block on reporting gaps.
 
 ## Integration
 

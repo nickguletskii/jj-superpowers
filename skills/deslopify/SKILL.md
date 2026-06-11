@@ -32,15 +32,7 @@ Never deslopify code you don't understand. Read before removing.
 
 ## Large Cleanup Mode
 
-For broad cleanup, reorganization, deduplication, or dead-code removal, keep the same approval gates as normal deslopifying but add a map/reduce pass:
-
-1. Confirm scope and search for related code outside the requested path.
-2. Map public APIs, internal symbols, cross-directory dependencies, dead code candidates, duplicated logic, and abstraction opportunities.
-3. Present findings with evidence. Dead-code claims need search evidence.
-4. Delete or refactor only user-confirmed items.
-5. Review the diff for unconfirmed changes, then verify.
-
-If subagents are supported and authorized, the prompt templates in `skills/codebase-cleanup/` may be used for the mapping, analysis, deletion, and review phases. The orchestrator owns user discussion; subagents report findings only.
+For broad cleanup, reorganization, deduplication, or dead-code removal across multiple directories, use `jj-superpowers:codebase-cleanup`. It provides the map/reduce workflow, subagent prompt pack, review gates, and deletion approval gates for large cleanup work.
 
 ## The Deslopify Checklist
 

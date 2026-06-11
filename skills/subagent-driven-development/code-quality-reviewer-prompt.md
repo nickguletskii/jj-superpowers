@@ -34,4 +34,4 @@ Task tool (sdd-quality-reviewer preferred; fallback jj-superpowers:code-reviewer
 
 **Code reviewer returns:** Strengths, Issues (Critical/Important/Minor), Assessment
 
-**Reporting Gaps:** The code reviewer template (`requesting-code-review/code-reviewer.md`) already instructs the reviewer to invoke `jj-superpowers:capturing-workflow-friction` and `jj-superpowers:documentation` when applicable. No additional relay is needed.
+**Reporting Gaps:** The code reviewer template (`requesting-code-review/code-reviewer.md`) already instructs the reviewer to invoke `jj-superpowers:documentation` when applicable. No additional relay is needed.

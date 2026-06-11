@@ -113,7 +113,6 @@ See [`.copilot-plugin/INSTALL.md`](.copilot-plugin/INSTALL.md).
 - **jj-organizing-history** - Post-implementation jj DAG organization and history cleanup
 - **finishing-a-development-branch** - PR/integrate decision workflow
 - **subagent-driven-development** - Fast iteration with two-stage review (spec compliance, then code quality)
-- **capturing-workflow-friction** - Log missing guidance, missing helper tools, and doc gaps without blocking work
 
 **jujutsu**
 - **jj-hunk** - Programmatic hunk selection (jj-hunk tool)

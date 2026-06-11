@@ -76,19 +76,9 @@ Task tool (general-purpose):
 
     ## Reporting Gaps
 
-    **If you encounter a command invocation issue** that could have been prevented by
-    information in a skill, invoke **jj-superpowers:capturing-workflow-friction** to log it — but only if:
-    - the relevant information is genuinely absent from existing skills, OR
-    - a skill has the information but its phrasing or trigger condition wasn't clear
-      enough that you recognised you should use it at the right moment.
-    Do NOT invoke for issues caused by simply forgetting something a skill already documents clearly.
-
-    **If you wish you had a reusable tool or script** to help perform your work,
-    invoke **jj-superpowers:capturing-workflow-friction** to log it.
-
     **If you spent significant effort exploring or reading code** to understand something
     that a short documentation file could have explained immediately, invoke
     **jj-superpowers:documentation** to create that document.
 
-    Log and continue — do not block your task on logging.
+    Continue with your review; do not block on reporting gaps.
 ```

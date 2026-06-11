@@ -6,6 +6,10 @@
 
 - Deno harness installer for global jj-superpowers links/config across Claude Code, Codex, Agy, Pi, Oh My Pi, and OpenCode.
 
+### Removed
+
+- `capturing-workflow-friction` skill and its activation prompts.
+
 ## [1.2.0] - 2026-06-10
 
 ### Added

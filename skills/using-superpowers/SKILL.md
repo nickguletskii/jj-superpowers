@@ -198,14 +198,8 @@ user explicitly overrides that specific behavior. Tell the user what you saw and
 ask them to notify jj-superpowers maintainers. Keep this report concise and
 continue with the user's requested work when possible.
 
-**If you encounter a command invocation issue** that could have been prevented by information in a skill, invoke **jj-superpowers:capturing-workflow-friction** to log it — but only if:
-- the relevant information is genuinely absent from existing skills, OR
-- a skill has the information but its phrasing or trigger condition wasn't clear enough that you recognised you should use it at the right moment.
+If you read multiple files or traced execution across modules to understand something
+that a short documentation file could have explained immediately, use
+**jj-superpowers:documentation** if the user wants the doc written now.
 
-Do NOT invoke for issues caused by simply forgetting something a skill already documents clearly.
-
-**If you find yourself doing something tedious, error-prone, or repetitive** that a reusable tool or script could automate but doesn't exist yet, invoke **jj-superpowers:capturing-workflow-friction** to log it.
-
-**If you read multiple files or traced execution across modules** to understand something that a short documentation file could have explained immediately, invoke **jj-superpowers:capturing-workflow-friction** to log the gap, then use **jj-superpowers:documentation** if the user wants the doc written now.
-
-Log and continue — do not block your task on logging.
+Continue with the user's requested work when possible; do not block on reporting gaps.
