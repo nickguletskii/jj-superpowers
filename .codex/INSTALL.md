@@ -1,10 +1,11 @@
 # Installing jj-superpowers for Codex
 
-Enable jj-superpowers skills in Codex via native skill discovery. Just clone and symlink.
+Enable jj-superpowers skills in Codex via native skill discovery. Clone the repo, then run the local Deno installer to create flat skill links.
 
 ## Prerequisites
 
 - Git
+- Deno
 
 ## Installation
 
@@ -13,32 +14,17 @@ Enable jj-superpowers skills in Codex via native skill discovery. Just clone and
    git clone https://github.com/nickguletskii/jj-superpowers.git ~/.codex/jj-superpowers
    ```
 
-2. **Create the skills symlink:**
+2. **Install flat skill links and named subagent roles:**
    ```bash
-   mkdir -p ~/.agents/skills
-   ln -s ~/.codex/jj-superpowers/skills ~/.agents/skills/jj-superpowers
+   cd ~/.codex/jj-superpowers
+   deno run -A scripts/install-harnesses.ts install --harness codex
    ```
 
-   **Windows (PowerShell):**
-   ```powershell
-   New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\.agents\skills"
-   cmd /c mklink /J "$env:USERPROFILE\.agents\skills\jj-superpowers" "$env:USERPROFILE\.codex\jj-superpowers\skills"
-   ```
+3. **Restart Codex** (quit and relaunch the CLI) to discover the skills and agents.
 
-3. **Optional: install named subagent roles**
+These custom agents support `subagent-driven-development` named role dispatch.
 
-   ```bash
-   mkdir -p ~/.codex/agents
-   ln -s ~/.codex/jj-superpowers/.codex/agents/sdd-implementer.toml ~/.codex/agents/sdd-implementer.toml
-   ln -s ~/.codex/jj-superpowers/.codex/agents/sdd-spec-reviewer.toml ~/.codex/agents/sdd-spec-reviewer.toml
-   ln -s ~/.codex/jj-superpowers/.codex/agents/sdd-verifier.toml ~/.codex/agents/sdd-verifier.toml
-   ln -s ~/.codex/jj-superpowers/.codex/agents/sdd-quality-reviewer.toml ~/.codex/agents/sdd-quality-reviewer.toml
-   ln -s ~/.codex/jj-superpowers/.codex/agents/sdd-jj-coordinator.toml ~/.codex/agents/sdd-jj-coordinator.toml
-   ```
-
-   These custom agents support `subagent-driven-development` named role dispatch.
-
-4. **Restart Codex** (quit and relaunch the CLI) to discover the skills and agents.
+The installer links each `skills/<name>/` directory directly under `~/.agents/skills/`, because Codex skill discovery expects `~/.agents/skills/<name>/SKILL.md` and does not treat `~/.agents/skills/jj-superpowers/` as a nested plugin namespace.
 
 ## Migrating from old bootstrap
 
@@ -49,7 +35,7 @@ If you installed jj-superpowers before native skill discovery, you need to:
    cd ~/.codex/jj-superpowers && git pull
    ```
 
-2. **Create the skills symlink** (step 2 above) — this is the new discovery mechanism.
+2. **Run the installer** (step 2 above) — it creates the native discovery links.
 
 3. **Remove the old bootstrap block** from `~/.codex/AGENTS.md` — any block referencing `jj-superpowers-codex bootstrap` is no longer needed.
 
@@ -58,10 +44,10 @@ If you installed jj-superpowers before native skill discovery, you need to:
 ## Verify
 
 ```bash
-ls -la ~/.agents/skills/jj-superpowers
+ls -la ~/.agents/skills/using-superpowers
 ```
 
-You should see a symlink (or junction on Windows) pointing to your jj-superpowers skills directory.
+You should see a symlink pointing to `~/.codex/jj-superpowers/skills/using-superpowers`.
 
 For named subagent roles, also verify:
 
@@ -80,7 +66,8 @@ Skills update instantly through the symlink.
 ## Uninstalling
 
 ```bash
-rm ~/.agents/skills/jj-superpowers
+cd ~/.codex/jj-superpowers
+deno run -A scripts/install-harnesses.ts uninstall --harness codex
 ```
 
 Optionally delete the clone: `rm -rf ~/.codex/jj-superpowers`.

@@ -23,6 +23,21 @@ Next up, once you say "go", the plan is executed through `subagent-driven-develo
 
 ## Installation
 
+### Automated local installer
+
+For a cloned checkout, install global links/config for selected harnesses with the Deno installer:
+
+```bash
+deno run -A scripts/install-harnesses.ts install --harness codex
+deno run -A scripts/install-harnesses.ts install --all
+deno run -A scripts/install-harnesses.ts status --all
+deno run -A scripts/install-harnesses.ts uninstall --harness codex
+```
+
+Supported harness IDs: `claude-code`, `codex`, `agy`, `pi`, `oh-my-pi`, `opencode`.
+
+The installer is self-contained, uses harness plugin/config registration where supported, and only removes managed links/config entries that point back to this checkout.
+
 ### Claude Code
 
 Clone and install as a local plugin:

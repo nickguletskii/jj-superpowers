@@ -24,43 +24,27 @@ Fetch and follow instructions from https://raw.githubusercontent.com/nickguletsk
    git clone https://github.com/nickguletskii/jj-superpowers.git ~/.codex/jj-superpowers
    ```
 
-2. Create the skills symlink:
+2. Install flat skill links and bundled Codex custom agents:
    ```bash
-   mkdir -p ~/.agents/skills
-   ln -s ~/.codex/jj-superpowers/skills ~/.agents/skills/jj-superpowers
+   cd ~/.codex/jj-superpowers
+   deno run -A scripts/install-harnesses.ts install --harness codex
    ```
 
 3. Restart Codex.
 
-4. **For named subagent roles** (optional): install the bundled Codex custom agents:
-   ```bash
-   mkdir -p ~/.codex/agents
-   ln -s ~/.codex/jj-superpowers/.codex/agents/sdd-implementer.toml ~/.codex/agents/sdd-implementer.toml
-   ln -s ~/.codex/jj-superpowers/.codex/agents/sdd-spec-reviewer.toml ~/.codex/agents/sdd-spec-reviewer.toml
-   ln -s ~/.codex/jj-superpowers/.codex/agents/sdd-verifier.toml ~/.codex/agents/sdd-verifier.toml
-   ln -s ~/.codex/jj-superpowers/.codex/agents/sdd-quality-reviewer.toml ~/.codex/agents/sdd-quality-reviewer.toml
-   ln -s ~/.codex/jj-superpowers/.codex/agents/sdd-jj-coordinator.toml ~/.codex/agents/sdd-jj-coordinator.toml
-   ```
-
-   Current Codex releases enable subagent workflows by default. These custom
-   agents let `subagent-driven-development` dispatch durable role prompts instead
-   of embedding all role instructions in each task message.
+Current Codex releases enable subagent workflows by default. These custom agents let `subagent-driven-development` dispatch durable role prompts instead of embedding all role instructions in each task message.
 
 ### Windows
 
-Use a junction instead of a symlink (works without Developer Mode):
-
-```powershell
-New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\.agents\skills"
-cmd /c mklink /J "$env:USERPROFILE\.agents\skills\jj-superpowers" "$env:USERPROFILE\.codex\jj-superpowers\skills"
-```
+The automated installer currently targets Linux/macOS symlink semantics. Windows junction support is not implemented.
 
 ## How It Works
 
-Codex has native skill discovery — it scans `~/.agents/skills/` at startup, parses SKILL.md frontmatter, and loads skills on demand. jj-superpowers skills are made visible through a single symlink:
+Codex has native skill discovery — it scans `~/.agents/skills/` at startup, parses SKILL.md frontmatter, and loads skills on demand. jj-superpowers skills are made visible as flat per-skill links:
 
 ```
-~/.agents/skills/jj-superpowers/ → ~/.codex/jj-superpowers/skills/
+~/.agents/skills/using-superpowers/ → ~/.codex/jj-superpowers/skills/using-superpowers/
+~/.agents/skills/brainstorming/ → ~/.codex/jj-superpowers/skills/brainstorming/
 ```
 
 The `using-superpowers` skill is discovered automatically and enforces skill
@@ -129,17 +113,13 @@ The `description` field is how Codex decides when to activate a skill automatica
 cd ~/.codex/jj-superpowers && git pull
 ```
 
-Skills update instantly through the symlink.
+Skills update instantly through the per-skill symlinks.
 
 ## Uninstalling
 
 ```bash
-rm ~/.agents/skills/jj-superpowers
-```
-
-**Windows (PowerShell):**
-```powershell
-Remove-Item "$env:USERPROFILE\.agents\skills\jj-superpowers"
+cd ~/.codex/jj-superpowers
+deno run -A scripts/install-harnesses.ts uninstall --harness codex
 ```
 
 Optionally delete the clone: `rm -rf ~/.codex/jj-superpowers` (Windows: `Remove-Item -Recurse -Force "$env:USERPROFILE\.codex\jj-superpowers"`).
@@ -148,8 +128,8 @@ Optionally delete the clone: `rm -rf ~/.codex/jj-superpowers` (Windows: `Remove-
 
 ### Skills not showing up
 
-1. Verify the symlink: `ls -la ~/.agents/skills/jj-superpowers`
-2. Check skills exist: `ls ~/.codex/jj-superpowers/skills`
+1. Verify a skill symlink: `ls -la ~/.agents/skills/using-superpowers`
+2. Check source skills exist: `ls ~/.codex/jj-superpowers/skills`
 3. Restart Codex — skills are discovered at startup
 
 ### Windows junction issues

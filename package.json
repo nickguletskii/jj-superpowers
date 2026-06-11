@@ -4,6 +4,7 @@
   "type": "module",
   "main": ".opencode/plugins/superpowers.js",
   "scripts": {
-    "generate:agents": "node scripts/generate-agents.mjs"
+    "generate:agents": "node scripts/generate-agents.mjs",
+    "install:harnesses": "deno run -A scripts/install-harnesses.ts"
   }
 }
