@@ -1,6 +1,6 @@
-# Analysis Reviewer Prompt
-
-Dispatch this subagent with these values substituted for the bracketed placeholders:
+name = "codebase-cleanup-analysis-reviewer"
+description = "Use to review codebase-cleanup analysis findings before they are presented to the user"
+developer_instructions = """Dispatch this subagent with these values substituted for the bracketed placeholders:
 - `[BY_GROUP_PATH]` — path to the group files (e.g. `docs/superpowers/code-map/2026-04-12-1430/by-group/`)
 
 ---
@@ -50,3 +50,4 @@ ISSUES FOUND
 
 If APPROVED: analysis is ready for Step 4 discussion with the user.
 If ISSUES FOUND: the relevant analysis subagent(s) must fix the listed issues. Re-dispatch this reviewer after fixes are complete.
+"""

@@ -29,10 +29,18 @@ function makeSourceRepo() {
     path.join(root, ".codex", "agents", "sdd-implementer.toml"),
     'name = "sdd-implementer"\n',
   );
+  fs.writeFileSync(
+    path.join(root, ".codex", "agents", "codebase-cleanup-analysis.toml"),
+    'name = "codebase-cleanup-analysis"\n',
+  );
   fs.mkdirSync(path.join(root, "agents"), { recursive: true });
   fs.writeFileSync(
     path.join(root, "agents", "sdd-implementer.md"),
     "---\nname: sdd-implementer\ndescription: test\n---\n",
+  );
+  fs.writeFileSync(
+    path.join(root, "agents", "codebase-cleanup-analysis.md"),
+    "---\nname: codebase-cleanup-analysis\ndescription: test\n---\n",
   );
   fs.mkdirSync(path.join(root, ".claude-plugin"), { recursive: true });
   fs.writeFileSync(
@@ -47,19 +55,27 @@ function makeSourceRepo() {
 }
 
 function runInstaller(home, args, options = {}) {
-  return spawnSync("deno", [
-    "run",
-    "--allow-read",
-    "--allow-write",
-    "--allow-env",
-    "--allow-run",
-    script,
-    ...args,
-  ], {
-    cwd: repoRoot,
-    env: { ...process.env, HOME: home, PATH: options.path ?? process.env.PATH },
-    encoding: "utf8",
-  });
+  return spawnSync(
+    "deno",
+    [
+      "run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      "--allow-run",
+      script,
+      ...args,
+    ],
+    {
+      cwd: repoRoot,
+      env: {
+        ...process.env,
+        HOME: home,
+        PATH: options.path ?? process.env.PATH,
+      },
+      encoding: "utf8",
+    },
+  );
 }
 
 function assertSymlink(target, source) {
@@ -102,6 +118,10 @@ test("codex install status and uninstall manage only repo links", () => {
     path.join(home, ".codex", "agents", "sdd-implementer.toml"),
     path.join(source, ".codex", "agents", "sdd-implementer.toml"),
   );
+  assertSymlink(
+    path.join(home, ".codex", "agents", "codebase-cleanup-analysis.toml"),
+    path.join(source, ".codex", "agents", "codebase-cleanup-analysis.toml"),
+  );
 
   const status = runInstaller(home, [
     "status",
@@ -127,6 +147,12 @@ test("codex install status and uninstall manage only repo links", () => {
   );
   assert.equal(
     fs.existsSync(path.join(home, ".codex", "agents", "sdd-implementer.toml")),
+    false,
+  );
+  assert.equal(
+    fs.existsSync(
+      path.join(home, ".codex", "agents", "codebase-cleanup-analysis.toml"),
+    ),
     false,
   );
 });

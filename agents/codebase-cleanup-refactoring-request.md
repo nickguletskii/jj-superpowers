@@ -1,4 +1,8 @@
-# Refactoring Request Prompt
+---
+name: codebase-cleanup-refactoring-request
+description: Use to synthesize reviewed codebase-cleanup findings into a refactoring request document
+model: inherit
+---
 
 Dispatch this subagent with these values substituted for the bracketed placeholders:
 - `[MAP_PATH]` — path to the code map session directory (e.g. `docs/superpowers/code-map/2026-04-12-1430/`)

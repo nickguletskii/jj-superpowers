@@ -1,6 +1,6 @@
-# Deletion Reviewer Prompt
-
-Dispatch this subagent with these values substituted for the bracketed placeholders:
+name = "codebase-cleanup-deletion-reviewer"
+description = "Use to review user-confirmed deletions during a codebase-cleanup workflow"
+developer_instructions = """Dispatch this subagent with these values substituted for the bracketed placeholders:
 - `[CONFIRMED_DELETIONS]` — the exact list of items the user approved for deletion (inlined by the orchestrator). Each entry includes: (a) symbol name or file path, (b) source file path, (c) item type: `file` or `symbol`.
 - `[MAP_PATH]` — path to the code map session directory (e.g. `docs/superpowers/code-map/2026-04-12-1430/`)
 
@@ -53,3 +53,4 @@ ISSUES FOUND
 
 If APPROVED: deletions are clean and Step 6 synthesis can proceed.
 If ISSUES FOUND: the deletion agent must fix the listed issues. Re-dispatch this reviewer after fixes are complete.
+"""

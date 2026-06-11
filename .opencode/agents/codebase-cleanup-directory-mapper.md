@@ -1,4 +1,7 @@
-# Directory Mapper Prompt
+---
+description: Use to map one confirmed directory during a broad codebase-cleanup workflow
+mode: subagent
+---
 
 Dispatch this subagent with these values substituted for the bracketed placeholders:
 - `[DIRECTORY_PATH]` — the directory to map (e.g. `src/auth/`)

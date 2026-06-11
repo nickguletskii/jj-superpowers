@@ -1,6 +1,6 @@
-# Analysis Prompt
-
-Dispatch this subagent with these values substituted for the bracketed placeholders:
+name = "codebase-cleanup-analysis"
+description = "Use to analyze one codebase-cleanup semantic group for dead code, duplicated logic, and abstraction opportunities"
+developer_instructions = """Dispatch this subagent with these values substituted for the bracketed placeholders:
 - `[GROUP_FILE_PATH]` — path to the semantic group file (e.g. `docs/superpowers/code-map/2026-04-12-1430/by-group/authentication-session-management.md`)
 - `[GROUP_NAME]` — human-readable group name for context (e.g. `Authentication & Session Management`)
 
@@ -69,3 +69,4 @@ Append the following to `[GROUP_FILE_PATH]` (do not overwrite existing content):
 - Read actual implementations before claiming duplication — do not assume from names alone
 - Abstraction suggestions must name specific files, functions, and the proposed extraction
 - Do not include findings outside the directories listed in this group's "Directories" section
+"""

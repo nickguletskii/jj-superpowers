@@ -1,14 +1,17 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const sourceDir = path.join(repoRoot, 'agents');
-const codexDir = path.join(repoRoot, '.codex', 'agents');
-const opencodeDir = path.join(repoRoot, '.opencode', 'agents');
+const repoRoot = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "..",
+);
+const sourceDir = path.join(repoRoot, "agents");
+const codexDir = path.join(repoRoot, ".codex", "agents");
+const opencodeDir = path.join(repoRoot, ".opencode", "agents");
 
 function parseAgentFile(filePath) {
-  const raw = fs.readFileSync(filePath, 'utf8');
+  const raw = fs.readFileSync(filePath, "utf8");
   const match = raw.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
   if (!match) {
     throw new Error(`${filePath} is missing YAML frontmatter`);
@@ -22,7 +25,7 @@ function parseAgentFile(filePath) {
 
 function parseFrontmatter(frontmatter, filePath) {
   const result = {};
-  const lines = frontmatter.split('\n');
+  const lines = frontmatter.split("\n");
 
   for (let i = 0; i < lines.length; i += 1) {
     const line = lines[i];
@@ -34,15 +37,15 @@ function parseFrontmatter(frontmatter, filePath) {
     }
 
     const [, key, rawValue] = scalar;
-    if (rawValue === '|' || rawValue === '>') {
+    if (rawValue === "|" || rawValue === ">") {
       const block = [];
       i += 1;
       while (i < lines.length && /^(\s+|$)/.test(lines[i])) {
-        block.push(lines[i].replace(/^ {2}/, ''));
+        block.push(lines[i].replace(/^ {2}/, ""));
         i += 1;
       }
       i -= 1;
-      result[key] = block.join('\n').trimEnd();
+      result[key] = block.join("\n").trimEnd();
     } else {
       result[key] = parseScalar(rawValue);
     }
@@ -53,9 +56,9 @@ function parseFrontmatter(frontmatter, filePath) {
 
 function parseScalar(value) {
   const trimmed = value.trim();
-  if (trimmed === 'true') return true;
-  if (trimmed === 'false') return false;
-  return trimmed.replace(/^["']|["']$/g, '');
+  if (trimmed === "true") return true;
+  if (trimmed === "false") return false;
+  return trimmed.replace(/^["']|["']$/g, "");
 }
 
 function tomlString(value) {
@@ -79,18 +82,18 @@ function renderCodexAgent(agent) {
   }
 
   lines.push(`developer_instructions = ${tomlMultiline(body)}`);
-  return `${lines.join('\n')}\n`;
+  return `${lines.join("\n")}\n`;
 }
 
 function renderOpenCodeAgent(agent) {
   const { frontmatter, body } = agent;
   const lines = [
-    '---',
+    "---",
     `description: ${frontmatter.description}`,
-    'mode: subagent',
+    "mode: subagent",
   ];
 
-  if (frontmatter.model && frontmatter.model !== 'inherit') {
+  if (frontmatter.model && frontmatter.model !== "inherit") {
     lines.push(`model: ${frontmatter.model}`);
   }
 
@@ -98,7 +101,7 @@ function renderOpenCodeAgent(agent) {
     frontmatter.opencode_tools_write !== undefined ||
     frontmatter.opencode_tools_edit !== undefined;
   if (hasToolConfig) {
-    lines.push('tools:');
+    lines.push("tools:");
     if (frontmatter.opencode_tools_write !== undefined) {
       lines.push(`  write: ${frontmatter.opencode_tools_write}`);
     }
@@ -107,8 +110,8 @@ function renderOpenCodeAgent(agent) {
     }
   }
 
-  lines.push('---', '', body);
-  return `${lines.join('\n')}\n`;
+  lines.push("---", "", body);
+  return `${lines.join("\n")}\n`;
 }
 
 function main() {
@@ -117,7 +120,7 @@ function main() {
 
   const sourceFiles = fs
     .readdirSync(sourceDir)
-    .filter((file) => /^sdd-.*\.md$/.test(file))
+    .filter((file) => /^[a-z0-9-]+\.md$/.test(file))
     .sort();
 
   for (const file of sourceFiles) {
@@ -132,8 +135,14 @@ function main() {
       throw new Error(`${sourcePath} is missing frontmatter description`);
     }
 
-    fs.writeFileSync(path.join(codexDir, `${name}.toml`), renderCodexAgent(agent));
-    fs.writeFileSync(path.join(opencodeDir, `${name}.md`), renderOpenCodeAgent(agent));
+    fs.writeFileSync(
+      path.join(codexDir, `${name}.toml`),
+      renderCodexAgent(agent),
+    );
+    fs.writeFileSync(
+      path.join(opencodeDir, `${name}.md`),
+      renderOpenCodeAgent(agent),
+    );
   }
 }
 

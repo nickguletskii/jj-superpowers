@@ -28,15 +28,15 @@ Do not use for:
 ## Required Workflow
 
 1. **Confirm scope** — ask the user which directories/files are in scope. Do not map unconfirmed areas except to understand dependencies.
-2. **Map directories** — dispatch directory mapper subagents using `agents/directory-mapper-prompt.md` for immediate files in each confirmed directory.
-3. **Consolidate map** — dispatch one consolidator using `agents/map-consolidator-prompt.md` to group directory maps semantically.
-4. **Review map** — dispatch a reviewer using `agents/map-reviewer-prompt.md`. Fix issues before analysis.
-5. **Analyze groups** — dispatch analysis subagents using `agents/analysis-prompt.md` for each semantic group.
-6. **Review analysis** — dispatch a reviewer using `agents/analysis-reviewer-prompt.md`. Fix issues before presenting findings.
+2. **Map directories** — dispatch `codebase-cleanup-directory-mapper` for immediate files in each confirmed directory.
+3. **Consolidate map** — dispatch `codebase-cleanup-map-consolidator` to group directory maps semantically.
+4. **Review map** — dispatch `codebase-cleanup-map-reviewer`. Fix issues before analysis.
+5. **Analyze groups** — dispatch `codebase-cleanup-analysis` for each semantic group.
+6. **Review analysis** — dispatch `codebase-cleanup-analysis-reviewer`. Fix issues before presenting findings.
 7. **Present findings** — show evidence-backed dead code, obsolete tests, duplication, and abstraction opportunities. Ask the user which deletions, if any, are approved.
-8. **Delete confirmed items only** — if the user approves exact deletions, dispatch `agents/deletion-agent-prompt.md` with only those items.
-9. **Review deletions** — dispatch `agents/deletion-reviewer-prompt.md`. Fix issues before synthesis.
-10. **Synthesize follow-up** — dispatch `agents/refactoring-request-prompt.md` to create a refactoring request for remaining duplication or abstraction work.
+8. **Delete confirmed items only** — if the user approves exact deletions, dispatch `codebase-cleanup-deletion` with only those items.
+9. **Review deletions** — dispatch `codebase-cleanup-deletion-reviewer`. Fix issues before synthesis.
+10. **Synthesize follow-up** — dispatch `codebase-cleanup-refactoring-request` to create a refactoring request for remaining duplication or abstraction work.
 
 ## Approval Gates
 
@@ -57,20 +57,20 @@ The orchestrator owns user discussion, scope decisions, approvals, and final syn
 
 Subagents must not invoke `claude`, `codex`, `gemini`, `opencode`, Copilot CLI, or any other agent harness from the shell. If another agent, role, model, or broader context is needed, they report the gap; the orchestrator owns further dispatch.
 
-## Agent Prompt Pack
+## Native Agents
 
-Use these prompt templates with bracketed placeholders substituted:
+Prefer native named subagents when the harness supports them. If native named subagents are not installed or not available in the current harness, use the shared source files in `agents/codebase-cleanup-*.md` as bounded subagent prompts.
 
-| Phase | Prompt |
-|---|---|
-| Directory mapping | `agents/directory-mapper-prompt.md` |
-| Map consolidation | `agents/map-consolidator-prompt.md` |
-| Map review | `agents/map-reviewer-prompt.md` |
-| Group analysis | `agents/analysis-prompt.md` |
-| Analysis review | `agents/analysis-reviewer-prompt.md` |
-| Confirmed deletion | `agents/deletion-agent-prompt.md` |
-| Deletion review | `agents/deletion-reviewer-prompt.md` |
-| Refactoring request synthesis | `agents/refactoring-request-prompt.md` |
+| Phase | Native agent | Shared source |
+|---|---|---|
+| Directory mapping | `codebase-cleanup-directory-mapper` | `agents/codebase-cleanup-directory-mapper.md` |
+| Map consolidation | `codebase-cleanup-map-consolidator` | `agents/codebase-cleanup-map-consolidator.md` |
+| Map review | `codebase-cleanup-map-reviewer` | `agents/codebase-cleanup-map-reviewer.md` |
+| Group analysis | `codebase-cleanup-analysis` | `agents/codebase-cleanup-analysis.md` |
+| Analysis review | `codebase-cleanup-analysis-reviewer` | `agents/codebase-cleanup-analysis-reviewer.md` |
+| Confirmed deletion | `codebase-cleanup-deletion` | `agents/codebase-cleanup-deletion.md` |
+| Deletion review | `codebase-cleanup-deletion-reviewer` | `agents/codebase-cleanup-deletion-reviewer.md` |
+| Refactoring request synthesis | `codebase-cleanup-refactoring-request` | `agents/codebase-cleanup-refactoring-request.md` |
 
 ## Common Mistakes
 

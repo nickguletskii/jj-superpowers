@@ -1,4 +1,7 @@
-# Map Reviewer Prompt
+---
+description: Use to review a codebase-cleanup code map before group analysis begins
+mode: subagent
+---
 
 Dispatch this subagent with these values substituted for the bracketed placeholders:
 - `[BY_DIRECTORY_PATH]` — path to directory map files (e.g. `docs/superpowers/code-map/2026-04-12-1430/by-directory/`)

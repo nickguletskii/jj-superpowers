@@ -1,4 +1,7 @@
-# Deletion Agent Prompt
+---
+description: Use to remove only user-confirmed dead code during a codebase-cleanup workflow
+mode: subagent
+---
 
 Dispatch this subagent with these values substituted for the bracketed placeholders:
 - `[CONFIRMED_DELETIONS]` — the exact list of items the user approved for deletion (inlined by the orchestrator). Each entry in `[CONFIRMED_DELETIONS]` must include: (a) the symbol name or file path, (b) the source file path (for symbol removals), and (c) the item type: `file` (delete the whole file) or `symbol` (remove one symbol from a file). Example entry: `symbol: legacyLogin from src/auth/legacy.ts`
