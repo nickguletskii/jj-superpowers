@@ -37,8 +37,8 @@ Before writing any files, create `[BY_GROUP_PATH]` and `[INDEX_PATH]` if they do
 - path/to/other/dir/
 
 ## Full API surface
-- `symbol(args): ReturnType` — description [from src/auth/]
-- `otherSymbol()` — description [from src/utils/]
+- `symbol(args): ReturnType` in `src/auth/file.ext` — description [from src/auth/]; SCIP symbol: `<symbol>` or `unavailable`
+- `otherSymbol()` in `src/utils/file.ext` — description [from src/utils/]; SCIP symbol: `<symbol>` or `unavailable`
 
 ## Cross-directory dependencies
 - `src/api/` imports `authenticateUser` from `src/auth/`
@@ -78,7 +78,7 @@ Before writing any files, create `[BY_GROUP_PATH]` and `[INDEX_PATH]` if they do
 - Aim for 3–8 groups total; merge small related directories rather than creating one group per directory
 - Group by WHAT the code does, not WHERE it lives in the filesystem
 - Group file names must be kebab-case (e.g. `authentication-session-management.md`)
-- Include ALL symbols from all member directories in "Full API surface"; annotate each with its source directory in brackets
+- Include ALL symbols from all member directories in "Full API surface"; preserve each symbol's defining file path and SCIP symbol ID from the directory map
 - Check import statements to discover cross-directory dependencies
 - Only record direct imports between directories listed in `[CONFIRMED_SCOPE]` in the `## Cross-directory dependencies` section; do not follow imports outside the mapped scope.
 - If a directory spans multiple semantic concerns, assign it to the dominant one and note the secondary in a comment

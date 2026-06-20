@@ -33,6 +33,11 @@ function makeSourceRepo() {
     path.join(root, ".codex", "agents", "codebase-cleanup-analysis.toml"),
     'name = "codebase-cleanup-analysis"\n',
   );
+  fs.mkdirSync(path.join(root, "tools"), { recursive: true });
+  fs.writeFileSync(
+    path.join(root, "tools", "scip-query"),
+    "#!/usr/bin/env python3\n",
+  );
   fs.mkdirSync(path.join(root, "agents"), { recursive: true });
   fs.writeFileSync(
     path.join(root, "agents", "sdd-implementer.md"),
@@ -122,6 +127,10 @@ test("codex install status and uninstall manage only repo links", () => {
     path.join(home, ".codex", "agents", "codebase-cleanup-analysis.toml"),
     path.join(source, ".codex", "agents", "codebase-cleanup-analysis.toml"),
   );
+  assertSymlink(
+    path.join(home, ".jj-superpowers", "tools", "scip-query"),
+    path.join(source, "tools", "scip-query"),
+  );
 
   const status = runInstaller(home, [
     "status",
@@ -153,6 +162,10 @@ test("codex install status and uninstall manage only repo links", () => {
     fs.existsSync(
       path.join(home, ".codex", "agents", "codebase-cleanup-analysis.toml"),
     ),
+    false,
+  );
+  assert.equal(
+    fs.existsSync(path.join(home, ".jj-superpowers", "tools", "scip-query")),
     false,
   );
 });
@@ -209,6 +222,10 @@ test("opencode install and uninstall patch plugin config", () => {
     source,
   ]);
   assert.equal(install.status, 0, install.stderr || install.stdout);
+  assertSymlink(
+    path.join(home, ".jj-superpowers", "tools", "scip-query"),
+    path.join(source, "tools", "scip-query"),
+  );
   const installed = JSON.parse(fs.readFileSync(configPath, "utf8"));
   assert.deepEqual(installed.plugin, [`jj-superpowers@file:${source}`]);
 
@@ -220,6 +237,10 @@ test("opencode install and uninstall patch plugin config", () => {
     source,
   ]);
   assert.equal(uninstall.status, 0, uninstall.stderr || uninstall.stdout);
+  assert.equal(
+    fs.existsSync(path.join(home, ".jj-superpowers", "tools", "scip-query")),
+    false,
+  );
   const uninstalled = JSON.parse(fs.readFileSync(configPath, "utf8"));
   assert.deepEqual(uninstalled.plugin, []);
 });

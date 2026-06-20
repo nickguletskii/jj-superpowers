@@ -84,6 +84,8 @@ digraph classify {
 
 Mid-implementation realizations are NOT design-time intent. They are refinement. Don't relitigate the test.
 
+**Before routing any spec amendment to `writing-specs`, apply golden rule D (don't duplicate the code).** If the spec change you're about to request would only transcribe the signature, enum, or constant you just edited — restating *what the code is* with no added timing model, edge case, contract, or *why* — there is no spec work owed. Don't manufacture a requirement to "cover" a code change; the code is canonical for that fact. Route to `writing-specs` only when the change alters an intricacy the code can't show.
+
 ## Code-as-spec detection (atomic three-artifact rule)
 
 For each touched path, check whether it matches any `spec_code.modules` entry.
@@ -148,6 +150,7 @@ Final prompt before declaring the change done:
 - **Calling mid-implementation realizations "design-time intent" to avoid the queue.** The test is mechanical: was it in the design doc? If not, it's refinement.
 - **Editing a code-as-spec module and "noting it for later".** Breaks the atomic rule. Route through writing-specs now. (Reminder: the three-artifact rule now refers to `SPEC.yaml` prose sections and requirements list, not separate `SPEC.md`/`requirements.yaml` files.)
 - **Bulk-adding paths to `excluded_paths` to silence drift-detector noise that you don't want to deal with.** That's the agent equivalent of `// TODO: fix this`. Push back; deferral goes in the queue, not in the manifest. (Reminder: `excluded_paths` is read by drift-detector, not by this skill — but agents sometimes try to repurpose it anyway.)
+- **Manufacturing a spec requirement that just restates the code you changed.** A REQ that transcribes the new signature/enum/constant adds no normative intent (golden rule D). No spec work is owed for a change that only alters what the code already shows. Don't route it to writing-specs to "be safe".
 - **Folding too many unrelated debt items into one change.** Surface, ask, fold deliberately. A change that does five things at once is hard to review and roll back.
 - **Loading only the sub-spec without the parent when a code_map hit returns a sub-spec slug.** Parent-level requirements are cross-cutting and apply everywhere. Always load both.
 - **Reporting a sub-spec slug as "no candidates found" because the slug has a slash.** Slugs with `/` are valid sub-spec references; resolve them to `capabilities/<parent>/<leaf>/SPEC.yaml`.

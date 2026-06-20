@@ -1,0 +1,416 @@
+#!/usr/bin/env python3
+"""Query cleanup-relevant facts from a SCIP index.
+
+This intentionally implements a small protobuf wire reader instead of depending on
+compiled SCIP bindings. It extracts the fields needed by cleanup agents:
+documents, symbol definitions, references, ranges, symbol roles, display names,
+and symbol kinds.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import sys
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any
+
+ROLE_DEFINITION = 0x1
+ROLE_TEST = 0x20
+
+TEST_PATH_RE = re.compile(r"(^|/)(tests?|__tests__)/|[._-](test|spec)\.[^/]+$|_test\.[^/]+$")
+GENERATED_PATH_RE = re.compile(r"(^|/)(generated|gen|target|dist|build|node_modules|\.venv|venv)/|\.generated\.")
+
+KIND_NAMES = {
+    7: "class",
+    8: "constant",
+    11: "enum",
+    12: "enum-member",
+    15: "field",
+    17: "function",
+    21: "interface",
+    25: "macro",
+    26: "method",
+    29: "module",
+    41: "property",
+    49: "struct",
+    53: "trait",
+    54: "type",
+    55: "type-alias",
+    60: "value",
+    61: "variable",
+}
+
+
+@dataclass
+class SymbolInfo:
+    symbol: str
+    display_name: str = ""
+    kind: int = 0
+    signature: str = ""
+
+
+@dataclass
+class OccurrenceInfo:
+    symbol: str
+    file: str
+    roles: int
+    range: list[int] = field(default_factory=list)
+
+    @property
+    def is_definition(self) -> bool:
+        return bool(self.roles & ROLE_DEFINITION)
+
+    @property
+    def is_test_role(self) -> bool:
+        return bool(self.roles & ROLE_TEST)
+
+
+@dataclass
+class DocumentInfo:
+    path: str
+    language: str = ""
+    symbols: dict[str, SymbolInfo] = field(default_factory=dict)
+    occurrences: list[OccurrenceInfo] = field(default_factory=list)
+
+
+@dataclass
+class IndexInfo:
+    documents: list[DocumentInfo]
+
+    @property
+    def symbols(self) -> dict[str, SymbolInfo]:
+        result: dict[str, SymbolInfo] = {}
+        for doc in self.documents:
+            result.update(doc.symbols)
+        return result
+
+    @property
+    def occurrences(self) -> list[OccurrenceInfo]:
+        return [occ for doc in self.documents for occ in doc.occurrences]
+
+
+def read_varint(data: bytes, pos: int) -> tuple[int, int]:
+    shift = 0
+    value = 0
+    while True:
+        if pos >= len(data):
+            raise ValueError("truncated varint")
+        byte = data[pos]
+        pos += 1
+        value |= (byte & 0x7F) << shift
+        if not byte & 0x80:
+            return value, pos
+        shift += 7
+        if shift > 70:
+            raise ValueError("varint too long")
+
+
+def iter_fields(data: bytes):
+    pos = 0
+    while pos < len(data):
+        key, pos = read_varint(data, pos)
+        field_no = key >> 3
+        wire_type = key & 0x7
+        if wire_type == 0:
+            value, pos = read_varint(data, pos)
+            yield field_no, wire_type, value
+        elif wire_type == 1:
+            value = data[pos : pos + 8]
+            pos += 8
+            yield field_no, wire_type, value
+        elif wire_type == 2:
+            length, pos = read_varint(data, pos)
+            value = data[pos : pos + length]
+            pos += length
+            yield field_no, wire_type, value
+        elif wire_type == 5:
+            value = data[pos : pos + 4]
+            pos += 4
+            yield field_no, wire_type, value
+        else:
+            raise ValueError(f"unsupported protobuf wire type {wire_type}")
+
+
+def decode_string(value: bytes) -> str:
+    return value.decode("utf-8", errors="replace")
+
+
+def decode_packed_varints(value: bytes) -> list[int]:
+    result = []
+    pos = 0
+    while pos < len(value):
+        item, pos = read_varint(value, pos)
+        result.append(item)
+    return result
+
+
+def parse_single_line_range(data: bytes) -> list[int]:
+    line = start = end = 0
+    for field_no, _wire, value in iter_fields(data):
+        if field_no == 1:
+            line = int(value)
+        elif field_no == 2:
+            start = int(value)
+        elif field_no == 3:
+            end = int(value)
+    return [line, start, end]
+
+
+def parse_multi_line_range(data: bytes) -> list[int]:
+    start_line = start = end_line = end = 0
+    for field_no, _wire, value in iter_fields(data):
+        if field_no == 1:
+            start_line = int(value)
+        elif field_no == 2:
+            start = int(value)
+        elif field_no == 3:
+            end_line = int(value)
+        elif field_no == 4:
+            end = int(value)
+    return [start_line, start, end_line, end]
+
+
+def parse_signature(data: bytes) -> str:
+    text = ""
+    for field_no, wire, value in iter_fields(data):
+        if field_no == 5 and wire == 2:
+            text = decode_string(value)
+    return text
+
+
+def parse_symbol_info(data: bytes) -> SymbolInfo:
+    info = SymbolInfo(symbol="")
+    for field_no, wire, value in iter_fields(data):
+        if field_no == 1 and wire == 2:
+            info.symbol = decode_string(value)
+        elif field_no == 5 and wire == 0:
+            info.kind = int(value)
+        elif field_no == 6 and wire == 2:
+            info.display_name = decode_string(value)
+        elif field_no == 7 and wire == 2:
+            info.signature = parse_signature(value)
+    return info
+
+
+def parse_occurrence(data: bytes, file_path: str) -> OccurrenceInfo | None:
+    symbol = ""
+    roles = 0
+    range_values: list[int] = []
+    for field_no, wire, value in iter_fields(data):
+        if field_no == 1:
+            if wire == 2:
+                range_values = decode_packed_varints(value)
+            elif wire == 0:
+                range_values.append(int(value))
+        elif field_no == 2 and wire == 2:
+            symbol = decode_string(value)
+        elif field_no == 3 and wire == 0:
+            roles = int(value)
+        elif field_no == 8 and wire == 2:
+            range_values = parse_single_line_range(value)
+        elif field_no == 9 and wire == 2:
+            range_values = parse_multi_line_range(value)
+    if not symbol:
+        return None
+    return OccurrenceInfo(symbol=symbol, file=file_path, roles=roles, range=range_values)
+
+
+def parse_document(data: bytes) -> DocumentInfo:
+    path = ""
+    language = ""
+    occurrence_payloads: list[bytes] = []
+    symbols: dict[str, SymbolInfo] = {}
+    for field_no, wire, value in iter_fields(data):
+        if field_no == 1 and wire == 2:
+            path = decode_string(value)
+        elif field_no == 2 and wire == 2:
+            occurrence_payloads.append(value)
+        elif field_no == 3 and wire == 2:
+            info = parse_symbol_info(value)
+            if info.symbol:
+                symbols[info.symbol] = info
+        elif field_no == 4 and wire == 2:
+            language = decode_string(value)
+    doc = DocumentInfo(path=path, language=language, symbols=symbols)
+    doc.occurrences = [occ for payload in occurrence_payloads if (occ := parse_occurrence(payload, path))]
+    return doc
+
+
+def parse_index(path: Path) -> IndexInfo:
+    data = path.read_bytes()
+    documents = []
+    for field_no, wire, value in iter_fields(data):
+        if field_no == 2 and wire == 2:
+            documents.append(parse_document(value))
+    return IndexInfo(documents=documents)
+
+
+def is_test_file(path: str) -> bool:
+    return bool(TEST_PATH_RE.search(path))
+
+
+def is_generated_file(path: str) -> bool:
+    return bool(GENERATED_PATH_RE.search(path))
+
+
+def fmt_range(range_values: list[int]) -> str | None:
+    if len(range_values) == 3:
+        return f"{range_values[0] + 1}:{range_values[1] + 1}-{range_values[0] + 1}:{range_values[2] + 1}"
+    if len(range_values) == 4:
+        return f"{range_values[0] + 1}:{range_values[1] + 1}-{range_values[2] + 1}:{range_values[3] + 1}"
+    return None
+
+
+def display_name(symbol: str, info: SymbolInfo | None = None) -> str:
+    if info and info.display_name:
+        return info.display_name
+    cleaned = symbol.rstrip(".")
+    match = re.search(r"([A-Za-z_][A-Za-z0-9_]*)[.#()/!]*$", cleaned)
+    return match.group(1) if match else symbol
+
+
+def definition_records(index: IndexInfo, prefix: str | None = None) -> list[dict[str, Any]]:
+    symbols = index.symbols
+    records = []
+    for occ in index.occurrences:
+        if not occ.is_definition:
+            continue
+        if prefix and not occ.file.startswith(prefix):
+            continue
+        info = symbols.get(occ.symbol)
+        records.append({
+            "symbol": occ.symbol,
+            "display_name": display_name(occ.symbol, info),
+            "kind": KIND_NAMES.get(info.kind if info else 0, "unknown"),
+            "file": occ.file,
+            "range": fmt_range(occ.range),
+            "language": next((doc.language for doc in index.documents if doc.path == occ.file), ""),
+            "signature": info.signature if info else "",
+        })
+    return sorted(records, key=lambda item: (item["file"], item["display_name"], item["symbol"]))
+
+
+def resolve_symbol(index: IndexInfo, query: str) -> str:
+    if query in index.symbols or any(occ.symbol == query for occ in index.occurrences):
+        return query
+    matches = []
+    for symbol, info in index.symbols.items():
+        if info.display_name == query or display_name(symbol, info) == query or query in symbol:
+            matches.append(symbol)
+    if len(matches) == 1:
+        return matches[0]
+    if not matches:
+        raise SystemExit(f"No SCIP symbol matched {query!r}")
+    raise SystemExit("Ambiguous symbol query. Matching symbols:\n" + "\n".join(matches[:50]))
+
+
+def reference_records(index: IndexInfo, query: str, exclude_tests: bool, outside_file: str | None) -> list[dict[str, Any]]:
+    symbol = resolve_symbol(index, query)
+    records = []
+    for occ in index.occurrences:
+        if occ.symbol != symbol or occ.is_definition:
+            continue
+        if outside_file and occ.file == outside_file:
+            continue
+        if exclude_tests and (occ.is_test_role or is_test_file(occ.file)):
+            continue
+        records.append({
+            "symbol": symbol,
+            "file": occ.file,
+            "range": fmt_range(occ.range),
+            "is_test": occ.is_test_role or is_test_file(occ.file),
+            "is_generated": is_generated_file(occ.file),
+        })
+    return sorted(records, key=lambda item: (item["file"], item["range"] or ""))
+
+
+def unused_records(index: IndexInfo, prefix: str | None, exclude_tests: bool) -> list[dict[str, Any]]:
+    records = []
+    for definition in definition_records(index, prefix):
+        refs = reference_records(index, definition["symbol"], exclude_tests=exclude_tests, outside_file=definition["file"])
+        if not refs:
+            records.append({**definition, "non_test_references_outside_defining_file": 0})
+    return records
+
+
+def emit(data: Any, as_json: bool) -> None:
+    if as_json:
+        print(json.dumps(data, indent=2, sort_keys=True))
+    elif isinstance(data, list):
+        for item in data:
+            print(json.dumps(item, sort_keys=True))
+    else:
+        print(json.dumps(data, indent=2, sort_keys=True))
+
+
+def cmd_summary(args: argparse.Namespace) -> None:
+    index = parse_index(Path(args.index))
+    symbols = index.symbols
+    occurrences = index.occurrences
+    data = {
+        "documents": len(index.documents),
+        "symbols_with_metadata": len(symbols),
+        "occurrences": len(occurrences),
+        "definitions": sum(1 for occ in occurrences if occ.is_definition),
+        "references": sum(1 for occ in occurrences if not occ.is_definition and occ.symbol),
+        "languages": sorted({doc.language for doc in index.documents if doc.language}),
+    }
+    emit(data, args.json)
+
+
+def cmd_definitions(args: argparse.Namespace) -> None:
+    emit(definition_records(parse_index(Path(args.index)), args.path_prefix), args.json)
+
+
+def cmd_refs(args: argparse.Namespace) -> None:
+    emit(reference_records(parse_index(Path(args.index)), args.symbol, args.exclude_tests, args.outside_file), args.json)
+
+
+def cmd_unused(args: argparse.Namespace) -> None:
+    emit(unused_records(parse_index(Path(args.index)), args.path_prefix, args.exclude_tests), args.json)
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="Query cleanup-relevant facts from a SCIP index")
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    summary = sub.add_parser("summary", help="summarize a SCIP index")
+    summary.add_argument("index")
+    summary.add_argument("--json", action="store_true")
+    summary.set_defaults(func=cmd_summary)
+
+    definitions = sub.add_parser("definitions", help="list symbol definitions, optionally under a path prefix")
+    definitions.add_argument("index")
+    definitions.add_argument("path_prefix", nargs="?")
+    definitions.add_argument("--json", action="store_true")
+    definitions.set_defaults(func=cmd_definitions)
+
+    refs = sub.add_parser("refs", help="list references for a symbol or unique display name")
+    refs.add_argument("index")
+    refs.add_argument("symbol")
+    refs.add_argument("--exclude-tests", action="store_true")
+    refs.add_argument("--outside-file")
+    refs.add_argument("--json", action="store_true")
+    refs.set_defaults(func=cmd_refs)
+
+    unused = sub.add_parser("unused", help="list definitions with no references outside their defining file")
+    unused.add_argument("index")
+    unused.add_argument("path_prefix", nargs="?")
+    unused.add_argument("--exclude-tests", action="store_true")
+    unused.add_argument("--json", action="store_true")
+    unused.set_defaults(func=cmd_unused)
+
+    return parser
+
+
+def main(argv: list[str]) -> int:
+    args = build_parser().parse_args(argv)
+    args.func(args)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main(sys.argv[1:]))

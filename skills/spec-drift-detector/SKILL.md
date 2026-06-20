@@ -78,6 +78,12 @@ SPEC.yaml replaces the former `requirements.yaml` + `SPEC.md` split. The structu
   - `suspect` — likely conflict, low confidence.
   - `unverified` — couldn't check (couldn't locate code, ambiguous spec, etc.).
 
+### 2b. Code-duplicating requirements (spec slop)
+LLM judgement, same sampled requirements as check 2. For each sampled requirement, ask: **does this requirement add intent the owned code can't carry, or does it merely transcribe a signature/enum/constant the reader already sees in the code?** (writing-specs golden rule D.)
+- A requirement whose text is a paraphrase of a visible constant, enum, type, or `if` check — adding no timing model, edge case, cross-system contract, or *why* — is `suspect` ("spec duplicates code").
+- Do NOT flag a requirement just because a value also appears in code: the question is whether the requirement adds a non-obvious contract/guarantee. "Reject > 2 GiB so clients can rely on rejection independently of S3" adds intent; "max size is 2 GiB" alone duplicates the constant.
+- Report as `suspect`; suggested route: `writing-specs` to cut or replace the requirement with the intricacy it was burying. Never auto-edit.
+
 ### 3. mdbook citations
 - Walk mdbook `.md` files for `REQ-`/`INV-` ID citations (or the project's `citation_format` from `layout.yaml`).
 - For each citation: verify the ID exists in some `SPEC.yaml` (in the `requirements:` list).

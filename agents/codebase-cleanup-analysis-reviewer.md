@@ -21,10 +21,10 @@ is needed, report the gap; the orchestrator owns further dispatch.
 For each group file in `[BY_GROUP_PATH]`, verify its `## Analysis` section contains all three subsections: `### Dead code`, `### Duplicated logic`, and `### Abstraction opportunities`. Flag any group file missing any subsection. Each subsection must be present even if empty (body should be `(none)`).
 
 **2. Evidence for dead code claims**
-Every dead code entry must include all three of: (a) the grep pattern used, (b) a result count of 0 outside the defining file (excluding test and generated files), and (c) confirmation that both import statements and direct call sites were checked. Flag any entry missing any of these three components.
+Every dead code entry must include: (a) SCIP reference evidence when a SCIP symbol is available, (b) the grep/string pattern used, (c) a result count of 0 outside the defining file (excluding test and generated files), and (d) confirmation that import statements, direct call sites, and dynamic/string risks were checked. Flag any entry missing required evidence.
 
 **3. Independent verification of 2–3 dead code claims**
-Pick 2–3 dead code entries and run the same grep the analysis agent used, excluding `*.test.*`, `*.spec.*`, and generated files. Check both import statements and call sites. If independent verification contradicts a dead-code claim, include it as an ISSUES FOUND item with your grep result count.
+Pick 2–3 dead code entries. When SCIP evidence is cited, rerun the same `[SCIP_QUERY_TOOL] refs ...` command or an equivalent exact-symbol query using the resolved query tool from `run-config.md`. Also run the same grep/string search the analysis agent used, excluding `*.test.*`, `*.spec.*`, and generated files. Check both import statements and call sites. If independent verification contradicts a dead-code claim, include it as an ISSUES FOUND item with your SCIP or grep result count.
 
 **4. Specificity and spot-check of duplication claims**
 Duplication entries must name specific files and functions. A claim that just says "similar logic" or "similar implementation" without naming the files is too vague. Flag vague claims.

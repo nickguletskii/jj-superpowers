@@ -7,6 +7,8 @@ model: inherit
 Dispatch this subagent with these values substituted for the bracketed placeholders:
 - `[GROUP_FILE_PATH]` — path to the semantic group file (e.g. `docs/superpowers/code-map/2026-04-12-1430/by-group/authentication-session-management.md`)
 - `[GROUP_NAME]` — human-readable group name for context (e.g. `Authentication & Session Management`)
+- `[SCIP_INDEX_PATH]` — optional SCIP index path, or `unavailable`
+- `[SCIP_QUERY_TOOL]` — resolved command/path for the SCIP query helper, or `unavailable`
 
 ---
 
@@ -18,18 +20,22 @@ is needed, report the gap; the orchestrator owns further dispatch.
 
 ## Your task
 
-Read `[GROUP_FILE_PATH]`. For each symbol in the "Full API surface" section, perform the checks below.
+Read `[GROUP_FILE_PATH]`. For each symbol in the "Full API surface" section, perform the checks below. If the symbol entry includes a `SCIP symbol: <symbol>` value and `[SCIP_INDEX_PATH]`/`[SCIP_QUERY_TOOL]` are not `unavailable`, use `[SCIP_QUERY_TOOL]` from the target project root for semantic reference evidence.
 
 ### 1. Dead code check
 
 Search the codebase for usages of this symbol outside the file that defines it.
 
 - Search within the codebase broadly, but only flag symbols from the directories listed in this group's `## Directories` section.
-- Use grep to search for the symbol name across the codebase
-- Check both import statements and direct usages
-- If 0 usages found outside the defining file, flag as potentially dead
+- If SCIP is available for this symbol, run:
+  ```sh
+  [SCIP_QUERY_TOOL] refs [SCIP_INDEX_PATH] '<SCIP_SYMBOL>' --outside-file path/to/defining-file.ext --exclude-tests --json
+  ```
+- Use grep/string search in addition to SCIP to catch dynamic imports, config strings, framework discovery, reflection, public API references, and files not covered by SCIP.
+- Check both import statements and direct usages.
+- If SCIP returns 0 semantic references outside the defining file and grep/string search finds 0 non-test source usages, flag as potentially dead.
 - Search source files only — exclude test files (`*.test.*`, `*.spec.*`) and generated files. A usage that appears only in test files does not count as a live usage.
-- Do NOT flag as dead without grep evidence — dynamic imports or reflection may be the consumer
+- Do NOT flag as dead without evidence. SCIP-only absence is not enough for dynamic/framework/public API cases; include grep/string evidence and risk notes.
 - Search for the bare symbol name, not just import statements — call-site usages and re-exports must also be checked.
 
 ### 2. Duplication check
@@ -55,7 +61,7 @@ Append the following to `[GROUP_FILE_PATH]` (do not overwrite existing content):
 ## Analysis
 
 ### Dead code
-- `symbolName` in `path/to/file.ts` — no usages found (grep: `symbolName` → 0 results outside defining file; import statements and call sites checked)
+- `symbolName` in `path/to/file.ts` — no usages found (SCIP: `[SCIP_QUERY_TOOL] refs ...` → 0 non-test semantic refs outside defining file; grep: `symbolName` → 0 non-test source results outside defining file; import statements, call sites, and dynamic/string risks checked)
 - (none) if no dead code found
 
 ### Duplicated logic
@@ -69,7 +75,7 @@ Append the following to `[GROUP_FILE_PATH]` (do not overwrite existing content):
 
 ## Rules
 
-- Every dead code claim MUST include the grep pattern used and the result count
+- Every dead code claim MUST include SCIP reference evidence when available, the grep/string pattern used, and the result count
 - Read actual implementations before claiming duplication — do not assume from names alone
 - Abstraction suggestions must name specific files, functions, and the proposed extraction
 - Do not include findings outside the directories listed in this group's "Directories" section

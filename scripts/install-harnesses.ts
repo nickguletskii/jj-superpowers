@@ -41,9 +41,10 @@ function normalizePath(value: string): string {
       segments.push(segment);
     }
   }
-  return `${absolute ? POSIX_SEPARATOR : ""}${
-    segments.join(POSIX_SEPARATOR)
-  }` || POSIX_SEPARATOR;
+  return (
+    `${absolute ? POSIX_SEPARATOR : ""}${segments.join(POSIX_SEPARATOR)}` ||
+    POSIX_SEPARATOR
+  );
 }
 
 type CommandName = "list" | "status" | "install" | "uninstall";
@@ -163,8 +164,12 @@ function parseArgs(argv: string[]): ParsedArgs {
 }
 
 function isCommand(value: string): value is CommandName {
-  return value === "list" || value === "status" || value === "install" ||
-    value === "uninstall";
+  return (
+    value === "list" ||
+    value === "status" ||
+    value === "install" ||
+    value === "uninstall"
+  );
 }
 
 function isHarnessId(value: string): value is HarnessId {
@@ -322,7 +327,8 @@ function getStringArray(
   const current = config[key];
   if (current === undefined) return [];
   if (
-    !Array.isArray(current) || current.some((item) => typeof item !== "string")
+    !Array.isArray(current) ||
+    current.some((item) => typeof item !== "string")
   ) {
     throw new Error(`expected ${key} to be an array of strings`);
   }
@@ -420,6 +426,16 @@ async function markdownAgentLinks(
   }));
 }
 
+function commonToolLinks(ctx: Context): SymlinkSpec[] {
+  return [
+    {
+      source: path.join(ctx.repoRoot, "tools", "scip-query"),
+      target: path.join(ctx.home, ".jj-superpowers", "tools", "scip-query"),
+      targetKind: "file" as const,
+    },
+  ];
+}
+
 async function applyLinks(links: SymlinkSpec[], ctx: Context): Promise<void> {
   for (const link of links) await ensureSymlink(link, ctx);
 }
@@ -515,6 +531,7 @@ async function fileHarnessLinks(
   return [
     ...(await skillLinks(ctx, root)),
     ...(await markdownAgentLinks(ctx, root)),
+    ...commonToolLinks(ctx),
   ];
 }
 
@@ -525,10 +542,12 @@ const HARNESSES: Harness[] = [
     description: "Register the local Claude plugin package.",
     async install(ctx) {
       await ensureSymlink(claudePluginSpec(ctx), ctx);
+      await applyLinks(commonToolLinks(ctx), ctx);
       await ensureJsonArrayEntry(claudeSettingsSpec(ctx), ctx);
     },
     async uninstall(ctx) {
       await removeManagedLink(claudePluginSpec(ctx), ctx);
+      await removeLinks(commonToolLinks(ctx), ctx);
       await removeJsonArrayEntry(claudeSettingsSpec(ctx), ctx);
     },
     async status(ctx) {
@@ -541,6 +560,7 @@ const HARNESSES: Harness[] = [
           target: link.target,
           expected: link.source,
         },
+        ...(await statusForLinks(commonToolLinks(ctx))),
         {
           label: "settings",
           status: await jsonArrayStatus(settings),
@@ -557,13 +577,21 @@ const HARNESSES: Harness[] = [
       "Link skills into ~/.agents and Codex TOML agents into ~/.codex.",
     async install(ctx) {
       await applyLinks(
-        [...(await codexLinks(ctx)), ...(await codexAgentLinks(ctx))],
+        [
+          ...(await codexLinks(ctx)),
+          ...(await codexAgentLinks(ctx)),
+          ...commonToolLinks(ctx),
+        ],
         ctx,
       );
     },
     async uninstall(ctx) {
       await removeLinks(
-        [...(await codexLinks(ctx)), ...(await codexAgentLinks(ctx))],
+        [
+          ...(await codexLinks(ctx)),
+          ...(await codexAgentLinks(ctx)),
+          ...commonToolLinks(ctx),
+        ],
         ctx,
       );
     },
@@ -571,6 +599,7 @@ const HARNESSES: Harness[] = [
       return statusForLinks([
         ...(await codexLinks(ctx)),
         ...(await codexAgentLinks(ctx)),
+        ...commonToolLinks(ctx),
       ]);
     },
   },
@@ -579,19 +608,24 @@ const HARNESSES: Harness[] = [
     name: "OpenCode",
     description: "Add the local package plugin reference to opencode.json.",
     async install(ctx) {
+      await applyLinks(commonToolLinks(ctx), ctx);
       await ensureJsonArrayEntry(opencodeSpec(ctx), ctx);
     },
     async uninstall(ctx) {
+      await removeLinks(commonToolLinks(ctx), ctx);
       await removeJsonArrayEntry(opencodeSpec(ctx), ctx);
     },
     async status(ctx) {
       const spec = opencodeSpec(ctx);
-      return [{
-        label: "plugin",
-        status: await jsonArrayStatus(spec),
-        target: spec.path,
-        expected: spec.value,
-      }];
+      return [
+        {
+          label: "plugin",
+          status: await jsonArrayStatus(spec),
+          target: spec.path,
+          expected: spec.value,
+        },
+        ...(await statusForLinks(commonToolLinks(ctx))),
+      ];
     },
   },
   {

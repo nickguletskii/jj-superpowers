@@ -99,7 +99,7 @@ Duplication and inconsistency that should be unified or at least made consistent
 - Duplicates of utility functions and types already implemented elsewhere — can they be made generic? Can traits/interfaces avoid duplication even if it adds modest complexity?
 - Duplicated logic that could be extracted
 - Unnecessary wrapper functions
-- Comments that restate the code
+- Comments that restate the code, are verbose, or reference transient artifacts (ticket IDs, doc/handoff paths) → for the rules and a cleanup pass, use `jj-superpowers:writing-comments`
 - Unused parameters not caught by linters
 - Code that could be made generic but isn't — same pattern across multiple types deserves a trait/interface rather than N copies
 - **Inconsistent configuration schema**: Similar config structs with slightly differing field names, enum variants with identical semantics but different names, or unreasonable default values that silently produce incorrect behavior. Even when configs can't share a schema, enforce consistent field naming so users don't track many variants of semantically identical fields.
