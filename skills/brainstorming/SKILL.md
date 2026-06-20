@@ -36,12 +36,12 @@ You MUST create a task for each of these items and complete them in order:
      ```
    - **Non-normative refactor** — no spec change needed.
 5. **Present design** — in sections scaled to their complexity, get user approval after each section. Use your system's "ask questions" tool.
-6. **Triage implementation tier** — after design approval, PROPOSE a tier (Trivial / Small / Full) with reasoning; the user may veto via your system's "ask questions" tool, but your proposal is the default (no mandatory round-trip). See the Triage Gate below.
+6. **Triage implementation tier and planning strategy** — after design approval, PROPOSE a tier (Trivial / Small / Full) with reasoning; the user may veto via your system's "ask questions" tool, but your proposal is the default (no mandatory round-trip). **Then, only if you set the Full tier**, PROPOSE a planning strategy (Waterfall / Agile) — same propose/override pattern, no mandatory round-trip; Trivial/Small are inherently single-shot and have no strategy. Step 6 is **after** the step-5 design-approval gate, so both the triage-tier and the strategy proposals are **within Rush's scope** (if Rush was activated at design approval, it auto-resolves them per the canonical Rush-resolution table — see the Triage Gate below).
 7. **Write design doc** — save to `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md` for the Full tier; for Trivial/Small keep the approved design and verification command in the conversation
 8. **Spec self-review** — quick inline check for placeholders, contradictions, ambiguity, scope (see below). Don't be afraid to go back to asking questions and approvals.
 9. **Adversarial self-review** — run the convergent review loop (`jj-superpowers:hypothesis-driven-improvement` Simple In-Line Mode) over the spec with rotating lenses, then ensemble with external harnesses when available (see below). 
-10. **User reviews written spec** — ask user to review the spec file before proceeding
-11. **Transition to implementation** — invoke writing-plans skill to create implementation plan or proceed using your system's recommended workflow (confirm with user using "ask questions" tool)
+10. **User reviews written spec** — ask user to review the spec file before proceeding. **This gate respects the autonomy level:** under Rush it auto-passes (the step-9 automated adversarial spec-review loop still runs); under Manual it pauses and asks as today.
+11. **Transition to implementation** — route by planning strategy: **Agile** → invoke `jj-superpowers:iterative-planning` (it owns the phase loop in place of a single `writing-plans` call); **Waterfall** (and any non-Full tier) → invoke `jj-superpowers:writing-plans` to create the implementation plan, or proceed using your system's recommended workflow (confirm with user using "ask questions" tool)
 
 ## Process Flow
 
@@ -54,12 +54,14 @@ digraph brainstorming {
     "Present design sections" [shape=box];
     "User approves design?" [shape=diamond];
     "Triage implementation tier" [shape=diamond];
+    "Planning strategy?\n(Full only)" [shape=diamond];
     "Write design doc" [shape=box];
     "Spec self-review\n(fix inline)" [shape=box];
-    "User reviews spec?" [shape=diamond];
+    "User reviews spec?\n(Rush auto-passes)" [shape=diamond];
     "Trivial: inline, then verify" [shape=doublecircle];
     "Small: direct subagent\ndispatch(es), then verify" [shape=doublecircle];
     "Invoke writing-plans skill" [shape=doublecircle];
+    "Invoke iterative-planning skill" [shape=doublecircle];
 
     "Explore project context" -> "Ask clarifying questions";
     "Ask clarifying questions" -> "Propose 2-3 approaches";
@@ -72,9 +74,11 @@ digraph brainstorming {
     "Triage implementation tier" -> "Small: direct subagent\ndispatch(es), then verify" [label="small"];
     "Triage implementation tier" -> "Write design doc" [label="full"];
     "Write design doc" -> "Spec self-review\n(fix inline)";
-    "Spec self-review\n(fix inline)" -> "User reviews spec?";
-    "User reviews spec?" -> "Write design doc" [label="changes requested"];
-    "User reviews spec?" -> "Invoke writing-plans skill" [label="approved"];
+    "Spec self-review\n(fix inline)" -> "User reviews spec?\n(Rush auto-passes)";
+    "User reviews spec?\n(Rush auto-passes)" -> "Write design doc" [label="changes requested"];
+    "User reviews spec?\n(Rush auto-passes)" -> "Planning strategy?\n(Full only)" [label="approved"];
+    "Planning strategy?\n(Full only)" -> "Invoke writing-plans skill" [label="waterfall"];
+    "Planning strategy?\n(Full only)" -> "Invoke iterative-planning skill" [label="agile"];
 }
 ```
 
@@ -95,6 +99,31 @@ After design approval, match the planning ceremony to the task. You (the orchest
 - **Full** — new architecture, new public API surface, multiple interacting components, cross-file design risk, or anything that benefits from a written, reviewable spec/plan.
 
 **Choosing the lightest adequate tier is the CORRECT default, not a risk.** Do not reflexively reach for Full. If the work genuinely fits Trivial, run it inline with no subagents and no plan files.
+
+## Planning Strategy (Full tier only)
+
+Tier and strategy are **two orthogonal axes** of one gate — keep them visibly independent. Tier chooses *how much planning ceremony*; strategy chooses *whether the plan is written all at once or one phase at a time*. **Only the Full tier can be Agile** (Trivial/Small are inherently single-shot, so they have no strategy axis). Propose a strategy **immediately after you set a Full tier**, using the **same propose/override pattern as the tier** — your proposal is the default, the user may veto via the "ask questions" tool, no mandatory round-trip.
+
+| Strategy | What it means | Transition (step 11) |
+|----------|---------------|----------------------|
+| **Waterfall** (default) | One `project-network.dot` for the whole project, as today. | `jj-superpowers:writing-plans` |
+| **Agile** | The plan-one-phase loop: brainstorm once, then plan-one-phase → execute → fold-learnings → plan-next. | `jj-superpowers:iterative-planning` |
+
+**Propose Agile** when scope signals indicate one graph would be unwieldy or premature — recommend Waterfall (even for Full) if none hold:
+
+- estimated **whole-project** task-node count **> ~10–12** (a single graph that large is hard to plan well up front and strains one execution session), or
+- **design uncertainty** — a later phase's task list cannot be written now without guessing, because it depends on an artifact (API shape, data format, measurement) an earlier phase will produce. Ordinary sequential dependency (order matters, but the later tasks are already specifiable) does **not** qualify, or
+- **expected context size** (all tasks + context docs + execution) would exceed one comfortable execution session.
+
+## Rush Boundary and Autonomy
+
+**Rush begins after design approval.** Brainstorming's clarifying-question gate (step 2) and the design-approval gate (step 5) are **above** the Rush boundary and are **never** auto-resolved by Rush. Step 6 (triage tier + strategy) is **below** the boundary, so under Rush both proposals are auto-resolved with their recommended option per the **canonical Rush-resolution table** in `jj-superpowers:using-superpowers` (see its **Autonomy Level** subsection — the single source of truth for the table, the safety floor, and the retry budget; referenced here by name, not transcribed).
+
+**Optional Rush offer.** At the design-approval gate, when you assess ambiguity is low, you **may** offer Rush once (single offer, not a nag).
+
+**Step-10 spec user-review gate respects autonomy.** Under Rush it auto-passes; the **step-9 automated adversarial spec-review loop still runs** regardless (Rush removes the human sign-off wait, never the check itself). Under Manual it pauses and asks as today.
+
+**Manual is unchanged.** Without Rush, every gate above still pauses and asks exactly as before.
 
 > **Worked Trivial example:** "Fix a typo'd error string in one file." Single obvious file, no new abstraction, one-command verification (e.g. the project's test/lint command on that file), no design risk. Propose **Trivial**, get design approval as always, then edit the file inline in this session and run the named verify command. No spec, no `writing-plans`, no subagents.
 
@@ -211,9 +240,11 @@ After the spec review loop passes, ask the user to review the written spec befor
 
 Wait for the user's response. If they request changes, make them and re-run the spec review loop. Only proceed once the user approves.
 
+**This gate respects the autonomy level** (see the Rush Boundary and Autonomy notes above): under **Rush** it **auto-passes** without waiting on user sign-off — but the step-9 automated adversarial spec-review loop above **still runs**. Under **Manual** it pauses and asks as today.
+
 **Implementation:**
 
-- For the Full tier, invoke the writing-plans skill to create a detailed implementation plan. Do NOT invoke any other skill; writing-plans is the next step.
+- For the Full tier, route by the planning strategy chosen in step 6: **Waterfall** → invoke `jj-superpowers:writing-plans` to create a detailed implementation plan; **Agile** → invoke `jj-superpowers:iterative-planning`, which owns the phase loop in place of a single `writing-plans` call. Do NOT invoke any other skill; the strategy-selected skill is the next step.
 - For Trivial/Small tiers, use the approved inline or direct-subagent path per the Triage Gate and run the named verification before claiming completion. Remember the off-graph spec-sync requirement: invoke `spec-code-sync` before any source edit when the project has `.agents/layout.yaml`.
 
 ## Key Principles
