@@ -277,15 +277,15 @@ wc -w skills/path/SKILL.md
 - `creating-skills`, `testing-skills`, `debugging-with-logs`
 - Active, describes the action you're taking
 
-### 4. Cross-Referencing Other Skills
+### 5. Cross-Referencing Other Skills
 
 **When writing documentation that references other skills:**
 
 Use skill name only, with explicit requirement markers:
 - ✅ Good: `**REQUIRED SUB-SKILL:** Use jj-superpowers:test-driven-development`
 - ✅ Good: `**REQUIRED BACKGROUND:** You MUST understand jj-superpowers:systematic-debugging`
-- ❌ Bad: `See skills/testing/test-driven-development` (unclear if required)
-- ❌ Bad: `@skills/testing/test-driven-development/SKILL.md` (force-loads, burns context)
+- ❌ Bad: `See skills/test-driven-development` (unclear if required)
+- ❌ Bad: `@skills/test-driven-development/SKILL.md` (force-loads, burns context)
 
 **Why no @ links:** `@` syntax force-loads files immediately, consuming 200k+ context before you need them.
 
@@ -315,7 +315,7 @@ digraph when_flowchart {
 - Linear instructions → Numbered lists
 - Labels without semantic meaning (step1, helper2)
 
-See @graphviz-conventions.dot for graphviz style rules.
+See `graphviz-conventions.dot` in this directory for graphviz style rules.
 
 **Visualizing for your human partner:** Use `render-graphs.js` in this directory to render a skill's flowcharts to SVG:
 ```bash
@@ -372,6 +372,17 @@ pptx/
   scripts/       # Executable tools
 ```
 When: Reference material too large for inline
+
+### No-Ship Hygiene (What Must NOT Live in a Skill Dir)
+
+A shipped skill directory contains only `SKILL.md` plus the files it references. The installer symlinks the *whole* directory into every harness, so anything inside ships.
+
+Keep these OUT of the skill dir (move elsewhere or delete):
+- Pressure-test scenarios and baseline RED logs
+- Creation/handoff logs and session notes
+- Build/packaging files (e.g. `pyproject.toml`, lockfiles)
+
+If an artifact isn't referenced by `SKILL.md` and isn't a tool the skill uses, it does not belong in the skill dir.
 
 ## The Iron Law (Same as TDD)
 
@@ -555,7 +566,7 @@ Run same scenarios WITH skill. Agent should now comply.
 
 Agent found new rationalization? Add explicit counter. Re-test until bulletproof.
 
-**Testing methodology:** See @testing-skills-with-subagents.md for the complete testing methodology:
+**Testing methodology:** See `testing-skills-with-subagents.md` in this directory for the complete testing methodology:
 - How to write pressure scenarios
 - Pressure types (time, sunk cost, authority, exhaustion)
 - Plugging holes systematically

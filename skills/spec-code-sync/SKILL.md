@@ -1,13 +1,11 @@
 ---
 name: spec-code-sync
-description: Use when planning or executing any code change in a project that has `.agents/layout.yaml` — runs the candidate-spec lookup (surfaces specs likely relevant to touched paths via `code_map` hints; does not gate on coverage), classifies the change as design-time intent vs post-implementation refinement, routes spec amendments through `writing-specs`, and detects code-first edits of code-as-spec modules. `writing-plans` and `executing-plans` MUST invoke this skill before any source-file edit; also explicitly loadable on demand.
+description: Use when planning or executing any code change in a project that has `.agents/layout.yaml`, before any source-file edit. `writing-plans` and `executing-plans` MUST invoke this skill before any source-file edit; also explicitly loadable on demand.
 ---
 
 # Spec ↔ Code Sync
 
 The workflow gate around code changes in projects with an agent-spec ecosystem. Decides what doc/spec work each code change owes, when it must happen, and how to detect code edits that would silently drift the spec.
-
-**Spec reference:** `docs/superpowers/specs/2026-05-28-agent-spec-ecosystem-design.md` §5.2, §3.2, §3.3.
 
 ## Golden rules
 
@@ -35,7 +33,7 @@ The workflow gate around code changes in projects with an agent-spec ecosystem. 
 
    **Sub-spec hit:** if a `code_map` entry returns a sub-spec slug (`<parent>/<leaf>`), load that sub-spec's `SPEC.yaml` **and** the parent's `SPEC.yaml` (frontmatter + cross-cutting requirements). Parent-level requirements apply across all sub-specs and must not be violated.
 
-4. **Frontmatter precedence check** (per design §3.3 — **best-effort**, see caveat below): for each loaded spec, compare its frontmatter `owns:` and `code_spec:` against the corresponding `code_map`/`spec_code.modules` entries in `layout.yaml`. Spec frontmatter is canonical. (Note: specs are now stored as a single `SPEC.yaml` file; the frontmatter is the YAML root of that file, not a separate Markdown frontmatter header.) On disagreement:
+4. **Frontmatter precedence check** (**best-effort**, see caveat below): for each loaded spec, compare its frontmatter `owns:` and `code_spec:` against the corresponding `code_map`/`spec_code.modules` entries in `layout.yaml`. Spec frontmatter is canonical. (Note: specs are now stored as a single `SPEC.yaml` file; the frontmatter is the YAML root of that file, not a separate Markdown frontmatter header.) On disagreement:
    - If the layout entry would have routed the touched path differently than the spec frontmatter would, surface this immediately: "`layout.yaml` says path X is owned by capability A; the loaded spec's frontmatter says A no longer owns X (or now owns Y instead). Treating frontmatter as authoritative." Then re-resolve ownership for any affected touched paths using frontmatter.
    - Record the divergence as a `layout.yaml` staleness issue. If the agent can also write `layout.yaml`, update it in the same change; otherwise flag for `spec-drift-detector`.
 
@@ -122,7 +120,7 @@ This supplements `code_map` lookup: a file that has `impl:` annotations but no `
 
 When the agent notices code-quality or spec issues unrelated to the current task:
 
-Apply the autonomous-session routing rule (design spec §8.3):
+Apply the autonomous-session routing rule:
 
 - **Inline-fix** SHALL be taken only when: on-path, trivial (single-file, no new abstractions, no behavior change), AND covered by the current change's verification.
 - Otherwise **enqueue** a new per-entry file in the matching queue directory (`code/`, `tests/`, `perf/`, `docs/`), at `<queue>/<YYYY-MM-DD>/<HHMMSS>-<slug>.md`.

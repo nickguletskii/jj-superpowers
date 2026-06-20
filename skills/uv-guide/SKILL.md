@@ -1,6 +1,6 @@
 ---
 name: uv-guide
-description: Using uv for Python scripting, package management, and development with sandbox awareness
+description: Use when running Python scripts with uv, managing Python packages, dependencies, or virtualenvs, or when uv hits sandbox permission or cache errors (such as "Operation not permitted").
 ---
 
 # uv: Fast Python Package Manager & Script Runner
@@ -267,7 +267,7 @@ uv run script.py
 | `uv remove pkg` | Remove dependency |
 | `uv sync` | Install all project dependencies |
 | `uv lock` | Create lock file (reproducibility) |
-| `uv compile` | Compile .py to .pyc |
+| `uv pip compile` | Compile `requirements.in` → pinned `requirements.txt` lockfile |
 
 ## PEP 723: Inline Script Metadata
 
@@ -308,7 +308,7 @@ Skills that provide Python scripts can use `uv run` for:
 
 **Example from the dot-to-jj-dag script:**
 ```bash
-uv run skills/jj-organizing-history/resources/dot-to-jj-dag/dot-to-jj-dag.py example.dot --anchor-map anchors.txt
+uv run ~/.jj-superpowers/tools/dot-to-jj-dag.py example.dot --anchor-map anchors.txt
 ```
 
 ## Troubleshooting

@@ -433,6 +433,23 @@ function commonToolLinks(ctx: Context): SymlinkSpec[] {
       target: path.join(ctx.home, ".jj-superpowers", "tools", "scip-query"),
       targetKind: "file" as const,
     },
+    {
+      source: path.join(
+        ctx.repoRoot,
+        "skills",
+        "jj-organizing-history",
+        "resources",
+        "dot-to-jj-dag",
+        "dot-to-jj-dag.py",
+      ),
+      target: path.join(
+        ctx.home,
+        ".jj-superpowers",
+        "tools",
+        "dot-to-jj-dag.py",
+      ),
+      targetKind: "file" as const,
+    },
   ];
 }
 

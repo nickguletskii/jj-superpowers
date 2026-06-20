@@ -1,13 +1,11 @@
 ---
 name: writing-specs
-description: Use when authoring or amending agent-oriented project specifications — capability specs (vertical, user/dev-visible behavior), plane specs (horizontal cross-cuts like auth/observability/error-model), the project glossary, or invariants. Triggers on "write a spec", "amend the spec", "new capability", "new plane", "add to glossary", "this is normative", and is auto-invoked by `brainstorming` when a design includes normative behavior changes. Also the sole authoring path for code-as-specification module changes (typed APIs with RFC2119 docs).
+description: Use when authoring or amending agent-oriented project specifications — capability specs, plane specs, the project glossary, invariants, or code-as-spec module changes. Triggers on "write a spec", "amend the spec", "new capability", "new plane", "add to glossary", "invariants", "this is normative", and code-as-spec module changes; auto-invoked by `brainstorming` when a design includes normative behavior changes.
 ---
 
 # Writing Specs
 
 Author and amend agent-oriented specifications: capability specs, plane specs, glossary, invariants, and code-as-spec module signatures + docs. Output is sufficient for clean-room reimplementation preserving externally observable behavior — including concurrency/parallelism semantics — without dictating implementation details.
-
-**Spec reference:** `docs/superpowers/specs/2026-05-28-agent-spec-ecosystem-design.md` §4, §5.1.
 
 ## Golden rules
 
@@ -24,7 +22,7 @@ Author and amend agent-oriented specifications: capability specs, plane specs, g
 - Authoring a new capability or plane spec.
 - Amending an existing spec (adding/changing a normative requirement).
 - Adding/refining glossary terms or invariants.
-- Editing a typed API surface that is registered as a code-as-spec module (this is the **only** authorized path — see §4 of design spec, rule 4).
+- Editing a typed API surface that is registered as a code-as-spec module (this is the **only** authorized path — see "Code-as-spec module changes" below).
 
 **Not for:**
 - Setting up `layout.yaml` → `project-layout`.
@@ -219,14 +217,14 @@ Quick inline check — fix in place, don't loop on it:
 1. **Clean-room sufficiency**: "Could a competent engineer with no other context implement this from the spec alone?" If no, what's missing?
 2. **RFC2119 correctness**: MUST/SHOULD/MAY used where they belong; no casual "should" that meant MUST.
 3. **No implementation leakage**: scaling assumptions don't mandate algorithms/libraries; failure modes don't prescribe class names; nothing dictates code structure.
-3b. **No code duplication (golden rule D)**: read each requirement and ask "could I regenerate this by paraphrasing the signature/enum/constant?" If yes, it's transcription — cut it or replace it with the intricacy it was burying (timing model, edge case, contract, *why*).
-4. **Frontmatter ↔ `layout.yaml`**: `owns:` and `code_spec:` written; if `layout.yaml` `code_map`/`spec_code.modules` disagree, update `layout.yaml`.
-5. **Co-ownership check**: other capabilities/planes MAY share `owns:` over the same path — that's allowed. But when this spec adds/changes a requirement on a co-owned path, confirm with the user that the new requirement does not contradict requirements in the co-owning specs. List the other owners explicitly; don't paper over the overlap.
-6. **References resolve**: every plane/glossary/invariant ID you cite exists.
-7. **`impl:` annotations**: if this spec change adds a new MUST requirement that has an obvious primary implementation site, note the file so developers know to add `// impl: REQ-XXX-NNN` there.
-8. **Sub-spec consistency (if applicable):** `sub_specs:` in parent lists exactly the leaf directory names that have a `SPEC.yaml`. No extra entries, no missing entries.
-9. **Sub-spec id format:** each sub-spec's `id` equals `{parent-slug}/{leaf-directory-name}`.
-10. **No double-nesting:** no sub-spec has a `sub_specs:` key.
+4. **No code duplication (golden rule D)**: read each requirement and ask "could I regenerate this by paraphrasing the signature/enum/constant?" If yes, it's transcription — cut it or replace it with the intricacy it was burying (timing model, edge case, contract, *why*).
+5. **Frontmatter ↔ `layout.yaml`**: `owns:` and `code_spec:` written; if `layout.yaml` `code_map`/`spec_code.modules` disagree, update `layout.yaml`.
+6. **Co-ownership check**: other capabilities/planes MAY share `owns:` over the same path — that's allowed. But when this spec adds/changes a requirement on a co-owned path, confirm with the user that the new requirement does not contradict requirements in the co-owning specs. List the other owners explicitly; don't paper over the overlap.
+7. **References resolve**: every plane/glossary/invariant ID you cite exists.
+8. **`impl:` annotations**: if this spec change adds a new MUST requirement that has an obvious primary implementation site, note the file so developers know to add `// impl: REQ-XXX-NNN` there.
+9. **Sub-spec consistency (if applicable):** `sub_specs:` in parent lists exactly the leaf directory names that have a `SPEC.yaml`. No extra entries, no missing entries.
+10. **Sub-spec id format:** each sub-spec's `id` equals `{parent-slug}/{leaf-directory-name}`.
+11. **No double-nesting:** no sub-spec has a `sub_specs:` key.
 
 If you find a placeholder, ambiguity, or contradiction → fix and continue. Don't ship "TBD" sections.
 
@@ -243,5 +241,6 @@ If you find a placeholder, ambiguity, or contradiction → fix and continue. Don
 
 ## References (load on demand)
 
+- `references/spec-template.md` — copy-and-fill `SPEC.yaml` template.
 - `references/rfc2119-cheatsheet.md` — when to use MUST/SHOULD/MAY/MUST NOT/SHOULD NOT.
 - `references/code-as-spec-checklist.md` — atomic-change procedure for typed API edits.

@@ -114,8 +114,7 @@ FOR multi-item feedback:
 
 Treat review feedback about oversized files as architectural feedback, not formatting feedback.
 
-- A touched file over roughly 500 lines should trigger a decomposition check.
-- A touched file at 1000 lines or more is usually unacceptable and should be split unless there is a very strong reason not to.
+- The file-size discipline (the ~500/1000-line thresholds) is owned by `jj-superpowers:deslopify` — see its canonical file-size rule. A touched file that crosses those thresholds should trigger a decomposition check.
 - Splitting is not cosmetic: it improves readability, reviewability, and makes agent edits safer because each unit fits in context more easily.
 - Break files apart by responsibility, not by arbitrary line count. Extract logical units with explicit interfaces and self-contained behavior.
 
@@ -183,7 +182,28 @@ State the correction factually and move on.
 | Avoiding pushback | Technical correctness > comfort |
 | Partial implementation | Clarify all items first |
 | Can't verify, proceed anyway | State limitation, ask for direction |
-| Treating a 1000+ line file as acceptable | Split into logical units before merge |
+| Treating a file past the `jj-superpowers:deslopify` size thresholds as acceptable | Split into logical units before merge |
+
+## Common Rationalizations
+
+| Excuse | Reality |
+|--------|---------|
+| "The reviewer is right, I'll just implement everything" | Blindly implementing wrong feedback ships bugs. Verify each point technically against the code first. |
+| "It's faster to just agree and apply it" | Applying an incorrect suggestion is slower — rework plus the bug it introduced. Speed comes from correctness. |
+| "I should thank the reviewer warmly first" | Performative gratitude is noise. Respond with technical substance, not affect. |
+| "Pushing back seems confrontational" | Technically-grounded disagreement is the job. Silent compliance with a wrong call is the failure. |
+| "The feedback is vague but I'll guess what they meant" | Guessing encodes a wrong assumption. Ask, or state your interpretation explicitly before acting. |
+
+## Red Flags - STOP
+
+- I'm writing "Great catch!" / "You're absolutely right!" before evaluating
+- I'm applying a change I can't technically justify
+- I haven't verified the reviewer's claim against the code
+- I'm changing behavior I believe is correct just to satisfy a comment
+- I'm implementing some items while still unclear on others
+- I'm about to type "Thanks" instead of stating the fix
+
+**All of these mean: STOP — verify the feedback technically before acting.**
 
 ## Real Examples
 

@@ -58,7 +58,7 @@ If CLAUDE.md, GEMINI.md, or AGENTS.md says "don't use TDD" and a skill says "alw
 Skills use Claude Code tool names. Non-CC platforms translate tools as follows:
 
 - **Codex:** see `references/codex-tools.md`
-- **Gemini CLI:** tool mapping loaded automatically via GEMINI.md
+- **Gemini CLI:** tool mapping loaded automatically via GEMINI.md; reference `references/gemini-tools.md`
 - **OpenCode:** plugin bootstrap maps common tools compactly; use OpenCode's native skill tool and subagent `@mention` system
 - **GitHub Copilot CLI:** see `references/copilot-tools.md`
 

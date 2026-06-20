@@ -54,10 +54,10 @@ Task tool (haiku model):
 
     ```bash
     # Using uv (recommended) — automatically installs dependencies
-    uv run skills/jj-organizing-history/resources/dot-to-jj-dag/dot-to-jj-dag.py <dot_file> --anchor-map <anchor_map_file>
+    uv run ~/.jj-superpowers/tools/dot-to-jj-dag.py <dot_file> --anchor-map <anchor_map_file>
 
     # Or with Python directly (requires manual dependency installation)
-    python3 skills/jj-organizing-history/resources/dot-to-jj-dag/dot-to-jj-dag.py <dot_file> --anchor-map <anchor_map_file>
+    python3 ~/.jj-superpowers/tools/dot-to-jj-dag.py <dot_file> --anchor-map <anchor_map_file>
     ```
 
     **Anchor map file format** (one per line):
@@ -67,9 +67,9 @@ Task tool (haiku model):
     ```
 
     **See:**
-    - `skills/jj-organizing-history/resources/dot-to-jj-dag/dot-to-jj-dag.py` — DAG builder script
-    - `skills/jj-organizing-history/resources/dot-to-jj-dag/README.md` — script usage documentation
-    - `skills/uv-guide/SKILL.md` — Comprehensive guide to using `uv`, including sandbox configuration if needed
+    - `~/.jj-superpowers/tools/dot-to-jj-dag.py` — DAG builder script
+    - `jj-superpowers:jj-organizing-history` — owning skill, includes script usage documentation
+    - `jj-superpowers:uv-guide` — Comprehensive guide to using `uv`, including sandbox configuration if needed
 
     ## Manual Algorithm (if not using the Python script)
 

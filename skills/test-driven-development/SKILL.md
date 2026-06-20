@@ -230,7 +230,7 @@ The key word is *evidence*: don't write defensive type-checking tests speculativ
 
 Not everything needs a test. If the behavior is obvious from reading the source or the compiler already enforces it, the test adds nothing.
 
-For detailed guidance on distinguishing high-value from low-value tests, read @what-to-test.md.
+For detailed guidance on distinguishing high-value from low-value tests, read `what-to-test.md` in this directory.
 
 ## Why Order Matters
 
@@ -386,7 +386,7 @@ Never fix bugs without a test.
 
 ## Testing Anti-Patterns
 
-When adding mocks or test utilities, read @testing-anti-patterns.md to avoid common pitfalls:
+When adding mocks or test utilities, read `testing-anti-patterns.md` in this directory to avoid common pitfalls:
 - Testing mock behavior instead of real behavior
 - Adding test-only methods to production classes
 - Mocking without understanding dependencies

@@ -24,6 +24,7 @@ test("skill consolidation leaves only intended entry points discoverable", () =>
     "receiving-code-review",
     "deslopify",
     "codebase-cleanup",
+    "documentation",
   ]) {
     assert.ok(skills.includes(name), `${name} should be discoverable`);
   }

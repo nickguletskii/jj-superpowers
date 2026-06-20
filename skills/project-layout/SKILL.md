@@ -7,8 +7,6 @@ description: Use when bootstrapping or auditing a project's agent-discoverable l
 
 Establish and maintain the per-project structure that every other skill in this set relies on. The hub is `.agents/layout.yaml`. Everything else (specs, queues, blogs, project-specific skills) hangs off it.
 
-**Spec reference:** `docs/superpowers/specs/2026-05-28-agent-spec-ecosystem-design.md` §3, §5.4, §10.
-
 ## Golden rules (apply throughout)
 
 > **A. Shorter is better.** Shorter docs are easier to read, modify, keep current, and cheaper in agent context. Cut anything that doesn't earn its tokens.
@@ -140,3 +138,4 @@ When a user asks to audit docs:
 - `references/agents-md-template.md` — the short root `AGENTS.md` template.
 - `references/gitignore-defaults.md` — proposed `.gitignore` additions per artifact.
 - `references/brownfield-checklist.md` — concrete questions to ask during bootstrap.
+- `references/find-references-script.md` — the `.agents/scripts/find-references` deletion-handling helper to install during bootstrap.

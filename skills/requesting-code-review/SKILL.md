@@ -66,8 +66,7 @@ When the template labels this section `CHANGE_ID` but the scope is not a revisio
 
 The reviewer must evaluate file boundaries, not just correctness.
 
-- Flag touched files that grow beyond roughly 500 lines unless there is a strong, explicit reason not to split them.
-- Treat files at 1000 lines or more as presumptively unacceptable. The default outcome should be "split this before merge."
+- Apply the file-size discipline (the ~500/1000-line thresholds) owned by `jj-superpowers:deslopify` — see its canonical file-size rule. Flag touched files that cross those thresholds unless there is a strong, explicit reason not to split them.
 - Ask whether parsing, validation, orchestration, rendering, state management, and I/O are being mixed in one file when they could be separate logical units.
 - Prefer extracting self-contained units with narrow interfaces so each file is easier for humans and agents to read, review, and modify.
 
@@ -120,7 +119,7 @@ You: [Fix progress indicators]
 - Ignore Critical issues
 - Proceed with unfixed Important issues
 - Argue with valid technical feedback
-- Treat a 1000+ line touched file as normal
+- Treat a touched file that crosses the `jj-superpowers:deslopify` file-size thresholds as normal
 - Keep unrelated responsibilities together because "the tests pass"
 
 **If reviewer wrong:**

@@ -1,9 +1,9 @@
 ---
 name: finishing-a-development-branch
-description: Use when implementation is complete, all tests pass, and you need to decide how to integrate the work - guides completion of a jj work scope by presenting structured options for integration, PR, or cleanup
+description: Use when implementation is complete, all tests pass, and you need to decide how to integrate the work - guides completion of a jj development branch by presenting structured options for integration, PR, or cleanup
 ---
 
-# Finishing a Development Work Scope
+# Finishing a Development Branch
 
 ## Overview
 
@@ -245,7 +245,7 @@ Then: Abandon scope structure if present (Step 5)
 
 #### Option 3: Keep As-Is
 
-Report: "Keeping work scope `<scope-id>`. No changes made."
+Report: "Keeping development branch `<scope-id>`. No changes made."
 
 **Don't clean up.**
 
@@ -345,7 +345,7 @@ jj log -r 'trunk()..@' --no-pager
 
 **Never:**
 - Skip Step 0 pre-flight checks
-- Run `jj show`, `jj diff`, or any diff command inline — this pollutes the agent's context; give the user the command to run themselves instead
+- Run `jj show`, `jj diff`, or any full-diff command inline — this pollutes the agent's context; give the user the command to run themselves instead. **Exception:** bounded `--stat` summaries (e.g. `jj show -r <id> --stat --no-pager`) are allowed, since they emit only changed-file names and line counts, not diff bodies
 - Proceed with failing tests
 - Push without verifying tests on result
 - Delete work without confirmation

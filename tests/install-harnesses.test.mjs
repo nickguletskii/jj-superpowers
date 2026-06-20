@@ -38,6 +38,21 @@ function makeSourceRepo() {
     path.join(root, "tools", "scip-query"),
     "#!/usr/bin/env python3\n",
   );
+  fs.mkdirSync(
+    path.join(root, "skills", "jj-organizing-history", "resources", "dot-to-jj-dag"),
+    { recursive: true },
+  );
+  fs.writeFileSync(
+    path.join(
+      root,
+      "skills",
+      "jj-organizing-history",
+      "resources",
+      "dot-to-jj-dag",
+      "dot-to-jj-dag.py",
+    ),
+    "#!/usr/bin/env python3\n",
+  );
   fs.mkdirSync(path.join(root, "agents"), { recursive: true });
   fs.writeFileSync(
     path.join(root, "agents", "sdd-implementer.md"),
@@ -131,6 +146,17 @@ test("codex install status and uninstall manage only repo links", () => {
     path.join(home, ".jj-superpowers", "tools", "scip-query"),
     path.join(source, "tools", "scip-query"),
   );
+  assertSymlink(
+    path.join(home, ".jj-superpowers", "tools", "dot-to-jj-dag.py"),
+    path.join(
+      source,
+      "skills",
+      "jj-organizing-history",
+      "resources",
+      "dot-to-jj-dag",
+      "dot-to-jj-dag.py",
+    ),
+  );
 
   const status = runInstaller(home, [
     "status",
@@ -166,6 +192,12 @@ test("codex install status and uninstall manage only repo links", () => {
   );
   assert.equal(
     fs.existsSync(path.join(home, ".jj-superpowers", "tools", "scip-query")),
+    false,
+  );
+  assert.equal(
+    fs.existsSync(
+      path.join(home, ".jj-superpowers", "tools", "dot-to-jj-dag.py"),
+    ),
     false,
   );
 });

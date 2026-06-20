@@ -1,20 +1,6 @@
 ---
 name: jujutsu
-description: |
-  Comprehensive guidance for using jujutsu (jj) version control system instead of git.
-  Covers change-based workflows, atomic commits, stacked changes, and revset queries.
-
-  **When to use this skill:**
-  - When the repository's CLAUDE.md explicitly specifies using jujutsu/jj instead of git
-  - When user explicitly mentions "jujutsu", "jj", or asks to use jj commands
-  - When working with jj repositories (identifiable by `.jj/` directory)
-  - When user asks about version control in a jj-enabled project
-
-  **Triggers include**: "use jj", "create a change", "split this change",
-  "jujutsu workflow", "jj describe", "manage bookmarks"
-
-  This skill completely replaces git workflows when active - use jj commands instead of git commands
-  for all version control operations including commits, branches, and rebasing.
+description: Use when doing version control in a jj/jujutsu repository (a `.jj/` directory is present), when the user says to use jj or jujutsu "instead of git", or when CLAUDE.md mandates jj. Triggers on creating or splitting a change, rebasing, managing bookmarks, querying with revsets, or working with stacked changes.
 ---
 
 # Jujutsu Version Control
@@ -77,6 +63,22 @@ After splitting, rebasing, abandoning, or otherwise rewriting history:
 - inspect `jj log -r 'parents(@) | @' --no-graph --no-pager` to confirm the parent/ancestor relationship matches your intent
 
 See [workflows.md](references/workflows.md) for detailed non-interactive patterns.
+
+### Red Flags - STOP
+
+These are self-check thoughts that mean you are about to break a safety rule above. Each maps back to an existing prohibition — if you catch yourself thinking one, **stop before running the command**.
+
+- "I'll just `jj abandon` / `jj op abandon` to clean this up" — STOP: `jj op abandon` is **not reversible** and `jj abandon` can discard work; do not run them unless the user explicitly asked.
+- "Let me `jj edit <old-change>` / `jj checkout` / `jj co` real quick" — STOP: that moves `@` onto an existing change — a forbidden `@`-move (rule 2).
+- "I'll `jj next` / `jj prev` to step around the graph" — STOP: those move `@` along the graph — forbidden without explicit user permission (rule 2).
+- "I'll `jj new` to start fresh here" — STOP: plain `jj new` moves `@` to the new change; use `jj new --no-edit --insert-after ... --insert-before ...` instead (rule 2 / rule 4).
+- "I'll blind-`jj undo` / `jj op restore` to escape a state I don't understand" — STOP: `jj undo`/`jj op restore` are safe recovery tools (see the operation-log recovery workflow below), but rolling back *without first checking `jj op log`* can discard good work; inspect the op log first, and surface to the user if the correct target is unclear.
+- "I'll run a full `jj show` / `jj diff` inline to check" — STOP: that pollutes the agent context with full hunks; use the bounded `--stat` exception (e.g. `jj show -r <id> --stat --no-pager`) or give the user the command to run.
+- "I'll `jj split -o @-` to extract this quickly" — STOP: that leaves the remainder as a sibling that no longer depends on the extracted change; insert a predecessor and `jj squash` into it instead (rule 4).
+- "I'll just run `jj describe` / `jj squash -i` / `jj split` / `jj resolve` / `jj diffedit`" — STOP: those open an editor or interactive UI; use the non-interactive forms in rule 3 (or edit files directly).
+- "I'll drop to raw `git` for this one" — STOP: use `jj`; raw `git` is only for an operation the user explicitly requested that `jj` cannot do (rule 1).
+
+**All of these mean: STOP — do not run the command; surface to the user or use the safe alternative.**
 
 ## Triggering This Skill
 
@@ -283,10 +285,10 @@ jj op log
 
 Use these when working in `@` and filing specific work into a pre-planned destination change without opening an editor.
 
-The `-u` / `--keep-emptied` flag keeps `@` alive even when all its content is squashed out — essential in agentic workflows where `@` is the permanent tip.
+The `-u` / `--use-destination-message` flag tells `jj` to keep the **destination** change's description and discard the source's, so filing a scratch `@` into a pre-described destination never prompts for a combined message. (Squashing all content out of `@` never loses work: `jj` auto-creates a fresh empty `@` as the new tip.)
 
 ```bash
-# Move all of @ into a destination change (keep @ alive)
+# Move all of @ into a destination change (keep the destination's description)
 jj squash --from @ --into <rev> -u
 
 # Move specific paths from @ into a destination change (leave other edits in @)
@@ -301,7 +303,7 @@ jj describe -r <rev> -m "toreview: my step"
 # 3. jj describe -r <rev> -m "toreview: <description>"
 ```
 
-**Why `-u` matters**: without it, squashing all content out of `@` abandons `@`, which may disrupt a multi-step workflow where `@` is expected to remain as the DAG tip.
+**Why `-u` matters**: the destination is already described (e.g. `toreview: <step>`) while `@` holds only a scratch message. Without `-u`, squashing a described `@` into a described destination prompts for a combined description; `-u` keeps the destination's description and drops the source's, so the filing stays non-interactive. It does **not** affect whether `@` survives — `jj` always replaces an emptied `@` with a fresh empty change.
 
 ### Operation Log and Recovery
 
@@ -466,7 +468,7 @@ If this is a jj repo but `CLAUDE.md` is missing or doesn't mention jj, follow th
 
 ## Tips for AI Agents
 
-1. **Never run diffs inline**: Do not run `jj show`, `jj diff`, or any diff command to read output into the agent context — this pollutes context with large diffs. Give the user the command to run themselves instead.
+1. **Never run full diffs inline**: Do not run `jj show`, `jj diff`, or any diff command that emits full hunk content into the agent context — this pollutes context with large diffs. Give the user the command to run themselves instead. **Exception:** bounded `--stat` summaries (e.g. `jj show -r <id> --stat --no-pager`, `jj diff --stat --no-pager`) are allowed — they list only changed files and line counts, not diff bodies.
 2. **Always check for interactive commands**: If a workflow requires `jj split` or `jj squash -i`, provide non-interactive alternative
 3. **Use revsets for precision**: `jj log -r 'trunk()..@'` shows exactly what needs pushing
 4. **Trust operation log**: If uncertain, `jj op log` shows what happened; `jj undo` reverses it

@@ -5,7 +5,7 @@ Utility script for creating jj change DAGs from DOT graph specifications. This i
 Run with `uv`:
 
 ```bash
-uv run skills/jj-organizing-history/resources/dot-to-jj-dag/dot-to-jj-dag.py <dot_file> --anchor-map <anchor_map_file>
+uv run dot-to-jj-dag.py <dot_file> --anchor-map <anchor_map_file>
 ```
 
 Useful options:

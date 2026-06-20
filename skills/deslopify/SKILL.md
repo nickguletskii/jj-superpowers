@@ -115,7 +115,7 @@ Duplication and inconsistency that should be unified or at least made consistent
 
 Files and modules structured in ways that obscure rather than reveal the codebase's shape.
 
-- **Long files**: Files over ~500 lines usually mix multiple responsibilities. Split by responsibility, not by arbitrary line count. Files over ~1000 lines are presumptively unacceptable.
+- **Long files (canonical file-size rule)**: Files over ~500 lines usually mix multiple responsibilities and warrant a decomposition check; files over ~1000 lines are presumptively unacceptable and should be split before merge. Split by responsibility, not by arbitrary line count. This is the single source of truth for the ~500/1000-line thresholds; other skills cross-reference it rather than restating the numbers.
 - **Flat modules**: Directories with many files at one level and no submodules. Organize code in a tree that mirrors the domain — group related types, functions, and tests together.
 - **Tests mixed with implementation**: Long test suites in the same file as the code they test. Only tests that help readers understand invariants or intent belong near implementation. Exhaustive test suites go in dedicated test files or directories.
 

@@ -1,6 +1,6 @@
 ---
 name: hypothesis-driven-improvement
-description: Use when driving an open-ended objective whose path is unknown — "eliminate all the ways X fails to do Y", harden a flaky/intermittent behavior, push a metric to a target, or run an adversarial review loop (spec/design/code review) that should repeat until a round surfaces zero Major findings — with many candidate causes/findings rather than one observed bug. Use when tempted to ship a hunch-fix and declare victory, when a metric is noisy, or when improvement work needs to converge instead of wander.
+description: Use when driving an open-ended objective whose path is unknown — "eliminate all the ways X fails to do Y", harden a flaky/intermittent behavior, push a metric to a target, or run an adversarial review loop — with many candidate causes rather than one observed bug. Use when tempted to ship a hunch-fix and declare victory, when a metric is noisy, or when improvement work needs to converge instead of wander.
 ---
 
 # Hypothesis-Driven Improvement

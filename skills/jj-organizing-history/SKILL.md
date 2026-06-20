@@ -42,10 +42,10 @@ Use `jj-superpowers:jj-hunk` for low-level hunk selection. Use `jj-superpowers:j
    jj log -r 'trunk()..@' --no-pager \
      --template 'change_id.short(8) ++ "  " ++ description.first_line() ++ "\n"'
    ```
-2. Inspect each `toorg:` change with `jj show -r <id> --stat --no-pager`.
+2. Inspect each `toorg:` change with `jj show -r <id> --stat --no-pager` — this `--stat` summary is the bounded-summary exception to the inline-diff ban in `jj-superpowers:jujutsu` ("Never run full diffs inline"), so it is safe to run inline; do not run a full inline diff.
 3. Group commits by logical concern and dependency.
 4. Present the proposed DAG and assignments to the user using the decision-checkpoint pattern.
-5. Build the DAG using `skills/subagent-driven-development/jj-dag-builder-prompt.md` and the `skills/jj-organizing-history/resources/dot-to-jj-dag/dot-to-jj-dag.py` script.
+5. Build the DAG using the `jj-superpowers:subagent-driven-development` skill's `jj-dag-builder-prompt.md` and the skill-relative `resources/dot-to-jj-dag/dot-to-jj-dag.py` script.
 6. Move content into target `todo:` nodes with `jj squash --from <toorg-id> --into <target-id> <files> -u`.
 7. Rename completed nodes to `toreview: <label>` and abandon empty `toorg:` commits.
 8. Verify no `toorg:` lines remain, `@` is empty, and no divergent/conflicted changes exist.
@@ -65,7 +65,20 @@ Use for arbitrary committed jj history, not raw `toorg:` implementation output.
 
 Only use parallel split when the result should be sibling changes with the same parent. If the current working copy must depend on the extracted change, insert a predecessor before `@` and squash into it instead.
 
-For scripted file/hunk parallel splits, use `skills/jj-split-parallel/scripts/gen_split.py`. Remember that `jj split --parallel` keeps the selected split on the original change ID and gives the remaining change a new ID.
+For scripted file/hunk parallel splits, use the skill-relative `resources/gen-split/gen_split.py`. Remember that `jj split --parallel` keeps the selected split on the original change ID and gives the remaining change a new ID.
+
+Run it with a JSON config:
+
+```bash
+uv run resources/gen-split/gen_split.py <config.json>
+```
+
+The config sets `rev` (the full change ID to split), `mode` (`file` or `hunk`), `session_dir` (where temp spec files are written), and an ordered list of `groups`:
+
+- **`file` mode** assigns paths from a `jj diff --summary` dump (`files_txt`) to groups by regex `patterns` matched against the destination path; the first matching group wins, and renames pass both src and dst paths.
+- **`hunk` mode** splits each group by a `jj-hunk` `spec` (e.g. `{"files": {"src/a.rs": {"hunks": [0, 2]}}, "default": "keep"}`).
+
+The final group with no `patterns`/`spec` receives `jj describe` (not a split) for the remaining change. On any `jj` failure the script runs `jj undo` automatically before exiting.
 
 ## Integration
 

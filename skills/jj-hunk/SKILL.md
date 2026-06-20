@@ -1,6 +1,6 @@
 ---
 name: jj-hunk
-description: Programmatic hunk selection for jj (Jujutsu). Use when splitting commits, making partial commits, or selectively squashing changes without interactive UI.
+description: Use when splitting commits in jj, making partial or hunk-level commits, or selectively squashing changes without an interactive UI.
 ---
 
 # jj-hunk: Programmatic Hunk Selection

@@ -172,7 +172,7 @@ jj diffedit -r <change-id>
 **Non-interactive file-filing from `@` into a named destination** (preferred in agentic workflows):
 
 ```bash
-# Move all of @ into a destination, keep @ alive even if it becomes empty
+# Move all of @ into a destination, keeping the destination's description
 jj squash --from @ --into <change-id> -u
 
 # Move only specific paths, leave unrelated edits in @
@@ -182,7 +182,7 @@ jj squash --from @ --into <change-id> path/to/file1.rs path/to/file2.rs -u
 jj describe -r <change-id> -m "toreview: my description"
 ```
 
-`-u` (`--keep-emptied`) prevents `@` from being abandoned when all its content is squashed out — critical when `@` is the fixed DAG tip across multiple filing steps.
+`-u` (`--use-destination-message`) keeps the destination change's description and drops the source's, so filing a scratch `@` into a pre-described destination stays non-interactive instead of prompting for a combined message. It does not control `@`'s survival: squashing all content out of `@` never loses work, because `jj` auto-creates a fresh empty `@` as the new tip.
 
 ### 6. Rebasing and Updating
 

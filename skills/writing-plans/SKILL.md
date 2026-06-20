@@ -150,8 +150,7 @@ Before defining tasks, map out which files will be created or modified and what 
 
 - Design units with clear boundaries and well-defined interfaces.
 - Prefer focused files over large files that do too much.
-- Treat roughly 500 lines as a warning threshold for touched files.
-- Treat 1000 lines or more as generally unacceptable for touched files unless the language or framework forces it.
+- Apply the file-size discipline (the ~500/1000-line thresholds) owned by `jj-superpowers:deslopify` — see its canonical file-size rule — when sizing touched files.
 - Files that change together should live together. Split by responsibility, not by technical layer.
 - In existing codebases, follow established patterns. If a file you're modifying is already unwieldy, include a focused split in the plan when it serves the task.
 
@@ -305,6 +304,8 @@ After writing the complete plan, check it yourself:
 7. **Placeholder scan:** No red flags from the "No Placeholders" section.
 
 Fix issues inline. If a spec requirement has no task, add the task and update `project-network.dot`.
+
+For a deeper adversarial pass — or when you want to dispatch a separate reviewer subagent over the finished plan — use the prompt template in `plan-document-reviewer-prompt.md`. It checks the same dimensions as this self-review (completeness, spec alignment, task decomposition, graph validity, file contention, verification ownership, buildability) with the shared Major/Minor/Nit severity taxonomy.
 
 ## Skill Validation
 

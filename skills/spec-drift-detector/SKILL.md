@@ -1,13 +1,11 @@
 ---
 name: spec-drift-detector
-description: Use when auditing a project for drift between specs, code, code-as-spec modules, mdbook citations, and tech-debt queues. Runs in two modes — default diff-scoped (loads only specs intersecting the current diff) or `--full-audit` (opt-in, partitionable by subsystem). Reports findings only; the sole authorized state changes are queue janitoring and ephemeral-artifact retention pruning. Recommended in `finishing-a-development-branch` and on demand ("check for drift", "audit specs", "find orphan references").
+description: Use when auditing a project for drift between specs, code, code-as-spec modules, mdbook citations, and tech-debt queues. Recommended in `finishing-a-development-branch` and on demand ("check for drift", "audit specs", "find orphan references").
 ---
 
 # Spec Drift Detector
 
 An on-demand auditor. Walks the project to find divergence between artifacts that should agree. Reports; doesn't fix code/specs/mdbook. The only state it changes is bookkeeping (queue lifecycle, ephemeral retention).
-
-**Spec reference:** `docs/superpowers/specs/2026-05-28-agent-spec-ecosystem-design.md` §5.3, §10.4.
 
 **Subagent-friendly.** This skill is designed to run as a subagent dispatched by `finishing-a-development-branch` or the user. Keep its work bounded and its report concise.
 
@@ -55,9 +53,9 @@ For each category, write findings to the report. Don't act except for the explic
 
 SPEC.yaml replaces the former `requirements.yaml` + `SPEC.md` split. The structured `requirements:` list in SPEC.yaml is used for fast indexing; the frontmatter fields (`owns:`, `code_spec:`, `references:`, etc.) drive the consistency checks below.
 
-- **Diff-scoped**: for each spec loaded via `code_map`, compare its frontmatter `owns:`/`code_spec:` against `layout.yaml`'s corresponding entry. Spec frontmatter is canonical (per §3.3). Report disagreements.
+- **Diff-scoped**: for each spec loaded via `code_map`, compare its frontmatter `owns:`/`code_spec:` against `layout.yaml`'s corresponding entry. Spec frontmatter is canonical. Report disagreements.
 - **`--full-audit`**: walk every spec's frontmatter and compare against `layout.yaml`. Reports paths in frontmatter that `code_map` omits, paths in `code_map` that no frontmatter claims, and `spec_code.modules` ↔ `code_spec:` disagreements.
-- Co-ownership across capabilities and planes is allowed (per §3.2). Do NOT flag overlap as a finding. Do flag *requirement-level contradictions* between co-owning specs (e.g., two REQs on the same path that demand incompatible behavior) as `mismatch`.
+- Co-ownership across capabilities and planes is allowed. Do NOT flag overlap as a finding. Do flag *requirement-level contradictions* between co-owning specs (e.g., two REQs on the same path that demand incompatible behavior) as `mismatch`.
 
 **Sub-spec consistency check (three parts) — runs for any parent spec that is loaded in the current mode:**
 1. **List ↔ directories:** for each parent spec with `sub_specs:`, verify every listed leaf name has a corresponding subdirectory with a `SPEC.yaml`. Report any entry with no directory, and any directory with a `SPEC.yaml` that is absent from the parent's `sub_specs:` list. (directory scan applies to the specific parent loaded; does not require walking all parent specs)
@@ -65,7 +63,7 @@ SPEC.yaml replaces the former `requirements.yaml` + `SPEC.md` split. The structu
 3. **`id` ↔ path:** each sub-spec's `id` MUST equal `{parent}/{leaf-directory-name}`. Report mismatches (severity: `mismatch`).
 
 **Duplicate REQ-/INV- ID check:** each REQ-/INV- ID MUST appear in exactly one `SPEC.yaml` file. If the same ID appears in a parent and a child, or in two siblings, report as `mismatch`. This catches incomplete migrations where a requirement was copied but not removed from the parent. Runs in both modes, scoped to loaded specs in diff-scoped mode and corpus-wide in `--full-audit`.
-- **Do NOT report "orphan code"** (code paths outside any `owns:`). `owns:` is a hint, not a coverage map (per §3.2); many files are technical/non-product (build glue, config, internal infrastructure libraries, shared helper crates/packages, test scaffolding) and are expected to lack spec mapping. The only exception: **`spec_code.modules` paths** are exhaustive — if a public item in a registered code-as-spec module is not referenced by any spec's `code_spec:` or REQ-ID, report that as `mismatch`.
+- **Do NOT report "orphan code"** (code paths outside any `owns:`). `owns:` is a hint, not a coverage map; many files are technical/non-product (build glue, config, internal infrastructure libraries, shared helper crates/packages, test scaffolding) and are expected to lack spec mapping. The only exception: **`spec_code.modules` paths** are exhaustive — if a public item in a registered code-as-spec module is not referenced by any spec's `code_spec:` or REQ-ID, report that as `mismatch`.
 
 ### 2. Requirement ↔ code spot-check
 - LLM judgement on small windows; not exhaustive.
@@ -96,7 +94,7 @@ For each module in `spec_code.modules`:
 - Verify any `REQ-`/`INV-` ID referenced in a doc comment resolves in `SPEC.yaml` (in the `requirements:` list).
 - Verify `SPEC.yaml` is updated — requirements list and/or frontmatter — when a code-as-spec module's public surface changes.
 
-### 5. Orphan references (deletion check — §10.4)
+### 5. Orphan references (deletion check)
 **Mode-scoped**:
 - **Diff-scoped**: only check references for the IDs/paths that were deleted or renamed in the current diff (targeted grep). Other orphans elsewhere in the corpus are NOT detected in this mode.
 - **`--full-audit`**: walk every spec frontmatter `references:` block; check every reference for existence.
