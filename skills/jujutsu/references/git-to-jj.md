@@ -79,10 +79,10 @@ jj commit -m "Change description"       # Describe + start new change
 | Git | Jujutsu | Notes |
 |-----|---------|-------|
 | `git commit --amend` | (automatic) | Working copy is always amended |
-| `git rebase -i` | `jj split`, `jj squash`, `jj rebase` | Multiple focused commands |
+| `git rebase -i` | `jj-hunk` (split), `jj squash ... -u`, `jj rebase` | Use the `jj-hunk` skill, not interactive `jj split` |
 | `git rebase main` | `jj rebase -o main` | Rebase current change |
-| `git rebase -i HEAD~3` | `jj split`, `jj squash`, `jj edit` | Interactive editing |
-| `git reset --soft HEAD~1` | `jj squash --from @-` | Move parent's diff into working copy |
+| `git rebase -i HEAD~3` | `jj-hunk` (split), `jj squash ... -u`, `jj rebase` | Avoid interactive `jj split` and `@`-moving `jj edit` |
+| `git reset --soft HEAD~1` | `jj squash --from @- -u` | Move parent's diff into working copy |
 | `git reset --hard HEAD~1` | `jj abandon @` | Abandon current change |
 | `git reset --hard <commit>` | `jj new <change-id>` | Start new from specific change |
 
@@ -112,9 +112,9 @@ jj commit -m "Change description"       # Describe + start new change
 | Git | Jujutsu | Notes |
 |-----|---------|-------|
 | `git merge` (creates conflicts) | `jj rebase` (creates conflict changes) | Conflicts are first-class |
-| Edit conflict markers | `jj resolve` or edit markers | Interactive or manual |
+| Edit conflict markers | `jj resolve --tool :ours\|:theirs` or edit markers | Take a side non-interactively, or edit markers; never bare `jj resolve` |
 | `git add <file>` (mark resolved) | (automatic) | Resolved when markers removed |
-| `git merge --continue` | `jj describe` | Just describe the resolution |
+| `git merge --continue` | `jj describe -m "..."` | Just describe the resolution |
 
 ### Viewing History
 
@@ -132,33 +132,33 @@ Jujutsu uses "revsets" for flexible queries:
 
 ```bash
 # Current working copy
-jj log -r '@'
+jj log -r '@' --no-pager
 
 # Parent of working copy
-jj log -r '@-'
+jj log -r '@-' --no-pager
 
 # All ancestors of working copy
-jj log -r '::@'
+jj log -r '::@' --no-pager
 
 # Ancestors up to 10 changes back
-jj log -r 'ancestors(@, 10)'
+jj log -r 'ancestors(@, 10)' --no-pager
 
 # All changes in bookmark
-jj log -r 'bookmark_name'
+jj log -r 'bookmark_name' --no-pager
 
 # Changes not in remote (two-dot range)
-jj log -r 'trunk()..@'
+jj log -r 'trunk()..@' --no-pager
 
 # Changes by author
-jj log -r 'author("alice")'
+jj log -r 'author("alice")' --no-pager
 
 # Combine conditions
-jj log -r 'author("alice") & ::@'
+jj log -r 'author("alice") & ::@' --no-pager
 ```
 
 ## Key Differences in Philosophy
 
-1. **No staging area**: Jujutsu automatically tracks all changes. This means you can't selectively stage hunks before committing (use `jj split` instead).
+1. **No staging area**: Jujutsu automatically tracks all changes. This means you can't selectively stage hunks before committing (use the `jj-hunk` skill instead).
 
 2. **Working copy is a commit**: The working copy is always a commit, automatically amended as you edit. This eliminates the mental overhead of "staged vs unstaged vs committed."
 
@@ -175,8 +175,8 @@ jj log -r 'author("alice") & ::@'
 - **Start with colocated repos**: Use `jj git init --colocate` in existing git repos to try jj alongside git
 - **Trust automatic tracking**: Stop thinking about `git add` - jj handles it
 - **Use `jj new` frequently**: Create fresh working copies to separate concerns
-- **Use `jj commit`**: Shorthand for `jj describe` + `jj new`, familiar to git users
-- **Leverage `jj split`**: Replace git's interactive staging with post-hoc splitting
+- **Use `jj commit -m`**: Shorthand for `jj describe -m` + `jj new` (never bare `jj commit` — it opens an editor)
+- **Leverage the `jj-hunk` skill**: Replace git's interactive staging with non-interactive, post-hoc hunk splitting
 - **Try `jj absorb`**: Automatically distributes working copy edits to the appropriate ancestor commits
 - **Explore revsets**: They're more powerful than git's revision syntax
 - **Use `trunk()`**: Built-in alias that auto-detects your main branch

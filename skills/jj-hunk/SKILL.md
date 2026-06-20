@@ -5,7 +5,7 @@ description: Use when splitting commits in jj, making partial or hunk-level comm
 
 # jj-hunk: Programmatic Hunk Selection
 
-Use `jj-hunk` for non-interactive hunk selection in jj. Essential for AI agents that need to create clean, logical commits from mixed changes.
+Use `jj-hunk` for non-interactive hunk selection in jj — for creating clean, logical commits from mixed changes without an interactive UI.
 
 ## When to Use This Skill
 
@@ -320,7 +320,7 @@ jj-hunk split '{"files": {"src/lib/utils.ts": {"action": "keep"}, "src/api/route
 jj describe -m "feat: add posts endpoint"
 
 # 4. Verify
-jj log -r 'trunk()..@'
+jj log -r 'trunk()..@' --no-pager
 ```
 
 ### Verifying Splits
@@ -329,11 +329,11 @@ After splitting, verify each commit has the right content:
 
 ```bash
 # Check stats for each commit
-jj diff -r <rev1> --stat
-jj diff -r <rev2> --stat
+jj diff -r <rev1> --stat --no-pager
+jj diff -r <rev2> --stat --no-pager
 
 # Or view the log
-jj log
+jj log --no-pager
 ```
 
 ## Tips
@@ -341,5 +341,5 @@ jj log
 - **Always list first**: Run `jj-hunk list` to see hunk indices/ids before building specs
 - **Prefer ids for stability**: Use `ids` when hunks might shift between list and apply
 - **Use default wisely**: `"default": "reset"` is safer (explicit inclusion), `"default": "keep"` is convenient for excluding specific files
-- **Combine with jj**: After splitting, use `jj describe` to refine commit messages
+- **Combine with jj**: After splitting, use `jj describe -m` to refine commit messages (never bare `jj describe` — it opens an editor)
 - **Exact paths required**: File paths must match exactly (e.g., `"src/lib.rs"` not `"src/"`)

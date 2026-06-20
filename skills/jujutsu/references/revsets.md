@@ -2,6 +2,8 @@
 
 Revsets are jujutsu's powerful query language for specifying sets of changes. They're used with many commands like `jj log`, `jj diff`, `jj rebase`, etc.
 
+> The examples below show only the revset/expression. When you actually run one, add `--no-pager` to any `jj log` / `jj diff` / `jj show` (and prefer `--no-graph` + a `-T` template for parsing), per the non-interactive rule in [SKILL.md](../SKILL.md). Never run a bare `jj diff` / `jj show` that dumps full hunks into context — use `--stat` or hand the command to the user.
+
 ## Basic Symbols
 
 | Revset | Meaning |

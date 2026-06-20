@@ -7,7 +7,7 @@ description: Use when doing version control in a jj/jujutsu repository (a `.jj/`
 
 Jujutsu (jj) is a powerful version control system with a **change-based model** that simplifies workflows compared to git's commit-based model.
 
-## ⚠️ CRITICAL: Safety Rules for AI Agents
+## ⚠️ CRITICAL: Safety Rules
 
 ### 1. No raw `git` commands
 
@@ -21,8 +21,21 @@ The following commands reassign which change is `@` and must **not** be used unl
 |---|---|
 | `jj edit <id>` | Moves `@` to a different change |
 | `jj next` / `jj prev` | Moves `@` along the graph |
-| `jj new` (without `--no-edit`) | Creates a change and moves `@` to it |
+| `jj new` (without `--no-edit`) | Creates a change and moves `@` to it — forbidden **except** to make `@` a leaf when it has descendants (see exception below) |
 | `jj checkout` / `jj co` | Alias for `jj edit` |
+
+**Exception — make `@` a leaf when it has descendants.** Plain `jj new` (which moves `@`) is the **correct and required** tool in exactly one case: when `@` has descendants (children that depend on it). Editing files in a non-leaf `@` auto-amends it and forces every descendant to be rebased — and if a descendant is **another workspace's working copy**, that rewrites that workspace out from under it (stale state, conflicts). Plain `jj new` here moves `@` onto a **new empty child** (a fresh leaf), never onto an existing change, so it cannot lose or corrupt work. (`jj new --no-edit` does **not** help — it leaves `@` in place, so `@` stays non-leaf.)
+
+Run this check before your first edit in any session, and make `@` a leaf if needed:
+
+```bash
+# Empty output = @ is a leaf (safe to edit). Any output = @ has descendants.
+jj log -r 'children(@)' --no-graph --no-pager -T 'change_id.short(8) ++ "\n"'
+# If non-empty, make @ a fresh leaf BEFORE editing:
+jj new
+```
+
+This is the **only** sanctioned use of plain `jj new`. Every other "start fresh" or "step around the graph" use stays forbidden — use `jj new --no-edit --insert-after ... --insert-before ...` instead.
 
 ### 3. Always force non-interactive mode
 
@@ -35,14 +48,12 @@ Every `jj` command that can open an editor must be made non-interactive:
 | `jj commit` | `jj commit -m "message"` |
 | `jj squash -i` | `jj squash --from <id> --into <id> [files] -u` |
 | `jj split` | Use `jj-hunk split` via the `jj-hunk` skill instead |
-| `jj resolve` | Edit conflict markers manually in the file |
+| `jj resolve` | `jj resolve --list` to inspect · `jj resolve --tool :ours\|:theirs [filesets] [-r <rev>]` to take side #1/#2 non-interactively · or edit conflict markers manually |
 | `jj diffedit` | Not usable by agents — edit files directly |
 
 Always add `--no-pager` to `jj log`, `jj diff`, `jj show`, and `jj op log`.
 
-**When providing commands for users to execute manually**, offer both versions:
-- **For AI execution**: Non-interactive command
-- **For manual execution**: Interactive command with "(interactive)" label
+Never run an interactive or editor-opening command — there is no "manual fallback" to fall back to. Use the non-interactive forms above; for `jj split` / `jj squash -i`, use the `jj-hunk` skill; for `jj resolve`, use `--list` / `--tool` or edit conflict markers directly.
 
 ### 4. Distinguish "insert before `@`" from "create a sibling"
 
@@ -71,11 +82,11 @@ These are self-check thoughts that mean you are about to break a safety rule abo
 - "I'll just `jj abandon` / `jj op abandon` to clean this up" — STOP: `jj op abandon` is **not reversible** and `jj abandon` can discard work; do not run them unless the user explicitly asked.
 - "Let me `jj edit <old-change>` / `jj checkout` / `jj co` real quick" — STOP: that moves `@` onto an existing change — a forbidden `@`-move (rule 2).
 - "I'll `jj next` / `jj prev` to step around the graph" — STOP: those move `@` along the graph — forbidden without explicit user permission (rule 2).
-- "I'll `jj new` to start fresh here" — STOP: plain `jj new` moves `@` to the new change; use `jj new --no-edit --insert-after ... --insert-before ...` instead (rule 2 / rule 4).
+- "I'll `jj new` to start fresh here" — STOP: plain `jj new` moves `@` to the new change; use `jj new --no-edit --insert-after ... --insert-before ...` instead (rule 2 / rule 4). **Only exception:** when `children(@)` is non-empty (`@` has descendants), plain `jj new` is the *required* way to make `@` a leaf before editing — see the rule 2 exception.
 - "I'll blind-`jj undo` / `jj op restore` to escape a state I don't understand" — STOP: `jj undo`/`jj op restore` are safe recovery tools (see the operation-log recovery workflow below), but rolling back *without first checking `jj op log`* can discard good work; inspect the op log first, and surface to the user if the correct target is unclear.
 - "I'll run a full `jj show` / `jj diff` inline to check" — STOP: that pollutes the agent context with full hunks; use the bounded `--stat` exception (e.g. `jj show -r <id> --stat --no-pager`) or give the user the command to run.
 - "I'll `jj split -o @-` to extract this quickly" — STOP: that leaves the remainder as a sibling that no longer depends on the extracted change; insert a predecessor and `jj squash` into it instead (rule 4).
-- "I'll just run `jj describe` / `jj squash -i` / `jj split` / `jj resolve` / `jj diffedit`" — STOP: those open an editor or interactive UI; use the non-interactive forms in rule 3 (or edit files directly).
+- "I'll just run `jj describe` / `jj squash -i` / `jj split` / *bare* `jj resolve` / `jj diffedit`" — STOP: those open an editor or interactive UI; use the non-interactive forms in rule 3 (or edit files directly). (`jj resolve --list` and `jj resolve --tool :ours|:theirs` are non-interactive and allowed.)
 - "I'll drop to raw `git` for this one" — STOP: use `jj`; raw `git` is only for an operation the user explicitly requested that `jj` cannot do (rule 1).
 
 **All of these mean: STOP — do not run the command; surface to the user or use the safe alternative.**
@@ -108,7 +119,7 @@ jj version
 jj root
 
 # 2. Main branch / trunk detection
-jj log -r 'trunk()' --no-graph --limit 1
+jj log -r 'trunk()' --no-graph --limit 1 --no-pager
 
 # 4. Current bookmarks
 jj bookmark list
@@ -185,6 +196,10 @@ jj st                                           # Current working copy status
 jj log --no-pager                              # View change history
 jj log -r 'ancestors(@, 10)' --no-graph --no-pager
 
+# Before editing: is @ a leaf? Empty output = leaf (safe). Any output = @ has
+# descendants → run `jj new` to make @ a fresh leaf first (see safety rule 2 exception)
+jj log -r 'children(@)' --no-graph --no-pager -T 'change_id.short(8) ++ "\n"'
+
 # Describe the current working-copy change without moving @
 jj describe -m "Description"
 
@@ -200,13 +215,12 @@ jj rebase -o 'trunk()'
 jj rebase -s <change> -o <base>
 ```
 
-For manual stack-navigation workflows such as `jj edit`, `jj next`, or plain `jj new`, see
-`references/workflows.md`. Those commands move `@` and are not the default AI-agent workflow.
+`jj edit`, `jj next`, `jj prev`, and plain `jj new` move `@` and are forbidden (safety rule 2); the only sanctioned plain-`jj new` is making `@` a leaf when it has descendants (rule 2 exception). Use the non-interactive, `@`-preserving patterns below and in `references/workflows.md`.
 
 ### Viewing Changes and Diffs
 
 ```bash
-# Machine-parseable git-style diff (RECOMMENDED for AI agents)
+# Machine-parseable git-style diff (recommended default)
 jj diff --git --color=never --no-pager    # Current change vs parent
 
 # Summary statistics
@@ -214,15 +228,12 @@ jj diff --stat --no-pager                  # File change summary
 
 # Diff between specific changes
 jj diff --from <change-1> --to <change-2> --git --color=never --no-pager
-
-# Human-readable diff (for manual review)
-jj diff                                     # Default interactive view with pager
 ```
 
 **When to use each:**
-- `--git --color=never --no-pager`: **Default for AI agents** - produces machine-parseable git-style diffs without color codes or pager interruption
+- `--git --color=never --no-pager`: **Default** — machine-parseable git-style diff without color codes or pager interruption
 - `--stat --no-pager`: Quick file change summary (which files, how many lines changed)
-- Default `jj diff`: For human review in terminal only (uses pager, colors)
+- Never run bare `jj diff` — it can invoke a pager; always pass `--no-pager`.
 
 ### Bookmark (Branch) Management
 
@@ -265,11 +276,11 @@ jj git push --bookmark feature-name --force
 ### Non-Interactive Change Management
 
 ```bash
-# Squash entire working copy into parent
-jj squash
+# Squash entire working copy into parent (keep the parent's description)
+jj squash -u
 
-# Squash specific change into parent
-jj squash -r <change-id>
+# Squash specific change into its parent (keep the parent's description)
+jj squash -r <change-id> -u
 
 # Abandon change (like git reset, but safer)
 jj abandon <change-id>
@@ -278,7 +289,7 @@ jj abandon <change-id>
 jj undo
 
 # View operation history
-jj op log
+jj op log --no-pager
 ```
 
 ### Common Non-Interactive File-Filing Patterns
@@ -400,8 +411,7 @@ jj squash --from @ --into <new-change-id> file1.rs file2.rs -u
 jj describe -m "Second change"
 ```
 
-If the user explicitly wants parallel siblings instead, use `jj-organizing-history` or a sibling-specific workflow.
-For users executing manually, `jj split` remains the interactive option.
+For parallel siblings instead, use `jj-organizing-history` or a sibling-specific workflow. Never run `jj split` (interactive diff editor) — use the `jj-hunk` skill for hunk-level splits.
 
 ### Updating Change After Review
 
@@ -418,16 +428,16 @@ If direct amendment of another change is required, ask first because `jj edit <c
 
 ```bash
 # All unmerged changes (using trunk() alias)
-jj log -r 'trunk()..@'
+jj log -r 'trunk()..@' --no-pager
 
 # Recent changes
-jj log -r 'ancestors(@, 10)'
+jj log -r 'ancestors(@, 10)' --no-pager
 
 # Changes with bookmarks
-jj log -r 'bookmarks() & ::@'
+jj log -r 'bookmarks() & ::@' --no-pager
 
 # Your authored changes
-jj log -r 'mine()'
+jj log -r 'mine()' --no-pager
 ```
 
 See [revsets.md](references/revsets.md) for powerful query syntax.
@@ -466,10 +476,10 @@ If this is a jj repo but `CLAUDE.md` is missing or doesn't mention jj, follow th
 5. **Automatic tracking**: No need for `git add`
 6. **Elegant rebasing**: Descendants rebase automatically
 
-## Tips for AI Agents
+## Tips
 
-1. **Never run full diffs inline**: Do not run `jj show`, `jj diff`, or any diff command that emits full hunk content into the agent context — this pollutes context with large diffs. Give the user the command to run themselves instead. **Exception:** bounded `--stat` summaries (e.g. `jj show -r <id> --stat --no-pager`, `jj diff --stat --no-pager`) are allowed — they list only changed files and line counts, not diff bodies.
-2. **Always check for interactive commands**: If a workflow requires `jj split` or `jj squash -i`, provide non-interactive alternative
+1. **Never run full diffs inline**: Do not run `jj show`, `jj diff`, or any diff command that emits full hunk content into the agent context — this pollutes context with large diffs. Hand the command off to the user instead. **Exception:** bounded `--stat` summaries (e.g. `jj show -r <id> --stat --no-pager`, `jj diff --stat --no-pager`) are allowed — they list only changed files and line counts, not diff bodies.
+2. **Never run interactive or editor-opening commands**: `jj split`, `jj squash -i`, `jj diffedit`, bare `jj resolve`, and bare `jj describe`/`jj commit` all block on an editor or interactive UI — use the non-interactive forms (rule 3) or the `jj-hunk` skill.
 3. **Use revsets for precision**: `jj log -r 'trunk()..@'` shows exactly what needs pushing
 4. **Trust operation log**: If uncertain, `jj op log` shows what happened; `jj undo` reverses it
 5. **Describe changes clearly**: Good descriptions make history readable
