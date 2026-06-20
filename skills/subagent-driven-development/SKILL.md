@@ -271,6 +271,17 @@ Act on the user's choice and update the plan if execution graph changes.
 
 **Decidability rule:** classify as **structural** (escalate) iff the fix changes a consumer-referenced symbol/signature or touches the abstraction/requirements; otherwise **local**. A signature tweak is local **only** when no consumer task references that signature. On genuine ambiguity, **default to structural**.
 
+## Autonomy Level
+
+In Rush, resolve these checkpoints per the Autonomy Level table in `jj-superpowers:using-superpowers`.
+
+Manual (the default) is unchanged: every checkpoint above still pauses and asks. Rush removes only the human-wait — the automated review nodes (`spec_review`, `design_review`, `verify`, `quality_review`, `simplification`) STILL run; only their sign-off pauses are auto-resolved. Mapping onto the existing handling above:
+
+- A **structural `design_review` flaw** (`STATUS: BLOCKED_STRUCTURAL`, the return-to-brainstorming escalation) hits the safety floor and halts regardless of level.
+- `BLOCKED` / `SCOPE: related` is resolved mechanically (add the edge, run the producer, split the task) and never deferred; if the resolution needs non-trivial scope expansion, halt for the user.
+- `BLOCKED` / `SCOPE: unrelated` is noted as a separate task for later and execution continues.
+- A `verify` / `spec_review` / `quality_review` / `simplification` failure auto-routes back and retries up to the canonical limit, then halts if still failing — but a failure diagnosed as structural at any attempt halts immediately via the structural floor rather than consuming retries.
+
 ## Prompt Templates
 
 - `./implementer-prompt.md` - task node implementer
