@@ -69,7 +69,7 @@ Create:
 - `AGENTS.md` at repo root (~15 lines — see `references/agents-md-template.md`)
 - `docs/agent-specs/{capabilities,planes}/`, `glossary.md`, `invariants.md` (empty stubs only if user wants stubs)
 - `docs/agent-specs/capabilities/<slug>/<sub-spec>/SPEC.yaml` stubs for any pre-agreed sub-spec split.
-- `.agents/tech-debt/{docs,code,tests,perf}.md` (or just `docs.md` if user prefers minimal)
+- `.agents/tech-debt/{docs,code,tests,perf}/` (or just `docs/` if user prefers minimal) — one directory per queue; entries are per-file (see `references/manifest-schema.md` → Tech-debt queues). Add a `.gitkeep` to the required `docs/` so the empty dir is tracked.
 - `.gitignore` additions — see `references/gitignore-defaults.md`. Ask before committing changes that ignore previously-tracked paths.
 - Optional mdbook scaffold if user opted in.
 
@@ -77,14 +77,17 @@ Create:
 For each existing doc that overlaps with the new system:
 - **Leave alone** — clearly unrelated (LICENSE, architecture diagrams, etc.).
 - **Excerpt-via-writing-specs** — high-quality prose that describes normative behavior; hand off to `writing-specs` (don't auto-convert).
-- **Queue for rewrite** — outdated or unclear; add to `.agents/tech-debt/docs.md`.
+- **Queue for rewrite** — outdated or unclear; write a new entry file under `.agents/tech-debt/docs/<YYYY-MM-DD>/<HHMMSS>-<slug>.md` (per-entry format in `references/manifest-schema.md`).
 
 Never auto-generate specs from code or prose. Quality > coverage.
+
+### Step 6.5 — Migrate legacy tech-debt queues
+If the project predates schema v2 — manifest is `schema_version: 1`, or `tech_debt.queues.*` point at `.md` files / single-file queues exist on disk — convert them to per-entry directories using the **migration recipe** in `references/manifest-schema.md` (split each entry into `<queue>/<YYYY-MM-DD>/<HHMMSS>-<slug>.md`, drop `status:`/`last_verified:`, delete the old `<queue>.md`, bump `schema_version` to `2`). This is the authoritative, user-visible migration path; `spec-drift-detector` also performs it opportunistically during `--full-audit`.
 
 ### Step 7 — Termination check
 Stop when **both** are true:
 - a. Every candidate subsystem from step 1 has been classified as one of:
-  - **Capability/plane-bearing** → assigned in `code_map`, OR has a stub `SPEC.yaml` (status `draft`), OR has an explicit `tech-debt/docs.md` entry deferring the spec work.
+  - **Capability/plane-bearing** → assigned in `code_map`, OR has a stub `SPEC.yaml` (status `draft`), OR has an explicit `tech-debt/docs/` entry deferring the spec work.
   - **Infrastructure / non-product** → noted as such in the bootstrap conversation (build glue, internal libraries, dev tooling, test scaffolding). These do NOT need any spec, stub, or queue entry; their absence from `code_map` is correct. The user explicitly confirms this classification.
 - b. The user confirms the overall structure.
 

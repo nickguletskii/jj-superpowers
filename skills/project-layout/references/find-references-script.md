@@ -16,7 +16,7 @@ Categories scanned:
 - Glossary and invariants (cross-references to other terms/IDs)
 - mdbook chapters (`docs/book/src/**/*.md`)
 - `layout.yaml` (`code_map`, `spec_code.modules`, `excluded_paths`)
-- Tech-debt queues (`.agents/tech-debt/*.md`)
+- Tech-debt queues (per-entry files under `.agents/tech-debt/<queue>/`)
 
 ## Script
 

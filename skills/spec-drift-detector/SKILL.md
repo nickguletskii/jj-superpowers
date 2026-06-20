@@ -26,7 +26,7 @@ An on-demand auditor. Walks the project to find divergence between artifacts tha
 ### Default: diff-scoped
 Loads only what the current diff touches. Cheap; suitable for per-change runs.
 
-- **Always-load**: `layout.yaml`; for each spec the diff intersects (discovered via `code_map`), load its `SPEC.yaml` (for requirements index and frontmatter consistency check in section 1); tech-debt entries filtered to touched paths. When a loaded spec has a `sub_specs:` list, also load those sub-spec `SPEC.yaml` files (frontmatter + requirements list; prose only on demand — same rule as today). When a `code_map` hit returns a sub-spec slug (`<parent>/<leaf>`), load the sub-spec `SPEC.yaml` **and** the parent's `SPEC.yaml` (frontmatter + cross-cutting requirements). Parent-level requirements apply across all sub-specs.
+- **Always-load**: `layout.yaml`; for each spec the diff intersects (discovered via `code_map`), load its `SPEC.yaml` (for requirements index and frontmatter consistency check in section 1); tech-debt entries (per-entry files under the queue directories) filtered to touched paths. When a loaded spec has a `sub_specs:` list, also load those sub-spec `SPEC.yaml` files (frontmatter + requirements list; prose only on demand — same rule as today). When a `code_map` hit returns a sub-spec slug (`<parent>/<leaf>`), load the sub-spec `SPEC.yaml` **and** the parent's `SPEC.yaml` (frontmatter + cross-cutting requirements). Parent-level requirements apply across all sub-specs.
 - **On-demand**: full `SPEC.yaml` prose sections only when investigating a specific suspected drift.
 
 **Important — diff-scoped mode is NOT a backstop for stale `code_map`.** Diff intersection is computed from `code_map`, not from a full frontmatter walk. If a spec's frontmatter `owns:` lists a path that `code_map` has lost or misroutes, diff-scoped mode will miss it the same way `spec-code-sync`'s precedence check would. `--full-audit` (below) is the only mode that walks spec frontmatter directly and therefore catches `code_map` staleness. Schedule `--full-audit` periodically (weekly, on a maintenance cadence, or before significant integration milestones) for projects where the backstop matters.
@@ -39,7 +39,7 @@ When invoked, for each touched file with no `owns:` entry, drift-detector greps 
 ### `--full-audit` (opt-in)
 Periodic maintenance. Loads more, and is the authoritative reconciler for `code_map` ↔ frontmatter drift.
 
-- **Always-load**: `layout.yaml`, all spec frontmatter (small — just YAML headers), all `SPEC.yaml` files (frontmatter + requirements list), all tech-debt queues. For each loaded spec with `sub_specs:`, load all sub-spec `SPEC.yaml` files (frontmatter + requirements list).
+- **Always-load**: `layout.yaml`, all spec frontmatter (small — just YAML headers), all `SPEC.yaml` files (frontmatter + requirements list), all tech-debt entry files across the queue directories. For each loaded spec with `sub_specs:`, load all sub-spec `SPEC.yaml` files (frontmatter + requirements list).
 - **On-demand**: full `SPEC.yaml` prose sections only when investigating.
 - **MAY be partitioned** by subsystem on large monorepos — audit one subsystem manifest at a time.
 - **Frontmatter walk is the backstop**: scans every spec's frontmatter `owns:`/`code_spec:` to compare against `layout.yaml` indices. Any divergence (paths in frontmatter but missing from `code_map`, vice versa) is reported as a `mismatch`.
@@ -124,10 +124,10 @@ Report each orphan. Do not auto-fix.
 Two — and only two — categories of state change are authorized. Both touch agent-infrastructure only; never specs, code, or mdbook.
 
 ### Queue janitoring
-For each tech-debt entry across configured queues:
-- Re-check each `locations:` reference. If the file is gone or the code at the cited range no longer matches, mark `status: resolved` or `status: abandoned` with a short note.
-- Prune entries whose `status: resolved`/`abandoned` is older than the retention policy (default 30d).
-- Update `last_verified:` on entries that remain open and still apply.
+Each queue is a directory of per-entry files (`<queue>/<YYYY-MM-DD>/<HHMMSS>-<slug>.md`). For each entry file across configured queues:
+- Re-check each `locations:` reference. If the file is gone or the code at the cited range no longer matches, the entry is resolved or abandoned: **delete the entry file** (VCS history is the audit trail — there is no `status:` field or retention sweep for queue entries).
+- Leave entries that remain open and still apply untouched (entry files are write-once; janitoring only creates via migration or deletes).
+- **Legacy migration**: if a queue is still a single `.md` file (schema v1), convert it to per-entry files using the migration recipe in `project-layout/references/manifest-schema.md`, then continue janitoring the resulting entries.
 
 ### Ephemeral-artifact retention
 Per `layout.yaml`:
@@ -150,7 +150,7 @@ Write to `docs/agent-specs/drift-reports/<YYYY-MM-DD>/<HHMM>-<scope>.md` (gitign
 **Suggested route**: writing-specs to amend spec, OR code change to align with spec — user/agent decides.
 ```
 
-End the report with a counts summary: `N findings (M mismatch, K suspect, L unverified), J orphans, P queue items janitored, Q ephemerals pruned`.
+End the report with a counts summary: `N findings (M mismatch, K suspect, L unverified), J orphans, P queue entries deleted, R queues migrated, Q ephemerals pruned`.
 
 ## What this skill does NOT do
 

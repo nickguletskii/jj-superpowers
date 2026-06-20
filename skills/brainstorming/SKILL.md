@@ -36,10 +36,10 @@ You MUST create a task for each of these items and complete them in order:
      ```
    - **Non-normative refactor** — no spec change needed.
 5. **Present design** — in sections scaled to their complexity, get user approval after each section. Use your system's "ask questions" tool.
-6. **Choose implementation workflow** — decide whether this needs the full documented workflow or qualifies for the Small Change Shortcut below
-7. **Write design doc** — save to `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md` unless using the Small Change Shortcut
+6. **Triage implementation tier** — after design approval, PROPOSE a tier (Trivial / Small / Full) with reasoning; the user may veto via your system's "ask questions" tool, but your proposal is the default (no mandatory round-trip). See the Triage Gate below.
+7. **Write design doc** — save to `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md` for the Full tier; for Trivial/Small keep the approved design and verification command in the conversation
 8. **Spec self-review** — quick inline check for placeholders, contradictions, ambiguity, scope (see below). Don't be afraid to go back to asking questions and approvals.
-9. **Adversarial self-review** — if external coding agents are available as tools/MCP servers/skills, invoke them to review the spec. 
+9. **Adversarial self-review** — run the convergent review loop (`jj-superpowers:hypothesis-driven-improvement` Simple In-Line Mode) over the spec with rotating lenses, then ensemble with external harnesses when available (see below). 
 10. **User reviews written spec** — ask user to review the spec file before proceeding
 11. **Transition to implementation** — invoke writing-plans skill to create implementation plan or proceed using your system's recommended workflow (confirm with user using "ask questions" tool)
 
@@ -53,11 +53,12 @@ digraph brainstorming {
     "Brainstorm API surface\nand abstractions" [shape=box];
     "Present design sections" [shape=box];
     "User approves design?" [shape=diamond];
-    "Choose implementation workflow" [shape=diamond];
+    "Triage implementation tier" [shape=diamond];
     "Write design doc" [shape=box];
     "Spec self-review\n(fix inline)" [shape=box];
     "User reviews spec?" [shape=diamond];
-    "Small Change Shortcut" [shape=doublecircle];
+    "Trivial: inline, then verify" [shape=doublecircle];
+    "Small: direct subagent\ndispatch(es), then verify" [shape=doublecircle];
     "Invoke writing-plans skill" [shape=doublecircle];
 
     "Explore project context" -> "Ask clarifying questions";
@@ -66,9 +67,10 @@ digraph brainstorming {
     "Brainstorm API surface\nand abstractions" -> "Present design sections";
     "Present design sections" -> "User approves design?";
     "User approves design?" -> "Present design sections" [label="no, revise"];
-    "User approves design?" -> "Choose implementation workflow" [label="yes"];
-    "Choose implementation workflow" -> "Small Change Shortcut" [label="small, approved"];
-    "Choose implementation workflow" -> "Write design doc" [label="full workflow"];
+    "User approves design?" -> "Triage implementation tier" [label="yes"];
+    "Triage implementation tier" -> "Trivial: inline, then verify" [label="trivial"];
+    "Triage implementation tier" -> "Small: direct subagent\ndispatch(es), then verify" [label="small"];
+    "Triage implementation tier" -> "Write design doc" [label="full"];
     "Write design doc" -> "Spec self-review\n(fix inline)";
     "Spec self-review\n(fix inline)" -> "User reviews spec?";
     "User reviews spec?" -> "Write design doc" [label="changes requested"];
@@ -76,24 +78,33 @@ digraph brainstorming {
 }
 ```
 
-## Small Change Shortcut
+## Triage Gate
 
-After exploring context, presenting approaches, brainstorming the API surface, and getting design approval, estimate whether the cost of writing and reviewing spec and plan files would exceed the implementation cost.
+After design approval, match the planning ceremony to the task. You (the orchestrator) **propose** one of three tiers **with reasoning**; the user may veto via your system's "ask questions" tool, but your proposal is the **default — there is no mandatory round-trip**. Triage chooses *how much planning ceremony*, never whether to skip design approval.
 
-Use the shortcut only when all are true:
+| Tier | Path | Who verifies | Plan files? |
+|------|------|--------------|-------------|
+| **Trivial** | Implement inline in this session, then verify | orchestrator runs the named verify command | none |
+| **Small** | 1–2 **direct subagent dispatches** | orchestrator runs the named verify command conversationally (implementers stay subject to the contended-command rule; the orchestrator is not, so it owns Small-tier verification) | none |
+| **Full** | Write spec → `writing-plans` → `project-network.dot` graph | `verify` nodes in the graph | yes |
 
-- The approved design is small enough to state clearly in the conversation.
-- The change is local, with obvious file scope and no new architecture.
-- Verification is straightforward and can be named before implementation.
-- Skipping spec and plan files will not make future context recovery materially harder.
+**Tier criteria:**
 
-When it qualifies, ask the user to choose one of these options instead of writing a spec:
+- **Trivial** — single obvious file, no new abstraction, verification nameable in one command, no design risk.
+- **Small** — local scope, ≤2 implementer dispatches, obvious file boundaries, **no new architecture, no cross-file design risk** (design risk forces Full, because the `design_review` gate lives only there).
+- **Full** — new architecture, new public API surface, multiple interacting components, cross-file design risk, or anything that benefits from a written, reviewable spec/plan.
 
-1. **Inline execution** - implement directly in this session, then verify.
-2. **Direct subagent dispatch** - dispatch one bounded subagent with the approved design, file scope, and verification command.
-3. **Full workflow** - write the spec and continue to `writing-plans`.
+**Choosing the lightest adequate tier is the CORRECT default, not a risk.** Do not reflexively reach for Full. If the work genuinely fits Trivial, run it inline with no subagents and no plan files.
 
-The shortcut does not skip design approval, file-scope discipline, or verification. If uncertainty appears during implementation, stop and return to the full workflow or ask the user for direction.
+> **Worked Trivial example:** "Fix a typo'd error string in one file." Single obvious file, no new abstraction, one-command verification (e.g. the project's test/lint command on that file), no design risk. Propose **Trivial**, get design approval as always, then edit the file inline in this session and run the named verify command. No spec, no `writing-plans`, no subagents.
+
+**Guardrails preserved at every tier.** Design approval (the HARD-GATE), file-scope discipline, and named verification apply at Trivial, Small, and Full alike. The only thing triage varies is the amount of planning ceremony.
+
+**Small-tier dispatch reuses the existing implementer contract.** A Small-tier direct dispatch MUST use the `sdd-implementer` named agent (fallback: the `implementer-prompt.md` prompt), passing the **approved design + exact file scope + verify command** as the dynamic context *in place of* a task file. This is non-negotiable: it carries over file-scope enforcement, the contended-command boundary, the no-nested-harness rule, the implementer status protocol (`DONE`/`BLOCKED`/…), and the "search before building a helper" discipline. Small tier changes *what context the implementer receives* (a conversational design, not a task file), never *which disciplines apply*.
+
+**Off-graph tiers preserve the spec-sync gate.** `writing-plans`/`executing-plans` are normally where `spec-code-sync` runs before source edits in projects with `.agents/layout.yaml`. Because Trivial/Small skip those skills, **you (the orchestrator) MUST invoke `spec-code-sync` before any source edit** at Trivial/Small tier when the project has `.agents/layout.yaml` (run the candidate-spec lookup on the touched paths; route amendments per its rules). Skipping the plan files must not silently skip spec sync.
+
+**Self-escalation.** Any tier hitting unexpected uncertainty mid-flight stops and **re-triages upward** (Trivial→Small→Full as warranted), or asks the user. Trivial/Small produced no spec or graph, so escalation to Full means writing them then — name that cost when escalating.
 
 ## The Process
 
@@ -117,6 +128,7 @@ The shortcut does not skip design approval, file-scope discipline, or verificati
 **Brainstorming the API surface:**
 
 - See the `designing-with-types-and-abstractions` skill for general guidance
+- **Search before you build:** before proposing any new helper, utility, or type, search the codebase, the standard library, and the current dependencies for something that already does it. Reuse it unless there is a documented reason not to, and record the reused utilities in the design.
 - Inventory the current public and internal APIs, data shapes, and call boundaries before deciding what should stay stable and what should change
 - Look for manual branching, duplicated code paths, leaky internal APIs, and backend-specific conditionals that should become a shared abstraction instead of accumulating more branches
 - Propose the interface, trait, type, and module boundary changes needed to make the current work scope generic and extensible
@@ -155,8 +167,8 @@ The shortcut does not skip design approval, file-scope discipline, or verificati
 
 **Documentation:**
 
-- For the full workflow, write the validated design (spec) to `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md`.
-- For the Small Change Shortcut, keep the approved design and verification command in the conversation instead of writing a spec file.
+- For the Full tier, write the validated design (spec) to `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md`.
+- For Trivial/Small tiers, keep the approved design and verification command in the conversation instead of writing a spec file.
 
 **Spec Self-Review:**
 After writing the spec document, look at it with fresh eyes:
@@ -170,8 +182,27 @@ After writing the spec document, look at it with fresh eyes:
 
 Fix any issues inline. No need to re-review — just fix and move on.
 
-**Adversarial self-review** 
-If available, invoke a 3rd party agent to review the spec using the "spec self-review" guidance.
+**Adversarial self-review**
+
+Keep the step 8 spec self-review above (your own fresh-eyes pass). Then run a **convergent review loop** as the default, invoking `jj-superpowers:hypothesis-driven-improvement`'s **Simple In-Line Mode** over the written spec.
+
+*Severity taxonomy.* Every finding is tagged **Major**, **Minor**, or **Nit**:
+
+- **Major** — changes the outcome: structural/design flaw, correctness error, genuine ambiguity (two readings → materially different builds), missing/contradicted requirement, wrong abstraction boundary. Must be resolved **and** re-reviewed.
+- **Minor** — under-specification or local improvement resolvable unambiguously with no design decision. Folded in immediately, same round; does not by itself trigger another round.
+- **Nit** — cosmetic/preference. Dropped (or folded trivially). Never loops.
+
+**Convergence = a review round that surfaces zero Major findings.** On that round, fold in any outstanding Minors (you, the orchestrator, edit the spec doc directly — there is no implementer here) and drop Nits, with **no confirming round on the Minors**. Minors remain subject to the accept/refute gate: a Minor-looking finding that is actually wrong may be refuted with justification.
+
+*Lenses.* Each round dispatches ~**3 reviewers**, each assigned a **distinct lens** from this encouraged menu: correctness/soundness, completeness/missing-requirements, ambiguity/interpretability, API & design soundness, concurrency, parallelism, performance, DRYness/duplication, ease of abstraction & extensibility, testability/verification, over/under-engineering (YAGNI). Pick the ~3 most relevant to this spec and **rotate lens assignments across rounds** for diversity. Reviewers read the immutable spec read-only, so they fan out safely.
+
+*External-harness ensembling.* After the subagent loop converges (a zero-Major round), run a **default-on-when-available** ensemble pass at the **orchestrator** level (the subagent no-other-harness rule is unaffected — that governs the reviewer subagents, not you):
+
+- Auto-detect available external harnesses: codex MCP (`mcp__codex__codex`); the `gemini` and `opencode` CLIs if installed.
+- Run the **same lens-based review** through each available harness.
+- The combined loop is `subagent-converge → ensemble pass`. An ensemble pass's **Major** findings **re-open the subagent loop**; after it re-converges, ensemble runs again. The loop ends when an **ensemble pass yields zero Major**.
+- External **Minor/Nit** findings are folded-and-go (or dropped) exactly like subagent Minors/Nits, and **do NOT re-open the loop** — only an ensemble **Major** re-opens it.
+- If **no** external harness is available, **skip silently**. The user may opt out.
 
 **User Review Gate:**
 After the spec review loop passes, ask the user to review the written spec before proceeding:
@@ -182,8 +213,8 @@ Wait for the user's response. If they request changes, make them and re-run the 
 
 **Implementation:**
 
-- For the full workflow, invoke the writing-plans skill to create a detailed implementation plan. Do NOT invoke any other skill; writing-plans is the next step.
-- For the Small Change Shortcut, use the approved inline or direct-subagent path and run the named verification before claiming completion.
+- For the Full tier, invoke the writing-plans skill to create a detailed implementation plan. Do NOT invoke any other skill; writing-plans is the next step.
+- For Trivial/Small tiers, use the approved inline or direct-subagent path per the Triage Gate and run the named verification before claiming completion. Remember the off-graph spec-sync requirement: invoke `spec-code-sync` before any source edit when the project has `.agents/layout.yaml`.
 
 ## Key Principles
 

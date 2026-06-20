@@ -19,6 +19,6 @@ docs/agent-specs/drift-reports/            # drift-detector ephemeral output
 
 Do NOT ignore:
 - `.agents/layout.yaml` — core manifest, must be in VCS.
-- `.agents/tech-debt/*.md` — shared queue, must be in VCS so other agents/devs see it.
+- `.agents/tech-debt/` — shared queue (per-entry files under `<queue>/<date>/`), must be in VCS so other agents/devs see it.
 - `.agents/skills/` — project-specific skills, must be in VCS.
 - `docs/agent-specs/` (excluding the drift-reports/ subdir) — specs are first-class project artifacts.

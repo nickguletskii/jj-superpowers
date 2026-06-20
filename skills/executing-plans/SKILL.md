@@ -28,7 +28,8 @@ Before executing work, confirm:
 - Every task node has `kind="task"`, `file`, and `files`.
 - Every task node reaches exactly one downstream `spec_review`.
 - Every `spec_review` reaches a `verify` node before any `quality_review`.
-- Every `quality_review` depends on a successful `verify` node.
+- The canonical terminal chain is `verify -> [simplification?] -> quality_review -> final`, where `simplification` is optional. A `quality_review` depends on a successful `verify` node, **or on a `simplification` node when one is present** (a `simplification` node itself depends on a successful `verify`).
+- When the graph has API-stub task(s) that other tasks consume, a `design_review` node depends on the stub task(s)' `spec_review`(s), and every consumer task depends on that `design_review` node (gating consumer start). A graph with no shared API surface needs no `design_review` node.
 - Every terminal path reaches `final`.
 - No cycles exist.
 - No parallel-ready task nodes have overlapping file scopes.
@@ -49,9 +50,17 @@ Create a task list from graph nodes, not from the order of files in the director
 
 **Spec review nodes:** After a task node reports done, perform the corresponding task-local spec check before marking its downstream `spec_review` passed. Confirm the implementation matches the task file, stays inside its file scope, and reports task-local checks honestly.
 
+**Design review nodes:** When the graph has a `design_review` node, run it after its upstream API-stub task(s)' `spec_review` pass and **before dispatching or starting any consumer task** (the node gates consumer *start*, so a bad API is caught before implementations are produced). Judge **coherence only**, using the node's `rubric` (default `jj-superpowers:designing-with-types-and-abstractions`): right variation axis, illegal states unrepresentable, explicit effects, no leaky boundaries. Do **not** re-run type-checking — the stub task carries its own narrow task-local type-check, so consumers already fan out against a compiling stub. Classify any finding:
+- **Local flaw** — the fix is contained to the stub task's own files and **does not change any type, signature, or symbol that a consumer task file references** (e.g. correcting an internal type, fixing documentation, adding a trait method no consumer cites yet, renaming a private helper). Re-dispatch/redo the stub task with the findings, re-run its `spec_review`, then re-run this `design_review`. No consumer task files change; **no user round-trip**. Reviewers never edit files — re-running the stub task does the work.
+- **Structural flaw** — the fix changes a **consumer-referenced symbol/signature** (even a "small" one, because consumer task files must then be regenerated), or the choice of abstraction, a missing requirement, or a contradiction with the spec. Return **`STATUS: BLOCKED_STRUCTURAL`**, **pause the graph**, do not start consumers, and surface 2-3 concrete options to the user (decision-checkpoint pattern). On a design change, return to **`jj-superpowers:brainstorming`** so `jj-superpowers:writing-plans` regenerates the affected consumer task files and the affected portion of `project-network.dot`. (Returning to brainstorming is an executor-level escalation event, not a graph edge — the DAG stays acyclic.)
+
+On genuine ambiguity between local and structural, **default to structural/escalate**: a wrongly-autonomous fix that silently leaves consumer task files stale is the exact failure this gate prevents. A signature tweak is local **only** when no consumer task references that signature.
+
 **Verify nodes:** After all upstream `spec_review` nodes pass, run the commands from the referenced `verify-*` file. Group verification commands live in and run from `verify-*` files, not task files. Mark the `verify` node passed only when every command succeeds or when the user explicitly accepts the remaining failure.
 
-**Quality review nodes:** After the upstream `verify` node passes, run the quality review checkpoint for the verified group. If subagents are unavailable, perform local review and clearly note that it is local review. Do not run `quality_review` before verification passes.
+**Simplification nodes:** A `simplification` node appears only in Full-tier graphs and only when the verified group introduced new helpers, utilities, or abstractions; when present it runs **after `verify` passes and before `quality_review`**. It is a **reviewer** node: apply the `jj-superpowers:deslopify` rubric (its duplication/under-engineering sections) and the `code-simplifier` lens to flag duplication of in-repo code, the standard library, or dependency functionality, and propose deletion/reuse of an existing API. Do not restate those checks — reuse them. Route accepted findings **back to an implementer** (reviewers never edit code, same pattern as `quality_review`); after the implementer applies fixes, **re-verify** the group. The node passes when it surfaces no accepted duplication/reduction finding, or all accepted findings have been routed back, fixed, and re-verified. The downstream `quality_review` then depends on this node, not directly on the `verify`.
+
+**Quality review nodes:** After the upstream `verify` node passes (or, when present, the `simplification` node passes), run the quality review checkpoint for the verified group. If subagents are unavailable, perform local review and clearly note that it is local review. Do not run `quality_review` before verification passes.
 
 **Final node:** Continue executing ready graph nodes until `final` is reached. Do not complete development from task completion alone.
 

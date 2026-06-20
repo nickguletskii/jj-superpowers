@@ -38,7 +38,9 @@ Node kinds:
 |------|----------|------|
 | `task` | implementer subagent | files changed and filed |
 | `spec_review` | spec reviewer subagent | task matches its task file |
+| `design_review` | design reviewer subagent (`sdd-design-reviewer`) | stubbed API is coherent |
 | `verify` | verification subagent or orchestrator command runner | commands exit successfully |
+| `simplification` | simplification reviewer subagent (`sdd-simplifier`) | no accepted duplication remains, or accepted findings routed back, fixed, and re-verified |
 | `quality_review` | code quality reviewer subagent | verified group is maintainable |
 | `final` | orchestrator | all upstream gates passed |
 
@@ -61,10 +63,19 @@ digraph process {
     "Run task spec review" [shape=box];
     "Spec review passes?" [shape=diamond];
     "Return to implementer for task fix" [shape=box];
+    "design_review node ready?\n(API stub spec review passed)" [shape=diamond];
+    "Run design_review (coherence only)" [shape=box];
+    "design_review outcome?" [shape=diamond];
+    "Local flaw: re-dispatch stub implementer\nwith findings" [shape=box];
+    "BLOCKED_STRUCTURAL: pause graph,\nsurface options, return to brainstorming" [shape=box];
     "Ready verify node?" [shape=diamond];
     "Run batched verification commands" [shape=box];
     "Verification passes?" [shape=diamond];
     "Return failures to responsible task nodes" [shape=box];
+    "simplification node present?\n(group added new helpers)" [shape=diamond];
+    "Run simplification review" [shape=box];
+    "Simplification passes?" [shape=diamond];
+    "Route findings back to implementer,\nthen re-verify" [shape=box];
     "Run group code-quality review" [shape=box];
     "Quality review passes?" [shape=diamond];
     "Return to responsible implementer" [shape=box];
@@ -83,13 +94,26 @@ digraph process {
     "Run task spec review" -> "Spec review passes?";
     "Spec review passes?" -> "Return to implementer for task fix" [label="no"];
     "Return to implementer for task fix" -> "Run task spec review";
-    "Spec review passes?" -> "Ready verify node?" [label="yes"];
+    "Spec review passes?" -> "design_review node ready?\n(API stub spec review passed)" [label="yes"];
+    "design_review node ready?\n(API stub spec review passed)" -> "Run design_review (coherence only)" [label="yes"];
+    "design_review node ready?\n(API stub spec review passed)" -> "Ready verify node?" [label="no"];
+    "Run design_review (coherence only)" -> "design_review outcome?";
+    "design_review outcome?" -> "Local flaw: re-dispatch stub implementer\nwith findings" [label="local"];
+    "Local flaw: re-dispatch stub implementer\nwith findings" -> "Run task spec review";
+    "design_review outcome?" -> "BLOCKED_STRUCTURAL: pause graph,\nsurface options, return to brainstorming" [label="structural"];
+    "design_review outcome?" -> "Ready verify node?" [label="pass: fan out consumers"];
     "Ready verify node?" -> "Run batched verification commands" [label="yes"];
     "Ready verify node?" -> "Ready task nodes?" [label="no"];
     "Run batched verification commands" -> "Verification passes?";
     "Verification passes?" -> "Return failures to responsible task nodes" [label="no"];
     "Return failures to responsible task nodes" -> "Run task spec review";
-    "Verification passes?" -> "Run group code-quality review" [label="yes"];
+    "Verification passes?" -> "simplification node present?\n(group added new helpers)" [label="yes"];
+    "simplification node present?\n(group added new helpers)" -> "Run simplification review" [label="yes"];
+    "simplification node present?\n(group added new helpers)" -> "Run group code-quality review" [label="no"];
+    "Run simplification review" -> "Simplification passes?";
+    "Simplification passes?" -> "Route findings back to implementer,\nthen re-verify" [label="no"];
+    "Route findings back to implementer,\nthen re-verify" -> "Run task spec review";
+    "Simplification passes?" -> "Run group code-quality review" [label="yes"];
     "Run group code-quality review" -> "Quality review passes?";
     "Quality review passes?" -> "Return to responsible implementer" [label="no"];
     "Return to responsible implementer" -> "Run task spec review";
@@ -107,7 +131,9 @@ Before dispatching work, check:
 - Every task node has `kind="task"`, `file`, `files`, and optionally `scopes`.
 - Every task node reaches exactly one downstream `spec_review`.
 - Every `spec_review` reaches a `verify` node before any `quality_review`.
-- Every `quality_review` depends on a successful `verify` node.
+- The terminal chain is `verify -> [simplification?] -> quality_review -> final`. A `quality_review` depends on a successful `verify` node directly when no `simplification` node is present, **or** on the `simplification` node when one is present.
+- A `simplification` node (present only when the verified group introduced new helpers/abstractions) depends on a successful `verify` node, and its downstream `quality_review` depends on it.
+- When a graph has consumed API-stub task(s), a `design_review` node depends on the stub task(s)' `spec_review`(s), and every consumer task depends on the `design_review` node (gating consumer start).
 - Every terminal path reaches `final`.
 - No cycles.
 - No ready-to-run parallel task nodes have overlapping `files` attributes (Target Files conflict check).
@@ -132,7 +158,9 @@ Default to **3–5 concurrent subagents** unless the user specifies otherwise. M
 |------------|-------------|--------------------------|
 | `task` | `sdd-implementer` | `./implementer-prompt.md` |
 | `spec_review` | `sdd-spec-reviewer` | `./spec-reviewer-prompt.md` |
+| `design_review` | `sdd-design-reviewer` | `./design-reviewer-prompt.md` |
 | `verify` | `sdd-verifier` | `./verification-prompt.md` |
+| `simplification` | `sdd-simplifier` | `./simplification-prompt.md` |
 | `quality_review` | `sdd-quality-reviewer` | `./code-quality-reviewer-prompt.md` |
 | jj filing helper | `sdd-jj-coordinator` | `./jj-coordinator-prompt.md` |
 
@@ -150,11 +178,15 @@ If named agents are unavailable, use the fallback prompt templates exactly as be
 
 **Spec review nodes:** Dispatch `sdd-spec-reviewer` or fallback `./spec-reviewer-prompt.md` after each task reports `DONE` or `DONE_WITH_CONCERNS`. Spec review is task-local and happens before verification fan-in.
 
+**Design review nodes:** Dispatch `sdd-design-reviewer` or fallback `./design-reviewer-prompt.md` after the API-stub task(s)' spec review(s) pass and before any consumer task starts. Pass the stub task file path, the stubbed surface, and the node's `rubric` (defaulting to `designing-with-types-and-abstractions`). The reviewer judges API *coherence* only and never edits files; it reports a local flaw (re-dispatch the stub implementer to fix and re-stub), `STATUS: BLOCKED_STRUCTURAL` (pause and escalate — see Design-Review Status under BLOCKED Handling), or pass (fan out consumers).
+
 **Verify nodes:** Run the commands from the referenced `verify-*.md` file after all upstream spec reviews pass. Use `sdd-verifier` or fallback `./verification-prompt.md` when logs may be long or when summarization is useful. Most build tools only support one build/test suite at a time, so verification nodes are batched reduction points.
 
 Verification commands and reports should follow `jj-superpowers:tool-output-discipline`: prefer quiet, structured, scoped, or filtered output, and expand only when concise output is insufficient for diagnosis.
 
-**Quality review nodes:** Dispatch `sdd-quality-reviewer` or fallback `./code-quality-reviewer-prompt.md` after the upstream verify node passes. The review scope is the verified task group, not necessarily a single task.
+**Simplification nodes:** Dispatch `sdd-simplifier` or fallback `./simplification-prompt.md` after the upstream verify node passes, when the verified group introduced new helpers, utilities, or abstractions. It is the single owner of duplication detection. Its method reuses the `deslopify` skill (its under-engineering/duplication guidance) and the `code-simplifier` agent — it does not restate their checks. Findings route back to an implementer, which applies fixes; the group then re-verifies. Pass the node's `scope` (the verified task-group ids).
+
+**Quality review nodes:** Dispatch `sdd-quality-reviewer` or fallback `./code-quality-reviewer-prompt.md` after the upstream verify node passes — or after the `simplification` node when one is present. The review scope is the verified task group, not necessarily a single task. Its mandate is maintainability/production-risk only; duplication detection is owned by `simplification`, not `quality_review`.
 
 **Final nodes:** After every upstream quality review passes, use `jj-superpowers:finishing-a-development-branch`.
 
@@ -163,6 +195,8 @@ Verification commands and reports should follow `jj-superpowers:tool-output-disc
 Implementers may run narrow task-local checks only when the task file names them. Implementers do not own group compile, test, lint, type-check, build, or smoke-test verification.
 
 `cargo check`, `cargo build`, and `cargo test` are normally verification-node commands even when package-scoped or test-filtered, because they contend on shared target-directory state. A task file may name one only when it documents why that command is safe and necessary for the task.
+
+**Sanctioned exception — API-stub type-check.** An API-stub task whose surface is gated by a `design_review` node MAY run a narrow, task-file-documented scoped type-check (e.g. `cargo check -p <crate> -q`) so consumers fan out against a compiling stub. Because `design_review` reviews coherence, not compilation, this scoped check is the one place a compile command belongs in a task. This is the single sanctioned exception; it does not otherwise weaken the contended-command rule.
 
 When implementers run an allowed task-local command, they should use `jj-superpowers:tool-output-discipline` and report concise results.
 
@@ -228,11 +262,22 @@ The blocker is a pre-existing gap outside this work scope. Pause and surface opt
 
 Act on the user's choice and update the plan if execution graph changes.
 
+### Design-Review Status (`STATUS: BLOCKED_STRUCTURAL`)
+
+`design_review` is a distinct, design-review-only status, separate from implementer `BLOCKED`. The reviewer charter is **coherence only** (rubric `designing-with-types-and-abstractions`: right variation axis, illegal states unrepresentable, explicit effects, no leaky boundaries) — it does NOT recompile. Reviewers never edit files. The node reports one of:
+
+- **Local flaw** — the fix is contained to the stub task's own files and changes no type, signature, or symbol a consumer task file references (e.g. fixing the stub's internal type or docs, adding a trait method no consumer cites yet, renaming a private helper). The orchestrator **re-dispatches the stub implementer** with the findings to fix and re-stub, then re-runs the stub's spec review. No consumer task files change; **no user round-trip**.
+- **Structural flaw → `STATUS: BLOCKED_STRUCTURAL`** — the fix changes a consumer-referenced symbol/signature, or the choice of abstraction, a missing requirement, or a contradiction with the spec. The orchestrator **pauses the graph**, does **not** dispatch consumers, surfaces 2–3 concrete options to the user (decision-checkpoint pattern), and returns to **brainstorming**; `writing-plans` then regenerates the affected consumer task files and the affected portion of `project-network.dot`. "Return to brainstorming" is an executor-level escalation event, not a graph edge — the DAG stays acyclic.
+
+**Decidability rule:** classify as **structural** (escalate) iff the fix changes a consumer-referenced symbol/signature or touches the abstraction/requirements; otherwise **local**. A signature tweak is local **only** when no consumer task references that signature. On genuine ambiguity, **default to structural**.
+
 ## Prompt Templates
 
 - `./implementer-prompt.md` - task node implementer
 - `./spec-reviewer-prompt.md` - per-task spec review node
+- `./design-reviewer-prompt.md` - design review node (API-stub coherence)
 - `./verification-prompt.md` - verify node command runner
+- `./simplification-prompt.md` - simplification review node (duplication detection)
 - `./code-quality-reviewer-prompt.md` - group quality review node
 - `./jj-coordinator-prompt.md` - low-level jj filing helper when needed
 
@@ -280,9 +325,11 @@ Never:
 - Dispatch parallel task nodes with overlapping file scopes.
 - Announce dispatch in one response turn and make Agent calls in separate subsequent turns — all Agent calls for a parallel batch must be in the same response.
 - Skip per-task spec review before verification fan-in.
+- Fan out consumer task nodes before `design_review` passes when a shared API stub exists.
 - Run code-quality review before verification passes.
+- Run both `simplification` and `quality_review` with overlapping duplication mandates — duplication detection is owned solely by `simplification`; `quality_review` is maintainability/production-risk only.
 - Treat implementer task-local checks as group verification.
-- Let implementers run `cargo check`, `cargo build`, `cargo test`, or other contended group commands unless the task file documents a concrete exception.
+- Let implementers run `cargo check`, `cargo build`, `cargo test`, or other contended group commands unless the task file documents a concrete exception. The one sanctioned exception is an API-stub task gated by a `design_review` node, which may run a narrow, task-file-documented scoped type-check so consumers fan out against a compiling stub.
 - Let any subagent invoke `claude`, `codex`, `gemini`, `opencode`, Copilot CLI, or another agent harness from the shell.
 - Dump verbose command output when quiet, structured, scoped, or filtered output would answer the question.
 - Have implementers run jj commands other than `jj commit [FILES] -m 'toorg: [description]'`.

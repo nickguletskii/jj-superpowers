@@ -20,7 +20,7 @@ Concrete questions to ask the user during step 3 of the bootstrap loop. Use the 
 - Should handoffs be committed to VCS (visible to all collaborators) or kept local (gitignored)?
 
 ## Existing docs disposition
-- For each long-standing doc (README, ARCHITECTURE, docs/), pick: leave alone / excerpt via writing-specs / queue for rewrite in `tech-debt/docs.md`.
+- For each long-standing doc (README, ARCHITECTURE, docs/), pick: leave alone / excerpt via writing-specs / queue for rewrite (new entry file under `.agents/tech-debt/docs/<YYYY-MM-DD>/<HHMMSS>-<slug>.md`).
 - For each existing `AGENTS.md`: which lines describe layout (move to manifest), which describe behavioral guidance (move to project-specific skills), which are conventions that fit nowhere structured (keep in AGENTS.md)?
 
 ## Scope exclusions
@@ -28,6 +28,6 @@ Concrete questions to ask the user during step 3 of the bootstrap loop. Use the 
 
 ## Subsystems detected
 - List the subsystem candidates from step 1. For each, classify as one of:
-  - **Capability/plane-bearing** → assigned in `code_map`, OR has a stub `SPEC.yaml` (status `draft`), OR has a `tech-debt/docs.md` defer entry.
+  - **Capability/plane-bearing** → assigned in `code_map`, OR has a stub `SPEC.yaml` (status `draft`), OR has a `tech-debt/docs/` defer entry.
   - **Infrastructure / non-product** → build glue, internal libraries, dev tooling, test scaffolding. No spec needed; absence from `code_map` is correct.
 - Are any worth their own nested `.agents/layout.yaml`? (Rule of thumb: only when the subsystem has materially different conventions from the root.)

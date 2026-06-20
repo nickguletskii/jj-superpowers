@@ -40,7 +40,7 @@ The workflow gate around code changes in projects with an agent-spec ecosystem. 
    - Record the divergence as a `layout.yaml` staleness issue. If the agent can also write `layout.yaml`, update it in the same change; otherwise flag for `spec-drift-detector`.
 
    **Caveat — `code_map` staleness is not caught here, nor in diff-scoped drift checks.** This precedence check only sees specs loaded via `code_map` in step 3. If `code_map` is stale and *omits* a path that some spec's frontmatter actually owns, the canonical spec is never loaded and the divergence stays invisible. `spec-drift-detector`'s default diff-scoped mode uses `code_map` too and has the same blind spot. **Only `spec-drift-detector --full-audit` walks spec frontmatter directly to catch this class of drift**; schedule it periodically (the design recommends weekly or before significant integration milestones), not just per-change.
-5. Load filtered tech-debt entries for touched paths (grep queues by path; don't load full queues).
+5. Load filtered tech-debt entries for touched paths (grep across the per-entry files in the queue directories by path; don't load every entry).
 
 ## Candidate-spec lookup (runs first)
 
@@ -70,7 +70,7 @@ After the candidate-spec lookup runs, classify the change. Use the **operational
 - **Design-time intent** ⇔ the brainstorming-step design doc named the spec amendment BEFORE any code task was authored.
   - **Action**: require a `spec-update` task in the plan, scheduled BEFORE the implementing task. `writing-specs` runs first; code runs second.
 - **Post-implementation refinement** (= queued normative debt that MUST be resolved later, not optional polish) ⇔ everything else, including mid-implementation realizations that a spec should change.
-  - **Action**: implement first; immediately enqueue an entry in `.agents/tech-debt/docs.md` describing what spec change is owed. Drift-detector will surface this later as a queue item and pair it with related drift findings. The debt is real and persistent until resolved through `writing-specs`.
+  - **Action**: implement first; immediately enqueue an entry by writing a new file `.agents/tech-debt/docs/<YYYY-MM-DD>/<HHMMSS>-<slug>.md` describing what spec change is owed (per-entry format in `project-layout/references/manifest-schema.md`). Drift-detector will surface this later as a queue item and pair it with related drift findings. The debt is real and persistent until resolved through `writing-specs`.
 
 ```dot
 digraph classify {
@@ -125,7 +125,7 @@ When the agent notices code-quality or spec issues unrelated to the current task
 Apply the autonomous-session routing rule (design spec §8.3):
 
 - **Inline-fix** SHALL be taken only when: on-path, trivial (single-file, no new abstractions, no behavior change), AND covered by the current change's verification.
-- Otherwise **enqueue** in the matching queue (`code.md`, `tests.md`, `perf.md`, `docs.md`).
+- Otherwise **enqueue** a new per-entry file in the matching queue directory (`code/`, `tests/`, `perf/`, `docs/`), at `<queue>/<YYYY-MM-DD>/<HHMMSS>-<slug>.md`.
 - **External filing** SHALL NOT happen autonomously unless the user has provided an allowlist of item kinds.
 
 ## Surfacing matching open queue items
@@ -133,7 +133,7 @@ Apply the autonomous-session routing rule (design spec §8.3):
 When loading filtered tech-debt entries for touched paths, surface to the agent:
 
 > "Open queue items for paths in this change:
-> - TD-CODE-2026-05-28-001 (handler.ts:142–178) — Replace ad-hoc retry. Effort: small.
+> - code/2026-05-28/142233-replace-adhoc-retry.md (handler.ts:142–178) — Replace ad-hoc retry. Effort: small.
 > Consider folding into this change."
 
 The agent decides; don't auto-fold.
@@ -142,7 +142,7 @@ The agent decides; don't auto-fold.
 
 Final prompt before declaring the change done:
 
-> "Reflection check: did this change alter any normative requirement that hasn't been reflected in the spec? If yes, return to `writing-specs`. If no, mark the relevant queue items resolved if you folded them in."
+> "Reflection check: did this change alter any normative requirement that hasn't been reflected in the spec? If yes, return to `writing-specs`. If no, resolve the relevant queue items you folded in by deleting their entry files (VCS history is the audit trail)."
 
 ## Anti-patterns
 

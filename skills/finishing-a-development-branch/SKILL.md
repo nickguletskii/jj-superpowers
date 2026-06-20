@@ -96,7 +96,7 @@ If the project has `.agents/layout.yaml`, run `jj-superpowers:spec-drift-detecto
 Findings are written to `docs/agent-specs/drift-reports/<YYYY-MM-DD>/<HHMM>-<scope>.md` (gitignored). Triage:
 
 - `mismatch` findings — resolve before proceeding (route to `writing-specs` for spec change, or fix code).
-- `suspect`/`unverified` — review with user; either resolve or enqueue in `.agents/tech-debt/docs.md`.
+- `suspect`/`unverified` — review with user; either resolve or enqueue a new entry file under `.agents/tech-debt/docs/<YYYY-MM-DD>/<HHMMSS>-<slug>.md`.
 - Orphan references — either restore the referenced item or update/remove the reference (per `documentation` skill).
 
 Do not skip this step on the theory that the change "doesn't touch specs" — typed-API edits, mdbook citation changes, and deleted files all surface here.

@@ -1,9 +1,10 @@
-# `.agents/layout.yaml` Schema (v1)
+# `.agents/layout.yaml` Schema (v2)
 
 Authoritative schema for the per-project layout manifest. Every skill in the spec ecosystem reads this file first and checks `schema_version`.
 
 ```yaml
-schema_version: 1                                   # MUST. Skills refuse unrecognized future versions; MAY auto-migrate older.
+schema_version: 2                                   # MUST. Skills refuse unrecognized future versions; MAY auto-migrate older.
+                                                    # v1→v2: tech-debt queues became per-entry-file directories (see Tech-debt queues below).
 
 specs:
   root: docs/agent-specs                            # MUST. Root for all spec content.
@@ -69,11 +70,11 @@ spec_code:
 
 tech_debt:
   root: .agents/tech-debt
-  queues:
-    docs:  .agents/tech-debt/docs.md                # MUST (everything else MAY)
-    code:  .agents/tech-debt/code.md
-    tests: .agents/tech-debt/tests.md
-    perf:  .agents/tech-debt/perf.md
+  queues:                                           # each is a DIRECTORY of per-entry files, not a single .md
+    docs:  .agents/tech-debt/docs/                  # MUST (everything else MAY)
+    code:  .agents/tech-debt/code/
+    tests: .agents/tech-debt/tests/
+    perf:  .agents/tech-debt/perf/
   external_tracker:                                 # optional
     kind: gitlab                                    # gitlab | github | linear | none
     project: projx/main
@@ -101,8 +102,44 @@ project_skills:
 - **`excluded_paths`** — globs. Used by `spec-drift-detector` to skip irrelevant areas during audits (generated code, vendor, build output). NOT used by `spec-code-sync` (which surfaces hints, not coverage). Sparing use; growth is audited.
 - **`code_map`** — denormalized index. Spec frontmatter `owns:` is canonical (see spec §3.3). `writing-specs` keeps these in sync; `spec-drift-detector` flags drift. Sub-spec slugs (`<parent>/<leaf>`) are valid in `capabilities:` and `planes:` lists. They resolve to `capabilities/<parent>/<leaf>/SPEC.yaml` (or `planes/...`). `code_map` matching is all-matches: a more-specific sub-spec entry and a broader parent catch-all may both match the same path; skills union the matched spec sets.
 - **`spec_code.modules`** — same precedence rule: spec frontmatter `code_spec:` is canonical.
-- **`tech_debt.queues.docs`** is the only queue required. Others are convenience splits.
+- **`tech_debt.queues.docs`** is the only queue required. Others are convenience splits. Each queue value is a **directory** holding one file per entry (see Tech-debt queues below), not a single accumulating `.md` file.
 - **`handoffs.committed`** — when `true`, handoffs go into version control. Drop the matching `.gitignore` entry in that case.
+
+## Tech-debt queues (per-entry files)
+
+Each queue is a directory; **every entry is its own write-once file**:
+
+```
+.agents/tech-debt/<queue>/<YYYY-MM-DD>/<HHMMSS>-<slug>.md
+```
+
+e.g. `.agents/tech-debt/docs/2026-06-20/143005-req-vid-014-amend.md`. The date directory and `HHMMSS-` prefix come from when the entry is created; `<slug>` is a short kebab-case handle (derived from the title or first cited location) that disambiguates entries sharing a second. This is the same date-dir + time-prefix convention already used by `handoffs/`, `blog/`, and `drift-reports/`.
+
+**Why per-file:** a single shared `docs.md` that every agent/branch appends to is a guaranteed VCS merge conflict. Distinct paths never conflict.
+
+**Entry file format** (canonical — all skills reference this shape):
+
+```markdown
+---
+locations:
+  - js/projx_frontend/src/upload/handler.ts:142-178
+---
+Handler enforces a 5 GiB limit but REQ-VID-014 says 2 GiB. Amend spec or align code.
+```
+
+**Write-once / no in-place mutation.** The only operations are **create** (new file) and **delete** (resolve/abandon — VCS history is the audit trail). There is no `status:` field and no retention sweep for queue entries; a resolved or no-longer-applicable entry is deleted outright. Keeping entries immutable is what makes the scheme conflict-free.
+
+### Migration recipe (v1 single-file → v2 per-entry, idempotent)
+
+Run when a manifest is `schema_version: 1`, or when `tech_debt.queues.*` still point at `.md` files / those files exist on disk. For each legacy queue file (e.g. `docs.md`):
+
+1. Split it into its individual entry blocks.
+2. Skip any entry already marked `status: resolved`/`abandoned` (it would be deleted anyway).
+3. For each remaining entry, write `.agents/tech-debt/<queue>/<YYYY-MM-DD>/<HHMMSS>-<slug>.md`. Use the entry's own timestamp for the date/time if it has one, else the migration run's time; entries colliding on the same second get an incremented `HHMMSS` or a `-2` slug suffix to stay unique.
+4. Preserve `locations:` and the description body verbatim; **drop** the now-defunct `status:`/`last_verified:` fields.
+5. Delete the old `<queue>.md`. Point the manifest value at the directory and set `schema_version: 2`.
+
+This recipe is owned here; `spec-drift-detector` performs it opportunistically under `--full-audit` and references this section rather than restating it.
 
 ## Conflict rules
 
