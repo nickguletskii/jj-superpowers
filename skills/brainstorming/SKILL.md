@@ -72,13 +72,13 @@ digraph brainstorming {
     "User approves design?" -> "Triage implementation tier" [label="yes"];
     "Triage implementation tier" -> "Trivial: inline, then verify" [label="trivial"];
     "Triage implementation tier" -> "Small: direct subagent\ndispatch(es), then verify" [label="small"];
-    "Triage implementation tier" -> "Write design doc" [label="full"];
+    "Triage implementation tier" -> "Planning strategy?\n(Full only)" [label="full"];
+    "Planning strategy?\n(Full only)" -> "Write design doc" [label="strategy chosen"];
     "Write design doc" -> "Spec self-review\n(fix inline)";
     "Spec self-review\n(fix inline)" -> "User reviews spec?\n(Rush auto-passes)";
     "User reviews spec?\n(Rush auto-passes)" -> "Write design doc" [label="changes requested"];
-    "User reviews spec?\n(Rush auto-passes)" -> "Planning strategy?\n(Full only)" [label="approved"];
-    "Planning strategy?\n(Full only)" -> "Invoke writing-plans skill" [label="waterfall"];
-    "Planning strategy?\n(Full only)" -> "Invoke iterative-planning skill" [label="agile"];
+    "User reviews spec?\n(Rush auto-passes)" -> "Invoke writing-plans skill" [label="approved + waterfall"];
+    "User reviews spec?\n(Rush auto-passes)" -> "Invoke iterative-planning skill" [label="approved + agile"];
 }
 ```
 
