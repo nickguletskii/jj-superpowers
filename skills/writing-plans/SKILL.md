@@ -11,6 +11,8 @@ Write comprehensive implementation plans assuming the engineer has zero context 
 
 Every plan is an execution graph. A small one-task change is just a small graph; do not create separate "simple", "chain", or "parallel" workflow modes.
 
+**Phase-scoped invocation.** `writing-plans` may be invoked **phase-scoped** — typically by `iterative-planning`, to produce one phase's `project-network.dot` reaching its own `final`. A phase graph is just a normal plan graph (same node kinds, same rules); behavior is otherwise unchanged.
+
 **Announce at start:** "I'm using the writing-plans skill to create the implementation plan."
 
 **Save plans to:** `docs/superpowers/plans/YYYY-MM-DD-<feature-name>/` (directory)
@@ -310,7 +312,11 @@ When editing this skill or `subagent-driven-development`, validate the behavior 
 
 ## Execution Handoff
 
-After saving the plan, offer execution choice:
+This handoff respects the autonomy level (see the Autonomy Level table in `using-superpowers`).
+
+**When this handoff applies.** The subagent-vs-inline choice below is owned here only in **Waterfall** (a single full-plan invocation). When `writing-plans` was invoked **phase-scoped** by `iterative-planning` (Agile), the execution-skill choice is owned by `iterative-planning` — decided once at roadmap time and applied to every phase — so this per-phase handoff is **SKIPPED** entirely.
+
+**Manual (Waterfall).** After saving the plan, offer execution choice:
 
 **"Plan complete and saved to `docs/superpowers/plans/<directory-name>/`. Two execution options:**
 
@@ -319,6 +325,8 @@ After saving the plan, offer execution choice:
 **2. Inline Execution** - Execute the graph in this session using `executing-plans`, with checkpoints at verification and review nodes.
 
 **Which approach?"**
+
+**Rush (Waterfall).** Do not ask; auto-pick per the Rush resolution for the execution-handoff checkpoint in the Autonomy Level table in `using-superpowers` (subagent-driven when subagents are authorized and the harness supports named subagents; else inline).
 
 If Subagent-Driven is chosen:
 - **REQUIRED SUB-SKILL:** Use `jj-superpowers:subagent-driven-development`.
