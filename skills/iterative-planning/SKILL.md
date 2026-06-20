@@ -15,8 +15,6 @@ This is a technique skill. It **delegates**: it does not reimplement planning or
 **REQUIRED SUB-SKILL:** Use `jj-superpowers:subagent-driven-development` or `jj-superpowers:executing-plans` to execute each phase's graph.
 **REQUIRED SUB-SKILL:** Use `jj-superpowers:finishing-a-development-branch` once all phases are done.
 
-Phase-boundary autonomy behavior (Manual pause vs Rush auto-advance) is governed by the canonical Rush-resolution table — see the **Autonomy Level table in `using-superpowers`**. Read it there; this skill does not restate it.
-
 ## The loop
 
 ```
@@ -32,7 +30,7 @@ docs/superpowers/plans/YYYY-MM-DD-<feature>/
    a. **Plan.** Invoke `writing-plans` **scoped to this phase only** → a normal, valid phase graph that reaches its own `final`. The per-phase `writing-plans` call **skips its own Execution Handoff** — execution-skill selection is owned here (see below).
    b. **Execute** that phase's graph via the selected execution skill.
    c. **Fold learnings.** After the phase's `final`, append a completion note (new APIs/types, deviations, surprises, follow-ups) to that phase's roadmap entry, then re-examine remaining phases and adjust if warranted (split / merge / reorder / insert / drop) — within the drift guardrail below.
-   d. **Boundary checkpoint.** Manual → pause and present the phase summary + proposed next phase for approval. Rush → auto-advance and write the non-blocking trail entry (the completion note + an `Auto-advanced` marker) into the roadmap entry. Resolve per the **Autonomy Level table in `using-superpowers`**.
+   d. **Boundary checkpoint.** Manual → pause and present the phase summary + proposed next phase for approval. Rush → auto-advance. Resolve per the **Autonomy Level table in `using-superpowers`**.
 3. **All phases `[done]`** → `finishing-a-development-branch`.
 
 ```dot
@@ -67,8 +65,8 @@ A phase is a vertically-sliced, independently-verifiable increment delivering a 
 ## Terminal phase failure
 
 If a phase's graph cannot reach its `final`, **never** silently skip it or proceed to the next phase (later phases build on integrated prior results):
-- **Structural** (`BLOCKED_STRUCTURAL`) → mark the phase `[blocked]`, return to brainstorming for that phase's design (floor #2 halts even under Rush). Downstream phases do **not** start.
-- **Stuck mechanical failure** (verify/quality exhausts the mechanical retry budget) → mark `[blocked]`; floor #4 halts and surfaces options (fix manually / re-scope / abandon).
+- **Structural** (`BLOCKED_STRUCTURAL`) → mark the phase `[blocked]`, return to brainstorming for that phase's design (floor #2). Downstream phases do **not** start.
+- **Stuck mechanical failure** (verify/quality exhausts the mechanical retry budget) → mark `[blocked]` (floor #4).
 
 ## Mid-phase resume contract
 
@@ -76,7 +74,7 @@ A phase is a normal plan with its own `project-network.dot`; the **phase graph**
 
 ## Roadmap-drift guardrail (Rush × Agile)
 
-The baseline is the **approved roadmap**, measured in **phases**. Under Rush, halt for confirmation (floor #3) when **either**:
+The baseline is the **approved roadmap**, measured in **phases**. Under Rush, floor #3 applies when **either**:
 - an inserted phase pursues a goal **not traceable to the approved design**, or
 - the phase count grows **materially** beyond the approved roadmap (rule of thumb > ~+50% phases).
 
