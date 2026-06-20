@@ -608,7 +608,7 @@ Deploying untested skills = deploying untested code. It's a violation of quality
 
 ## Skill Creation Checklist (TDD Adapted)
 
-**IMPORTANT: Use TodoWrite to create todos for EACH checklist item below.**
+**IMPORTANT: Work through EACH checklist item below in order, tracking against this checklist itself — not the harness task/todo tracker. Skill creation dispatches subagents (the pressure tests), and the harness task list doesn't survive subagent dispatch (see `jj-superpowers:using-superpowers`).**
 
 **RED Phase - Write Failing Test:**
 - [ ] Create pressure scenarios (3+ combined pressures for discipline skills)

@@ -40,7 +40,7 @@ When asking, use the decision-checkpoint pattern from `jj-superpowers:using-supe
 
 ### Step 3: Create the Execution List
 
-Create a task list from graph nodes, not from the order of files in the directory. Track each node as pending, in progress, passed, failed, or blocked. Only nodes whose dependencies have passed are ready.
+Track each node's state — pending, in progress, passed, failed, or blocked — against `project-network.dot` itself, not the harness task list (it doesn't survive subagent dispatch and drifts out of sync; see `jj-superpowers:using-superpowers`). Derive readiness from the graph, not from the order of files in the directory: only nodes whose dependencies have passed are ready.
 
 ### Step 4: Execute Ready Nodes
 

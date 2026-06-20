@@ -299,7 +299,7 @@ You: I'm using Subagent-Driven Development to execute project-network.dot.
 
 [Read plan.md and project-network.dot]
 [Validate graph: task_01 and task_02 are ready and have disjoint files]
-[Create todos from graph nodes]
+[Track node states against the graph, not the harness task list]
 
 [Fan-out: dispatch task_01 + task_02 implementers — both Agent calls in one response]
 

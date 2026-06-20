@@ -167,7 +167,7 @@ digraph skill_flow {
     "Invoke Skill tool" [shape=box];
     "Announce: 'Using [skill] to [purpose]'" [shape=box];
     "Has checklist?" [shape=diamond];
-    "Create TodoWrite todo per item" [shape=box];
+    "Track items against the skill checklist\n(not the harness task list)" [shape=box];
     "Follow skill exactly" [shape=box];
     "Respond (including clarifications)" [shape=doublecircle];
 
@@ -181,11 +181,24 @@ digraph skill_flow {
     "Might any skill apply?" -> "Respond (including clarifications)" [label="definitely not"];
     "Invoke Skill tool" -> "Announce: 'Using [skill] to [purpose]'";
     "Announce: 'Using [skill] to [purpose]'" -> "Has checklist?";
-    "Has checklist?" -> "Create TodoWrite todo per item" [label="yes"];
+    "Has checklist?" -> "Track items against the skill checklist\n(not the harness task list)" [label="yes"];
     "Has checklist?" -> "Follow skill exactly" [label="no"];
-    "Create TodoWrite todo per item" -> "Follow skill exactly";
+    "Track items against the skill checklist\n(not the harness task list)" -> "Follow skill exactly";
 }
 ```
+
+## Tracking Progress
+
+Track multi-step and subagent-driven work against the **durable artifact** — the
+skill's own checklist, `project-network.dot`, or `roadmap.md` — **not** the
+harness task/todo tracker (TodoWrite and its per-platform equivalents).
+
+The harness task list does not survive subagent dispatch: subagents cannot update
+it, it drifts out of sync with what dispatched agents actually did, and it goes
+stale across a long orchestration. The graph, roadmap, and skill checklists are
+the source of truth — re-derive readiness from them. Use the harness tracker only
+for purely inline, single-session work with no subagents, and never rely on it to
+coordinate dispatched agents.
 
 ## Red Flags
 
