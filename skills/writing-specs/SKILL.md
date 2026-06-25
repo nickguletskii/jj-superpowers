@@ -212,6 +212,17 @@ Rules for code-as-spec modules:
 - **Glossary**: define each term once. If two specs use the same word with different meaning, that's a sign one needs renaming — bring it up with the user.
 - **Invariants**: small cross-cutting rules that don't merit a plane spec. Each gets an `INV-` ID. If an invariant grows lifecycle/state, promote it to a plane.
 
+## Specifying user interfaces
+
+When a capability covers user-facing behavior (screens, panels, forms, editors, dashboards, CLI flows), express the UI as **observable, normative behavior** inside the existing sections — no new keys:
+
+- `actors_and_surfaces` — the **pages/surfaces** and who triggers what through them.
+- `state_and_lifecycle` — the **state machine(s)**: states, transitions as `event [guard] → target / effect`, initial/terminal states, illegal transitions, and async/timing semantics.
+- `requirements` — **interaction contracts** (event → observable effect) and widget behavior guarantees, plus the cross-cutting UI rules: errors/warnings are surfaced (never swallowed), long/async operations report progress, and the surface stays responsive (work MUST NOT block/freeze the UI thread).
+- `failure_modes` — each user-facing failure's condition and its **observable UI surface** behavior.
+
+Honor golden rule D: specify the *contract* (which states exist, what a transition guarantees, when an error/progress signal must appear), never transcribe widget props or markup — the component code is canonical for that. Full notation, page/widget/interaction patterns, and a worked example live in `references/ui-spec-patterns.md`.
+
 ## Self-review checklist (run before declaring done)
 
 Quick inline check — fix in place, don't loop on it:
@@ -227,13 +238,15 @@ Quick inline check — fix in place, don't loop on it:
 9. **Sub-spec consistency (if applicable):** `sub_specs:` in parent lists exactly the leaf directory names that have a `SPEC.yaml`. No extra entries, no missing entries.
 10. **Sub-spec id format:** each sub-spec's `id` equals `{parent-slug}/{leaf-directory-name}`.
 11. **No double-nesting:** no sub-spec has a `sub_specs:` key.
+12. **UI as observable behavior (if user-facing):** states, transitions, interactions, and error/progress surfaces are specified as observable contracts (golden rule D) — no transcribed widget props — and long/async behavior names its responsiveness + progress guarantees.
 
 If you find a placeholder, ambiguity, or contradiction → fix and continue. Don't ship "TBD" sections.
 
 ## Anti-patterns
 
 - **Transcribing code into requirements.** A REQ that restates a signature, enum, or constant the reader can see in the owned code ("the service accepts MP4, MOV, MKV"; "max size is 2 GiB") duplicates the source. The code is canonical for *what it is*; the spec is for what the code can't show — the timing model, the edge case, the cross-system contract, the *why*. If a paraphrase of the function would produce your REQ, delete it (golden rule D).
-- **Writing implementation hints.** "Use a B-tree for the index" is implementation. "Lookup MUST be O(log n) on the upload path" is normative.
+- **Transcribing widget props or markup.** Listing a component's props, fields, or layout in a requirement duplicates the code (golden rule D). Specify the behavior the UI guarantees — states, transitions, interaction effects, error/progress surfacing, responsiveness — not the component's shape.
+- **Writing implementation hints.** "Use a B-tree for the index" is implementation. "Lookup MUST be O(log n) on the upload path" is normative. (UI form: "use a web worker" is implementation; "the surface MUST stay responsive while extraction runs" is normative.)
 - **Naming a specific library, crate, package, or tool.** "Validate with `zod`", "use `tokio`", "store in Redis" dictates *how*, not *what*. A clean-room reimplementation may pick a different library. Specify the observable behavior or contract (e.g., "MUST reject payloads failing schema validation"), never the dependency that provides it. The exception is when interop with a *named external system* is itself the requirement (e.g., "MUST produce S3-compatible presigned URLs") — that's an observable contract, not an implementation choice.
 - **Duplicating glossary terms inline.** Reference, don't restate.
 - **Reusing retired IDs.** Even if the number is small. Deprecation-only.
@@ -246,3 +259,4 @@ If you find a placeholder, ambiguity, or contradiction → fix and continue. Don
 - `references/spec-template.md` — copy-and-fill `SPEC.yaml` template.
 - `references/rfc2119-cheatsheet.md` — when to use MUST/SHOULD/MAY/MUST NOT/SHOULD NOT.
 - `references/code-as-spec-checklist.md` — atomic-change procedure for typed API edits.
+- `references/ui-spec-patterns.md` — express UI (states, pages, widgets, transitions, interactions, error/progress) as observable behavior.

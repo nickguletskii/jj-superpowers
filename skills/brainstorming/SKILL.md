@@ -31,6 +31,8 @@ You MUST complete each of these items in order, tracking progress against this c
      - Nature: <one sentence describing what changes>
      ```
    - **Non-normative refactor** — no spec change needed.
+
+   **If the work includes user-facing interactions** (a screen, panel, form, editor, CLI flow, dashboard), also brainstorm the UI design entities — load `ui-interaction-design.md` (in this skill's directory). Produce the required core (user stories, user flows, navigation/IA map, key states, error/warning surfacing, progress & responsiveness), bias every flow toward low-friction/forgiving defaults for a forgetful, lazy user, and choose a navigation/layout paradigm deliberately. Normative UI behavior (state machines, interaction contracts, error/progress semantics) is formalized via `jj-superpowers:writing-specs`.
 5. **Present design** — in sections scaled to their complexity, get user approval after each section. Use your system's "ask questions" tool.
 6. **Triage implementation tier and planning strategy** — after design approval, PROPOSE a tier (Trivial / Small / Full) with reasoning; the user may veto via your system's "ask questions" tool, but your proposal is the default (no mandatory round-trip). **Then, only if you set the Full tier**, PROPOSE a planning strategy (Waterfall / Agile) — same propose/override pattern, no mandatory round-trip; Trivial/Small are inherently single-shot and have no strategy. Step 6 is **after** the step-5 design-approval gate, so both the triage-tier and the strategy proposals are **within Rush's scope** (if Rush was activated at design approval, it auto-resolves them per the canonical Rush-resolution table — see the Triage Gate below).
 7. **Write design doc** — save to `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md` for the Full tier; for Trivial/Small keep the approved design and verification command in the conversation
@@ -172,6 +174,7 @@ Tier and strategy are **two orthogonal axes** of one gate — keep them visibly 
 - Scale each section to its complexity: a few sentences if straightforward, up to 200-300 words if nuanced
 - Ask after each section whether it looks right so far
 - Cover: architecture, components, data flow, error handling, testing
+- For user-facing work, also cover: navigation, layout, shortcuts, the key states per surface, and the three non-negotiable UI requirements — **errors/warnings surfaced to the UI**, **progress reported** for long/async work, and the **UI never freezing** (work never blocks the render thread). See `ui-interaction-design.md`.
 - Cover implementation topology: independent units, shared interfaces, sequencing constraints, and verification gates the planner must preserve
 - Cover tooling: which commands belong to implementation vs verification, and how verbose tools should produce concise/structured output
 - Be ready to go back and clarify if something doesn't make sense
@@ -196,6 +199,7 @@ Tier and strategy are **two orthogonal axes** of one gate — keep them visibly 
 
 - For the Full tier, write the validated design (spec) to `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md`.
 - For Trivial/Small tiers, keep the approved design and verification command in the conversation instead of writing a spec file.
+- **For user-facing work**, the design (written or kept in conversation) MUST include a verification checklist that maps **each agreed user story to an acceptance check and each agreed user flow to a flow-completion check** (with its step budget), plus one check each for error/warning surfacing, progress reporting, and non-blocking responsiveness. These become `verify` nodes (Full) or the named verification (Trivial/Small). A story or flow with no check is a gap — close it.
 
 **Spec Self-Review:**
 After writing the spec document, look at it with fresh eyes:
@@ -206,6 +210,7 @@ After writing the spec document, look at it with fresh eyes:
 4. **Context comprehensiveness** Does this spec contain all information necessary to continue in a new session?
 5. **Implementation topology:** Does the spec identify independent implementation units, shared interfaces, sequencing constraints, and verification gates clearly enough for `writing-plans` to build a project network diagram?
 6. **Tooling and output:** Does the spec identify contended verification commands and any concise/structured output requirements?
+7. **UI coverage (if user-facing):** Does every agreed user story and user flow have a verification check? Are the key states (empty/loading/partial/error/success), error/warning surfaces, progress reporting, and non-blocking responsiveness all specified, and are flows biased toward low-friction defaults?
 
 Fix any issues inline. No need to re-review — just fix and move on.
 
@@ -250,6 +255,7 @@ Wait for the user's response. If they request changes, make them and re-run the 
 - **One question at a time** - Don't overwhelm with multiple questions
 - **Multiple choice preferred** - Easier to answer than open-ended when possible
 - **YAGNI ruthlessly** - Remove unnecessary features from all designs, but without omitting requested items silently
+- **Minimize friction for user-facing work** - Assume a forgetful, lazy user: autosave, remembered state, smart defaults, undo-over-confirm; always surface errors/warnings, report progress, and never freeze the UI
 - **Explore alternatives** - Always propose 2-3 approaches before settling
 - **Incremental validation** - Present design, get approval before moving on
 - **Be flexible** - Go back and clarify when something doesn't make sense
