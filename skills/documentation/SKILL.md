@@ -13,9 +13,11 @@ Documentation expresses what code and types cannot. If the code or type system a
 
 ## Golden rules (apply throughout)
 
-> **A. Shorter is better.** Shorter docs are easier to read, modify, keep current, and cheaper in agent context. Cut anything that doesn't earn its tokens.
+> **A. Shorter is better.** Shorter docs are easier to read, modify, keep current, and cheaper in agent context. Cut anything that doesn't earn its tokens. Nobody reads long documentation.
 >
 > **B. Shorter is not an excuse to skip.** If a fact belongs in docs per these rules, write it. Brevity is about *how*, not *whether*.
+>
+> **C. Simple language only.** No complex sentences. Use simple vocabulary. The documentation should make everything more understandable.
 
 ## When to Use
 
@@ -139,6 +141,7 @@ Project-specific documentation conventions live in `DOCS.md` at the project root
 
 Code and docs MUST reference each other:
 - **Doc comments** → link to architecture docs: `// See DOCS.md#auth-flow for the full picture`
+- **Spec references** → link to permanent agent specs (not transient artifacts), but do not assume the developer is going to go read them - these are primarily for agents
 - **Architecture docs** → link to code: `Implemented in src/auth/session.ts`
 - **ADRs** → link to both implementing code and discussing docs
 - **Module doc comments** → reference the module file path they describe

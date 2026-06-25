@@ -76,6 +76,7 @@ Keep the comment when a competent reader would be **surprised or misled** withou
 - Units, ranges, and non-obvious contracts not in the type
 - *Why* a surprising decision was made (not what it does)
 - Edge-case / concurrency / ordering semantics that aren't visible locally
+- References to specs (keep extremely short, don't assume the developer is going to open the spec and read it - cross-referencing only).
 
 The test for every comment: **"Does this add something the code can't say?"** If no → delete.
 

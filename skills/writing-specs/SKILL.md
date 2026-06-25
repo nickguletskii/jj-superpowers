@@ -9,13 +9,15 @@ Author and amend agent-oriented specifications: capability specs, plane specs, g
 
 ## Golden rules
 
-> **A. Shorter is better.** Shorter specs are easier to read, modify, and keep current.
+> **A. Shorter is better.** Shorter specs are easier to read, modify, and keep current. Nobody reads long documentation. Keep each spec to 1-3 short, simple sentences. The first sentence should be sufficient to understand what the spec is about.
 >
 > **B. Shorter is not an excuse to skip.** If a normative requirement exists, write it. Brevity is about *how*, not *whether*.
 >
 > **C. No fact in two places.** Spec frontmatter is canonical for `owns:`/`code_spec:`; `layout.yaml` indices follow. Glossary terms are defined once. Each requirement has exactly one home (prose REQ-, plane INV-, or code-as-spec item).
 >
 > **D. Don't duplicate the code.** A spec captures intent the code can't carry: time/clock models, ordering and concurrency semantics, edge-case behavior, cross-component contracts, the *why* behind a value. A requirement that merely transcribes a signature, type, enum, or visible constant (`reject files > 2 GiB`, `formats are MP4/MOV/MKV`) adds nothing — the code is already canonical for that fact. **Test:** if you could regenerate the requirement text by paraphrasing the code, it's duplication. Cut it, or replace it with the non-obvious intricacy it was burying. When a value IS a normative external contract, bind it to a code-as-spec item or REQ that states the *guarantee clients depend on*, not a re-typed copy of the constant.
+>
+> **E. No outdated/superseeded specs.** Remove superseeded/out of date specs immediately to avoid confusion.
 
 ## When to use
 
@@ -216,7 +218,7 @@ Quick inline check — fix in place, don't loop on it:
 
 1. **Clean-room sufficiency**: "Could a competent engineer with no other context implement this from the spec alone?" If no, what's missing?
 2. **RFC2119 correctness**: MUST/SHOULD/MAY used where they belong; no casual "should" that meant MUST.
-3. **No implementation leakage**: scaling assumptions don't mandate algorithms/libraries; failure modes don't prescribe class names; nothing dictates code structure.
+3. **No implementation leakage**: scaling assumptions don't mandate algorithms/libraries; failure modes don't prescribe class names; nothing dictates code structure or naming.
 4. **No code duplication (golden rule D)**: read each requirement and ask "could I regenerate this by paraphrasing the signature/enum/constant?" If yes, it's transcription — cut it or replace it with the intricacy it was burying (timing model, edge case, contract, *why*).
 5. **Frontmatter ↔ `layout.yaml`**: `owns:` and `code_spec:` written; if `layout.yaml` `code_map`/`spec_code.modules` disagree, update `layout.yaml`.
 6. **Co-ownership check**: other capabilities/planes MAY share `owns:` over the same path — that's allowed. But when this spec adds/changes a requirement on a co-owned path, confirm with the user that the new requirement does not contradict requirements in the co-owning specs. List the other owners explicitly; don't paper over the overlap.
