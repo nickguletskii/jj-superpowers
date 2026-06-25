@@ -17,7 +17,7 @@ Every project goes through this process. A todo list, a single-function utility,
 
 You MUST complete each of these items in order, tracking progress against this checklist itself — not the harness task/todo tracker (it doesn't survive subagent dispatch; see `jj-superpowers:using-superpowers`):
 
-1. **Explore project context** — check files, docs, recent commits (only if instructed to by user), relevant skills, rules, dependencies and guidance. Find existing abstractions, helpers, utilities, interfaces, traits to be reused. **If `.agents/layout.yaml` exists**, also read it and list the capability/plane specs likely affected by the work (use `code_map` to filter by paths the work will touch). Load full `SPEC.yaml` only for the specs that look most relevant.
+1. **Explore project context** — check files, docs, recent commits (only if instructed to by user), relevant skills, rules, dependencies and guidance. Find existing abstractions, helpers, utilities, interfaces, traits to be reused. **If `.agents/layout.yaml` exists**, also read it and list the capability/plane specs likely affected by the work (use `code_map` to filter by paths the work will touch). Load full `SPEC.yaml` only for the specs that look most relevant. Create a JSONL file containing a coarse list of relevant symbols (files, classes, functions, variables, etc...) to avoid re-exploring during later stages
 2. **Ask clarifying questions** — one at a time, understand purpose/constraints/success criteria. For questions where you have multiple answer proposals, use your system's "ask questions" tool
 3. **Propose 2-3 approaches** — with trade-offs and your recommendation
 4. **Brainstorm API surface and abstractions** — explore project context again to find any existing implementations of proposed additions; inventory current public and internal APIs, identify ad hoc branching and leaky boundaries, and propose interface changes that make the work generic instead of special-cased. **If the project has agent specs and the design changes normative behavior** (new requirement, changed requirement, new capability/plane, typed API change in a code-as-spec module), classify the change:
@@ -136,6 +136,7 @@ Tier and strategy are **two orthogonal axes** of one gate — keep them visibly 
 **Understanding the idea:**
 
 - Check out the current project state first (files, docs, recent commits (only if the user requests it), relevant skills, rules, dependencies and guidance)
+- Collect a list of existing relevant traits, interfaces and other symbols; ground on existing project patterns (unless the user asks for a fresh pattern/refactoring)
 - Ask questions one at a time to refine the idea
 - Prefer multiple choice questions when possible, but open-ended is fine too
 - Only one question per message - if a topic needs more exploration, break it into multiple questions
@@ -184,9 +185,10 @@ Tier and strategy are **two orthogonal axes** of one gate — keep them visibly 
 
 **Working in existing codebases:**
 
-- Explore the current structure before proposing changes. Follow existing patterns.
+- Explore the current structure before proposing changes. Follow existing patterns, but propose cleaner designs/abstractions if possible.
 - Where existing code has problems that affect the work (e.g., a file that's grown too large, unclear boundaries, tangled responsibilities), include targeted improvements as part of the design - the way a good developer improves code they're working in.
 - Don't propose unrelated refactoring. Stay focused on what serves the current goal, but propose relevant improvements, e.g. by introducing abstractions instead of creating ad-hoc solutions/branches.
+- Check whether existing traits/interfaces can be used or extended to avoid introducing new API shapes (prefer generic boundaries to reduce cognitive load).
 
 ## After the Design
 
@@ -219,7 +221,7 @@ Keep the step 8 spec self-review above (your own fresh-eyes pass). Then run a **
 
 **Convergence = a review round that surfaces zero Major findings.** On that round, fold in any outstanding Minors (you, the orchestrator, edit the spec doc directly — there is no implementer here) and drop Nits, with **no confirming round on the Minors**. Minors remain subject to the accept/refute gate: a Minor-looking finding that is actually wrong may be refuted with justification.
 
-*Lenses.* Each round dispatches ~**3 reviewers**, each assigned a **distinct lens** from this encouraged menu: correctness/soundness, completeness/missing-requirements, ambiguity/interpretability, API & design soundness, concurrency, parallelism, performance, DRYness/duplication, ease of abstraction & extensibility, testability/verification, over/under-engineering (YAGNI). Pick the ~3 most relevant to this spec and **rotate lens assignments across rounds** for diversity. Reviewers read the immutable spec read-only, so they fan out safely.
+*Lenses.* Each round dispatches ~**3 reviewers**, each assigned a **distinct lens** from this encouraged menu: correctness/soundness, completeness/missing-requirements, ambiguity/interpretability, API & design soundness, concurrency, parallelism, performance, DRYness/duplication, ease of abstraction & extensibility, testability/verification, over/under-engineering (YAGNI). Pick the ~3 most relevant (or high-risk) to this spec and **rotate lens assignments across rounds** for diversity. Reviewers read the immutable spec read-only, so they fan out safely.
 
 *External-harness ensembling.* After the subagent loop converges (a zero-Major round), run a **default-on-when-available** ensemble pass at the **orchestrator** level (the subagent no-other-harness rule is unaffected — that governs the reviewer subagents, not you):
 
