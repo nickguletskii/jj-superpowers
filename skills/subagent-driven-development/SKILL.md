@@ -210,7 +210,8 @@ Code-quality reviewers inspect the verified group and the verification report. T
 
 Use the least powerful model that can handle each role:
 
-- Mechanical implementation tasks with clear files and APIs: fast, cheap model.
+- Mechanical tasks with clear files and APIs: fast, cheap model.
+- Implementations: strongest model.
 - Integration tasks, ambiguous failures, or cross-file coordination: standard model.
 - Graph repair, design judgment, and code-quality review: strongest available model.
 - Verification summarization with long logs: cheap model if no debugging is needed; stronger model if failure diagnosis is required.
