@@ -1,39 +1,35 @@
 # Design Reviewer Prompt Template
 
-Use this template when dispatching a design reviewer subagent for a `design_review` node.
+Use this template when dispatching a design reviewer subagent. The design review is an **implied** gate: it is triggered by a `task` node marked `stub=true` — there is no `design_review` node in the graph.
 
 **Purpose:** Judge whether the stubbed API surface is *coherent and well-shaped* before any consumer task fans out against it.
 
-**Only dispatch after the stub task's `spec_review` passes and before any consumer task starts.** The `design_review` node gates consumer *start*, so a bad API is caught before implementations are produced.
+**Only dispatch after the `stub=true` task's spec review passes and before any of its dependents start.** The gate protects consumer *start*, so a bad API is caught before implementations are produced.
 
-**Verification command policy:** `design_review` judges coherence, NOT compilation. Do not run type-check, compile, build, lint, or test commands. The stub task carries its own narrow, documented task-local type-check so consumers fan out against a compiling stub; re-running it here is out of scope and duplicates verification-node turf.
-
-**No nested harnesses:** Do not invoke another agent harness through any channel — not the shell (`claude`, `codex`, `gemini`, `opencode`, Copilot CLI) and not MCP tools (e.g. `mcp__codex__codex`). Having the tool available is not permission to use it. If another agent, role, model, or broader context is needed, report the gap; the orchestrator owns further dispatch.
+**Verification command policy:** this gate judges coherence, NOT compilation. Do not run type-check, compile, build, lint, or test commands. The stub task carries its own narrow, documented task-local type-check so consumers fan out against a compiling stub; re-running it here is out of scope and duplicates verification-node turf.
 
 ```
 Task tool (sdd-design-reviewer preferred; fallback general-purpose):
   Use the named `sdd-design-reviewer` agent when available.
 
-  description: "Design-review stubbed API for [node id]"
+  description: "Design-review stubbed API for [stub task node id]"
   prompt: |
-    You are reviewing the stubbed API surface of one or more API-stub task nodes
-    for COHERENCE only, before downstream consumer tasks start. All paths are
+    You are reviewing the stubbed API surface of one or more `stub=true` task nodes
+    for COHERENCE only, before their dependent tasks start. All paths are
     relative to `[working directory]`.
 
     ## What To Review
 
     - **Stub task file(s):** `[path/to/task-NN-api-stubs.md]`
-    - **design_review node:** `[design_review_node_id from project-network.dot]`
-    - **Upstream stub task ids (`tasks`):** `[task ids]`
+    - **Stub task node(s) (`stub=true`):** `[task ids from project-network.dot]`
     - **Consumer task files (cite the stub interface):** `[paths]`
-    - **Rubric:** `[rubric attribute; defaults to designing-with-types-and-abstractions]`
     - **Context:** `[context/architecture.md]` (include only what exists)
 
     ## Rubric — coherence, not compilation
 
-    Apply `designing-with-types-and-abstractions` (unless the node's `rubric`
-    attribute overrides it). Judge ONLY whether the stubbed surface is coherent
-    and well-shaped:
+    Apply `designing-with-types-and-abstractions`. It is the rubric for this gate;
+    there is no node attribute that overrides it. Judge ONLY whether the stubbed
+    surface is coherent and well-shaped:
     - Right variation axis (the abstraction varies along the dimension that
       actually changes).
     - Illegal states unrepresentable (the types make invalid combinations
@@ -82,7 +78,7 @@ Task tool (sdd-design-reviewer preferred; fallback general-purpose):
     `quality_review` and `simplification`).
 
     Do not invoke another agent harness through any channel — not the shell
-    (`claude`, `codex`, `gemini`, `opencode`, Copilot CLI) and not MCP tools (e.g.
+    (`claude`, `codex`, `opencode`) and not MCP tools (e.g.
     `mcp__codex__codex`). Having the tool available is not permission to use it.
     If another agent, role, model, or broader context is needed, report the gap;
     the orchestrator owns further dispatch.

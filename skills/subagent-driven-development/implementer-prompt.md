@@ -2,18 +2,22 @@
 
 Use this template when dispatching an implementer subagent.
 
+**Target files and allowed scopes come from the graph node's `files` and `scopes` attributes, not from the task file** — the task file no longer restates them. The orchestrator fills them in below. Assemble the segments in the order given by the Prompt Assembly Order table in `SKILL.md`, and keep that order identical across dispatches.
+
 ```
 Task tool (general-purpose):
   description: "Implement Task N: [task name]"
   prompt: |
     You are implementing graph task node `[task_node_id]`: Task N: [task name]
 
-    🚨 **CRITICAL CONSTRAINT:** You may only run this jj command form: `jj commit [FILES] -m 'toorg: [description]'` to file completed work into a commit. All other jj commands are forbidden. That includes:
+    🚨 **CRITICAL CONSTRAINT:** You may only run this jj command form: `jj commit [FILES] -m 'toorg(<NODE_ID>): [what changed]'` to file completed work into a commit, using the graph node id given to you above. All other jj commands are forbidden. That includes:
     - ❌ `jj new`, `jj describe`, `jj squash`, `jj edit`, `jj next`, `jj prev`
     - ❌ `jj delete`, `jj abandon`
     - ❌ Any other jj subcommand
 
-    When you complete a logical unit of work, run: `jj commit [list of files] -m 'toorg: [short description]'`
+    When you complete a logical unit of work, run: `jj commit [list of files] -m 'toorg(<NODE_ID>): [short description of what changed]'`
+
+    The `toorg(<NODE_ID>)` prefix is a scaffold. The orchestrator uses it to find and consolidate your changes once your work passes review, and then replaces it with the real description. Never omit the node id, and do not spend effort on the wording — it will be rewritten.
     This moves those files out of `@` into a new commit preceding it. File one logical unit at a time — do not dump all files into a single commit.
 
     ## Your Task
@@ -49,7 +53,7 @@ Task tool (general-purpose):
     Once you're clear on requirements:
     1. Implement exactly what the task specifies
     2. Write task-local tests if helpful (following TDD if task says to)
-    3. File completed logical units: `jj commit [files] -m 'toorg: [description]'`
+    3. File completed logical units: `jj commit [files] -m 'toorg(<NODE_ID>): [what changed]'`
     4. Self-review (see below)
     5. Report back
 
@@ -63,11 +67,15 @@ Task tool (general-purpose):
 
     Do NOT modify any file outside the target files or the allowed directory scopes.
 
+    The lists below are the authoritative scope for this task. They come from the
+    graph node, not the task file — do not go looking for them in the task file, and
+    do not treat anything the task file implies about scope as widening them.
+
     **Target files:**
-    <TARGET_FILES — provided by orchestrator, one path per line>
+    <TARGET_FILES — from the node's `files` attribute, one path per line>
 
     **Allowed directory scopes:**
-    <ALLOWED_DIRECTORY_SCOPES — provided by orchestrator, one path per line, or "None">
+    <ALLOWED_DIRECTORY_SCOPES — from the node's `scopes` attribute, one path per line, or "None">
 
     If you discover you need to modify a file not covered by this target list or these directory scopes:
     - Do NOT modify it
@@ -83,7 +91,7 @@ Task tool (general-purpose):
     group compile, type-check, build, lint, test-suite, or smoke-test commands.
 
     Do not invoke another agent harness through any channel — not the shell
-    (`claude`, `codex`, `gemini`, `opencode`, Copilot CLI) and not MCP tools (e.g.
+    (`claude`, `codex`, `opencode`) and not MCP tools (e.g.
     `mcp__codex__codex`). Having the tool available is not permission to use it.
     If another agent, role, model, or broader context is needed, report
     NEEDS_CONTEXT or BLOCKED; the orchestrator owns further dispatch.
@@ -154,7 +162,7 @@ Task tool (general-purpose):
     - Is the code clean and maintainable?
 
     **Discipline:**
-    - Did I avoid overbuilding (YAGNI)?
+    - Did I build anything the task did not ask for?
     - Did I only build what was requested?
     - Did I follow existing patterns in the codebase?
 

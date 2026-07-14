@@ -155,7 +155,7 @@ jj squash --from @ --into <change-id> -u
 jj squash --from @ --into <change-id> path/to/file1.rs path/to/file2.rs -u
 
 # Update the destination description without opening an editor
-jj describe -r <change-id> -m "toreview: my description"
+jj describe -r <change-id> -m "feat(auth): add login endpoint"
 ```
 
 `-u` (`--use-destination-message`) keeps the destination change's description and drops the source's, so filing a scratch `@` into a pre-described destination stays non-interactive instead of prompting for a combined message. It does not control `@`'s survival: squashing all content out of `@` never loses work, because `jj` auto-creates a fresh empty `@` as the new tip.

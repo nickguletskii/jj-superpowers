@@ -7,7 +7,7 @@ description: Use when you have a spec or requirements for a task, before touchin
 
 ## Overview
 
-Write comprehensive implementation plans assuming the engineer has zero context for our codebase and questionable taste. Document the exact files, APIs, invariants, commands, acceptance checks, and context needed to implement the work. DRY. YAGNI (without deferring/skipping agreed-upon features/specs). TDD where it adds signal and helps reduce reviewer round trips. Frequent verification. Avoid contention.
+Write comprehensive implementation plans assuming the engineer has zero context for our codebase and questionable taste. Document the exact files, APIs, invariants, commands, acceptance checks, and context needed to implement the work. Don't repeat yourself. Don't plan work nobody asked for — and never quietly drop work they did. TDD where it adds signal and reduces reviewer round trips. Verify often. Avoid contention.
 
 Every plan is an execution graph. A small one-task change is just a small graph; do not create separate "simple", "chain", or "parallel" workflow modes.
 
@@ -41,48 +41,40 @@ Create only context docs that multiple tasks would otherwise need to repeat.
 
 `project-network.dot` is the execution contract. Edges mean "the source node must complete successfully before the target node may run." Parallelism is derived from graph readiness plus non-overlapping file scopes.
 
-Allowed node kinds:
+**Author only what you actually choose.** The graph has exactly two node kinds. Every review gate still runs — the executor derives each gate's scope from the graph rather than reading it from a node you had to write. Do not add nodes for `spec_review`, `design_review`, `simplification`, `quality_review`, or `final`; they are implied.
 
 | Kind | Purpose | Required attributes | Optional attributes |
 |------|---------|---------------------|---------------------|
-| `task` | Implementer-owned work | `file`, `files` | `scopes` |
-| `spec_review` | Per-task compliance gate | `task` | |
-| `design_review` | API-coherence gate on stubbed surfaces, before consumer fan-out | `tasks` | `rubric` |
-| `verify` | Batched compile/test/lint/build gate | `file` | |
-| `simplification` | Duplication/reduction review after verification | `scope` | |
-| `quality_review` | Group-level code quality review after verification | `scope` | |
-| `final` | Final completion gate | none | |
+| `task` | Implementer-owned work | `file`, `files` | `scopes`, `stub` |
+| `verify` | Batched compile/test/lint/build gate, and the group reduction point | `file` | `simplify` |
+
+Implied gates — the executor runs these; you never author them:
+
+| Gate | When it runs | Scope |
+|------|--------------|-------|
+| `spec_review` | after every `task` completes | that task |
+| `design_review` | after a `stub=true` task's spec review, before its dependents start | the stubbed surface |
+| `simplification` | after a `verify` marked `simplify=true` | that verify's task group |
+| `quality_review` | after `verify` (or after `simplification` when present) | that verify's task group |
+| `final` | when every `verify` node has passed | the whole graph |
 
 Rules:
-- Every `task` node has exactly one downstream `spec_review`.
-- A `verify` node may depend on one or more `spec_review` nodes.
-- A `quality_review` node depends on a successful `verify` node, **or on a `simplification` node when one is present** (see Terminal Chain below).
-- `final` depends on every terminal `quality_review`.
-- **Target Files & Collision Gate:** `files` represents a space-separated list of primary target files to be created or modified. Tasks may run in parallel only when their `files` attributes do not overlap.
-- **Allowed Directory Scopes:** `scopes` defines a space-separated list of directories/packages where the subagent is permitted to modify supporting files (such as imports, `mod.rs`, `index.ts` re-exports, and local tests) without trigger-blocking file containment rules.
-- **API First / Early Stubbing:** The earliest task node(s) in the graph MUST establish the new public API surfaces, types, schemas, interfaces, or traits as empty/stubbed implementations (returning `todo!()`, `throw new Error("Not implemented")`, or mock structures). This allows subsequent parallel tasks to compile/type-check immediately and prevents downstream blockage on missing symbols.
-- **Cleanup / Dead Code Check:** If the plan refactors existing code, modifies internal structures, or deprecates any functionality, it MUST include a dedicated cleanup `task` node (e.g. `task-cleanup.md`) at the end of the implementation phase (before verification). This cleanup task explicitly checks for and removes any pre-existing code that was made dead, obsolete tests, or unused imports, requesting user confirmation before performing deletions.
-- Commands that contend on shared build state, such as `cargo`, `bazel`, test suites, type checks, and linters, belong in `verify` nodes, not implementer tasks.
+- **Target Files & Collision Gate:** `files` is a space-separated list of primary target files to be created or modified. Tasks may run in parallel only when their `files` do not overlap. `files` lives **only** on the graph node — do not restate it in the task file.
+- **Allowed Directory Scopes:** `scopes` is a space-separated list of directories/packages where the implementer may modify supporting files (imports, `mod.rs`, `index.ts` re-exports, local tests) without tripping file-containment rules. Like `files`, it lives only on the graph node.
+- **A `verify` node's task group** is every `task` node that reaches it. This is what makes `verify` the one gate you must author: it is the only place you choose *which tasks batch together* and *which commands run*.
+- **API First / Early Stubbing:** The earliest task node(s) MUST establish the new public API surfaces, types, schemas, interfaces, or traits as empty/stubbed implementations (`todo!()`, `throw new Error("Not implemented")`, mock structures) and MUST be marked `stub=true`. This lets consumer tasks compile immediately, and it is what triggers the implied `design_review`. A graph with no shared API surface (independent leaf tasks) has no `stub=true` node and gets no design review.
+- **`simplify=true`:** Set on a `verify` node **only when** its task group introduced new helpers, utilities, or abstractions — otherwise there is no duplication risk to check. This triggers the implied `simplification` gate, which is the **single owner** of duplication detection (`quality_review` covers maintainability only).
+- **Cleanup / Dead Code Check:** If the plan refactors existing code, modifies internal structures, or deprecates functionality, it MUST include a dedicated cleanup `task` node (e.g. `task-cleanup.md`) before its verify node. It removes code made dead, obsolete tests, and unused imports, asking the user before deleting.
+- **Contended commands** (`cargo`, `bazel`, test suites, type checks, linters, builds) belong in `verify` nodes, never in implementer tasks — the single exception is a `stub=true` task's narrow scoped type-check. Canonical rule: **Verification Ownership** in `jj-superpowers:subagent-driven-development`.
 - **REQUIRED SUB-SKILL:** Use `jj-superpowers:tool-output-discipline` when writing verification commands.
 
-**Terminal chain.** The canonical terminal chain is `verify -> [simplification?] -> quality_review -> final`, where `simplification` is optional. A `quality_review` depends directly on its `verify` when no `simplification` node is present, and on the `simplification` node when one is.
-
-**`design_review` (API-coherence gate).** When the graph has API-stub task(s) that other tasks consume, insert a `design_review` node that depends on the stub task(s)' `spec_review`(s), and make every consumer task depend on the `design_review` node (gating consumer *start*, so a bad API is caught before implementations are produced):
-- `tasks` is a space-separated list of the upstream API-stub task ids.
-- `rubric` is a free-text pass-through into the reviewer prompt; it defaults to `designing-with-types-and-abstractions`.
-- `design_review` judges API *coherence* only (right variation axis, illegal states unrepresentable, explicit effects, no leaky boundaries). It does **not** re-run type-checking: the stub task carries a narrow task-local type-check so consumers fan out against a compiling stub (see the stub type-check exception under Task Files).
-- A graph with no shared API surface (independent leaf tasks) needs no `design_review` node. Most non-trivial plans have a stub task (API First, above), so this node is common.
-
-**`simplification` (duplication review).** Add a `simplification` node **only when** the verified group introduced new helpers, utilities, or abstractions (otherwise omit it — no duplication risk to check):
-- It depends on a successful `verify` node; the downstream `quality_review` then depends on it.
-- It is a reviewer node: it flags duplication of in-repo code, the standard library, or dependency functionality, and proposes deletion/reuse. Findings route back to an implementer (same pattern as `quality_review`), which then re-verifies.
-- It is the **single owner** of duplication detection: `quality_review` covers maintainability only and does NOT also flag duplication.
+**What `design_review` judges.** API *coherence* only — right variation axis, illegal states unrepresentable, explicit effects, no leaky boundaries. Its rubric defaults to `designing-with-types-and-abstractions`. It does **not** re-run type-checking: the `stub=true` task carries a narrow task-local type-check so consumers fan out against a compiling stub (see the stub type-check exception under Task Files). It gates consumer *start*, so a bad API is caught before implementations are produced against it.
 
 ### Agent-spec ecosystem integration
 
 If the project has `.agents/layout.yaml`, every plan that touches source files MUST address spec sync explicitly. Two paths:
 
-1. **Design-time intent** — the brainstorming design doc named a spec amendment. The plan MUST include a `task` node whose file is named `task-NN-spec-update-<topic>.md` and whose work invokes `writing-specs`. This task MUST be scheduled to complete BEFORE any task that implements the corresponding code change (add an edge from the implementing task's `task` node to the spec-update task's `spec_review` node, or earlier).
+1. **Design-time intent** — the brainstorming design doc named a spec amendment. The plan MUST include a `task` node whose file is named `task-NN-spec-update-<topic>.md` and whose work invokes `writing-specs`. Add an edge from that spec-update task to every task implementing the corresponding code change, so the spec lands first.
 2. **Deferred** — the plan explicitly acknowledges that doc updates are deferred to the `.agents/tech-debt/docs/` queue (a per-entry file written via `spec-code-sync`) during execution. Note this in `plan.md` so reviewers see the intent.
 
 For source-file-touching tasks, `executing-plans` MUST invoke `spec-code-sync` before any edit to run the candidate-spec lookup on touched paths and surface specs likely relevant. Tasks MUST list `files` precisely enough for the lookup to be meaningful — vague file lists defeat the lookup.
@@ -92,59 +84,31 @@ One-task graph:
 ```dot
 digraph {
   task_01 [kind="task", file="task-01-fix-parser.md", files="src/parser.rs tests/parser.rs"];
-  spec_01 [kind="spec_review", task="task_01"];
   verify_01 [kind="verify", file="verify-01-parser.md"];
-  quality_01 [kind="quality_review", scope="task_01"];
-  final [kind="final"];
 
-  task_01 -> spec_01 -> verify_01 -> quality_01 -> final;
+  task_01 -> verify_01;
 }
 ```
 
-Parallel group:
+`task_01` is spec-reviewed on completion; `verify_01` then runs, followed by quality review over `task_01`; `final` is reached when `verify_01` has passed. None of that is authored.
+
+API-first group (a stub task whose surface several consumers depend on, and a group that introduces new helpers):
 
 ```dot
 digraph {
-  task_01 [kind="task", file="task-01-api.md", files="src/api.rs tests/api.rs"];
-  task_02 [kind="task", file="task-02-ui.md", files="src/ui.rs tests/ui.rs"];
-  spec_01 [kind="spec_review", task="task_01"];
-  spec_02 [kind="spec_review", task="task_02"];
-  verify_01 [kind="verify", file="verify-01-api-ui.md"];
-  quality_01 [kind="quality_review", scope="task_01 task_02"];
-  final [kind="final"];
-
-  task_01 -> spec_01 -> verify_01;
-  task_02 -> spec_02 -> verify_01;
-  verify_01 -> quality_01 -> final;
-}
-```
-
-The parallel group above has no shared API surface (`api.rs` and `ui.rs` are independent), so it needs no `design_review`, and if it adds no new helpers it needs no `simplification`.
-
-API-first group with `design_review` and `simplification` (a stub task whose surface several consumers depend on, and a group that introduces new helpers):
-
-```dot
-digraph {
-  task_00 [kind="task", file="task-00-api-stubs.md", files="src/api/mod.rs"];
-  spec_00 [kind="spec_review", task="task_00"];
-  design_00 [kind="design_review", tasks="task_00"];
+  task_00 [kind="task", file="task-00-api-stubs.md", files="src/api/mod.rs", stub=true];
   task_01 [kind="task", file="task-01-backend.md", files="src/backend.rs"];
   task_02 [kind="task", file="task-02-client.md", files="src/client.rs"];
-  spec_01 [kind="spec_review", task="task_01"];
-  spec_02 [kind="spec_review", task="task_02"];
-  verify_01 [kind="verify", file="verify-01-group.md"];
-  simplify_01 [kind="simplification", scope="task_01 task_02"];
-  quality_01 [kind="quality_review", scope="task_01 task_02"];
-  final [kind="final"];
+  verify_01 [kind="verify", file="verify-01-group.md", simplify=true];
 
-  task_00 -> spec_00 -> design_00;
-  design_00 -> task_01 -> spec_01 -> verify_01;
-  design_00 -> task_02 -> spec_02 -> verify_01;
-  verify_01 -> simplify_01 -> quality_01 -> final;
+  task_00 -> task_01 -> verify_01;
+  task_00 -> task_02 -> verify_01;
 }
 ```
 
-`design_00` gates the start of both consumers, so the stubbed API surface in `task_00` is reviewed for coherence before `task_01`/`task_02` implement against it. `simplify_01` runs after verification (the group added new helpers) and before quality review.
+`stub=true` on `task_00` triggers a design review of its stubbed surface after its spec review passes, and that review gates the *start* of `task_01` and `task_02` — so a bad API is caught before either consumer implements against it. `simplify=true` on `verify_01` triggers a simplification gate after verification and before quality review, because the group added new helpers.
+
+A graph of independent leaf tasks (no shared API surface, no new helpers) carries neither attribute, and so gets neither gate.
 
 ## File Structure
 
@@ -152,7 +116,7 @@ Before defining tasks, map out which files will be created or modified and what 
 
 - Design units with clear boundaries and well-defined interfaces.
 - Prefer focused files over large files that do too much.
-- Apply the file-size discipline (the ~500/1000-line thresholds) owned by `jj-superpowers:deslopify` — see its canonical file-size rule — when sizing touched files.
+- Apply the canonical file-size rule owned by `jj-superpowers:deslopify` when sizing touched files.
 - Files that change together should live together. Split by responsibility, not by technical layer.
 - In existing codebases, follow established patterns. If a file you're modifying is already unwieldy, include a focused split in the plan when it serves the task.
 
@@ -196,27 +160,47 @@ Use short focused docs:
 
 No step-by-step implementation instructions in context docs.
 
+## Plan Artifacts Are a Prompt Prefix
+
+A subagent prompt is a **concatenation of context files**, assembled in a fixed order. LLM providers cache on the prompt *prefix*, so every byte that is identical across dispatches — and positioned before the first byte that differs — is served from cache: cheaper and faster. Structure plan artifacts to maximize that shared prefix.
+
+Assembly order for every implementer dispatch, most-stable first:
+
+| # | Segment | Varies with | Cacheable across |
+|---|---|---|---|
+| 1 | Agent role / system prompt | nothing | every dispatch, every plan |
+| 2 | `context/*.md` (architecture, tech-stack, file-structure) | the plan | every task in this plan |
+| 3 | Shared API/interface surface | the plan | every task in this plan |
+| 4 | **This task's file** | the task | — cache boundary — |
+| 5 | Target files, allowed scopes, upstream reports | the task | — |
+
+Two consequences for how you write plans:
+
+**Put shared material in `context/`, not in task files.** A fact repeated across five task files is five cache misses; the same fact in `context/architecture.md` is one cached prefix reused five times. This is the operational reason for the rule above — create a context doc exactly when multiple tasks would otherwise repeat something, and keep task files to what is genuinely task-specific.
+
+**Never transcribe an upstream interface into a consumer task file.** It is variable-position content that busts the cache on every dispatch, *and* it can drift from the real stub. Point at the source file (see "Reference upstream interfaces" below). If a surface is broadly consumed, describe it once in a context doc — where it lands in the stable prefix — rather than in each consumer.
+
+Keep segment order stable across dispatches. Reordering segments — even with identical content — invalidates the prefix and forfeits the cache.
+
 ## Task Files
 
 Each task gets its own file at the plan root: `task-NN-component-name.md`.
 
+A task file carries only what the graph cannot. **Target files and allowed scopes are NOT repeated here** — they live on the graph node (`files`, `scopes`), and the orchestrator injects them into the implementer's prompt. Restating them creates a third surface that silently drifts.
+
 ````markdown
 # Task N: [Component Name]
 
-**Target Files:**
-- Create: `exact/path/to/file.rs`
-- Modify: `exact/path/to/existing.rs`
-
-**Allowed Directory Scopes:**
-- `exact/path/to/` (gives implementer permission to touch/create supporting files in this directory, e.g. imports, mod.rs, index.ts, local tests)
-
 **Purpose:** [What this task changes and why.]
 
-**Existing utilities to reuse:**
-- Before defining this task, search the codebase, standard library, and current dependencies for helpers/types that already do what the task needs. Name them here so the implementer reuses them instead of reinventing. If a needed utility genuinely does not exist, say so explicitly.
+**Reuse:** [Search the codebase, standard library, and current dependencies for helpers/types
+that already do what this task needs, and name them so the implementer reuses them instead of
+reinventing. If a needed utility genuinely does not exist, say so explicitly.]
 
 **Interfaces and Invariants (API / Signature Only):**
-- Define `MyTrait` in `exact/path/to/file.rs`. Define ONLY public types, interfaces, traits, and function signatures. Do NOT pre-write implementation code or function bodies:
+- Upstream surface: read `exact/path/to/upstream.rs` — it exists and has passed design review.
+- This task defines `MyTrait` in `exact/path/to/file.rs`. Public types, interfaces, traits, and
+  function signatures ONLY — no implementation bodies:
 
   ```rust
   trait MyTrait {
@@ -230,16 +214,21 @@ Each task gets its own file at the plan root: `task-NN-component-name.md`.
 - [ ] Add the `MyTrait` definition and documentation (stubbed/mocked).
 - [ ] Update `MyStruct` to implement `MyTrait`.
 - [ ] Add tests covering success and error behavior.
-
-**Task-local checks:**
-- Run only these narrow checks if useful: `[exact command]`
-- Do not run `cargo check`, `cargo build`, `cargo test`, or other commands that contend on shared build state unless this task documents a concrete exception.
-- Group compile/test/lint/build verification is handled by `verify-*` files.
-
-**API-stub type-check exception:** An API-stub task whose surface is gated by a `design_review` node is the one sanctioned exception to the contended-command rule. Because consumers fan out against the stub and the `design_review` node reviews coherence (not compilation), the stub task MUST name a narrow, scoped type-check (e.g. `cargo check -p <crate> -q`) so the stub is known to compile before consumers start. Document the command here and why it is safe and necessary; this is the only task kind that may name such a command.
 ````
 
-Task files must be self-contained. Do not refer to sibling task files. If a task depends on a type or function produced by an upstream task, repeat the required interface in this task and make the dependency explicit in `project-network.dot`.
+**Omit `Task-local checks` entirely unless the task genuinely has one.** The default — group commands run at the `verify` node, the implementer runs nothing contended — is a standing rule, not something each task restates. Include the section only to name a specific narrow command.
+
+**API-stub type-check exception:** a `stub=true` task MUST name a narrow, scoped type-check (e.g. `cargo check -p <crate> -q`) so the stub is known to compile before consumers start, and MUST document why it is safe and necessary. No other task kind may name a contended command.
+
+### Reference upstream interfaces; do not transcribe them
+
+Do not refer to sibling task files, and do not copy an upstream task's signatures into this one. **Point at the source file instead.** The graph guarantees a consumer cannot start until its upstream `stub=true` task has completed and passed design review, so the stubbed surface **exists on disk** by the time the implementer reads this task file. A transcribed copy can disagree with what the stub implementer actually wrote, and the implementer cannot tell which is authoritative. A pointer cannot drift.
+
+```markdown
+Upstream surface: read `src/api/mod.rs` (defined by the stub task; exists before this task starts).
+```
+
+Write out a signature only when this task is the one **defining** it. Everything a task consumes, it reads from the code.
 
 ## Verification Files
 
@@ -267,7 +256,6 @@ Write verification commands with tool-output discipline:
 - Separate primary pass/fail commands from diagnostic commands when useful; filtered diagnostic pipelines must not be the only pass/fail signal unless they preserve the underlying tool's exit status.
 - Put full-log commands behind an explicit escalation note rather than making them the default.
 - For commands likely to need unsandboxed, network, cache, or device permissions, use a short prefix-whitelistable command. Prefer checked-in helper scripts with named arguments over inline env assignments, heredocs, shell wrappers, or chained command strings.
-- Do not put contended commands such as `cargo check`, `cargo build`, or `cargo test` in task-local checks just because they can be package-scoped or test-filtered; they usually still block shared build state.
 
 ## No Placeholders & No Code Bodies
 
@@ -284,25 +272,16 @@ Every step must contain the actual information an engineer needs. These are plan
 
 You are writing a plan, not performing the implementation. Provide complete public signatures, type definitions, invariants, high-level algorithms, helper choices, and commands. You MUST NOT pre-write implementation code/bodies; implementation details belong strictly in the implementation subagent's scope.
 
-## Common Mistakes
-
-| Mistake | Prevention |
-|---------|------------|
-| Writing implementation code in plans | Never write function/method bodies, JSX rendering code, CSS definitions, or complete logic loops. Provide only traits, types, interfaces, signature stubs, and plain text invariants. |
-| Narrow file scopes blocking agents | Specify a directory scope (using `scopes` attribute in the graph, and `Allowed Directory Scopes` in task files) to allow minor edits (imports, mod.rs, tests) without causing BLOCKED status. |
-| Sequential blockages on missing APIs | Designate the first task node as an "API & Interface Stubs" node, committing all public interfaces first so parallel consumer tasks compile immediately. |
-| Forgetting codebase cleanup | If refactoring or replacing code, always include a dedicated cleanup task node at the end of the implementation phase to check for and delete dead code/unused imports. |
-
 ## Self-Review
 
 After writing the complete plan, check it yourself:
 
-1. **Spec coverage:** Every requirement maps to at least one task or verification node.
-2. **Graph validity:** No orphan nodes, no cycles, every task reaches `spec_review -> verify -> [simplification?] -> quality_review -> final`. If the graph has a consumed API-stub task, a `design_review` node gates the consumers; if a verified group adds new helpers, a `simplification` node precedes its `quality_review`.
-3. **File contention:** No parallel-ready tasks touch overlapping files.
+1. **Spec coverage:** Every requirement maps to at least one task or verify node.
+2. **Graph validity:** Only `task` and `verify` nodes. No cycles. Every task reaches a `verify` node. A consumed API-stub task is marked `stub=true`; a verify node whose group added new helpers is marked `simplify=true`.
+3. **File contention:** No parallel-ready tasks have overlapping `files`.
 4. **Verification ownership:** Build/test/lint/type-check commands live in `verify-*` files, not implementer tasks.
-5. **Output discipline:** Verbose tools use quiet, structured, scoped, or filtered output where practical.
-6. **Type consistency:** Types, method signatures, and property names stay consistent across tasks.
+5. **Prefix reuse:** Material shared by 2+ tasks lives in `context/`, not copied into each task file. No task file transcribes an upstream interface.
+6. **Output discipline:** Verbose tools use quiet, structured, scoped, or filtered output where practical.
 7. **Placeholder scan:** No red flags from the "No Placeholders" section.
 
 Fix issues inline. If a spec requirement has no task, add the task and update `project-network.dot`.

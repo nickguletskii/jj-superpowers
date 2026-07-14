@@ -1,28 +1,28 @@
 # Simplification Reviewer Prompt Template
 
-Use this template when dispatching a simplification reviewer subagent for a `simplification` node.
+Use this template when dispatching a simplification reviewer subagent. Simplification is an **implied** gate: it is triggered by a `verify` node marked `simplify=true` — there is no `simplification` node in the graph.
 
 **Purpose:** Detect duplication of in-repo code, the standard library, or dependency functionality in a verified task group, and propose deletion or reuse of an existing API.
 
-**Only dispatch after the group's `verify` node passes, and only when the verified group introduced new helpers, utilities, or abstractions** (otherwise the node is omitted — no duplication risk to check). The `simplification` node is the single owner of duplication detection; `quality_review` downstream covers maintainability only.
+**Only dispatch after a `simplify=true` `verify` node passes.** A verify without that attribute introduced no new helpers, so there is no duplication risk to check and this gate does not run. This gate is the single owner of duplication detection; the downstream quality review covers maintainability only.
+
+**Scope is derived, not authored:** the verified task group is every `task` node that reaches this verify. Compute it from the graph and pass it below.
 
 **Verification command policy:** The upstream `verify` node owns compile, type-check, build, lint, test-suite, and smoke-test execution. Inspect the verified diff and verification report. Do not rerun those commands unless code inspection gives a concrete reason to believe the report is stale or contradicted by the diff.
-
-**No nested harnesses:** Do not invoke another agent harness through any channel — not the shell (`claude`, `codex`, `gemini`, `opencode`, Copilot CLI) and not MCP tools (e.g. `mcp__codex__codex`). Having the tool available is not permission to use it. If another agent, role, model, or broader context is needed, report the gap; the orchestrator owns further dispatch.
 
 ```
 Task tool (sdd-simplifier preferred; fallback general-purpose):
   Use the named `sdd-simplifier` agent when available.
 
-  description: "Simplification review for [node id]"
+  description: "Simplification review for [verify node id]"
   prompt: |
     You are reviewing a verified `subagent-driven-development` task group for
     duplication and reducible code. All paths are relative to
     `[working directory]`.
 
-    - **simplification node:** `[simplification_node_id from project-network.dot]`
-    - **Verified group (`scope`):** `[task ids]`
-    - **Change/diff under review:** `[the toreview: change ID or range]`
+    - **verify node (`simplify=true`):** `[verify_node_id from project-network.dot]`
+    - **Verified task group (every task reaching that verify):** `[task ids]`
+    - **Change/diff under review:** `[the consolidated change ID or range]`
     - **Verification report:** `[commands and results from the verify node]`
 
     ## Your method — apply existing rubrics, do not restate them
@@ -57,7 +57,7 @@ Task tool (sdd-simplifier preferred; fallback general-purpose):
     applies the fix; the group then re-verifies.
 
     Do not invoke another agent harness through any channel — not the shell
-    (`claude`, `codex`, `gemini`, `opencode`, Copilot CLI) and not MCP tools (e.g.
+    (`claude`, `codex`, `opencode`) and not MCP tools (e.g.
     `mcp__codex__codex`). Having the tool available is not permission to use it.
     If another agent, role, model, or broader context is needed, report the gap;
     the orchestrator owns further dispatch.

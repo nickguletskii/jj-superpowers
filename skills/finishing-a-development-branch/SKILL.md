@@ -23,7 +23,7 @@ Run all three checks before anything else. A dirty DAG must be resolved before p
 ```bash
 jj diff --no-pager --stat
 ```
-Any output = uncommitted changes remain in `@`. Commit them with `jj commit [files] -m 'toorg: ...'` or abandon them before continuing.
+Any output = uncommitted changes remain in `@`. Commit them with a real description (`jj commit [files] -m '<semantic description>'`) or abandon them before continuing. Do not introduce a `toorg` scaffold here — scaffolds exist only inside graph execution, where a consolidation step is guaranteed to remove them.
 
 **Check 2 — No divergent changes:**
 ```bash
@@ -41,7 +41,7 @@ Any output = unresolved merge conflicts remain. Edit the conflict markers in the
 
 **If any fail:** stop. Report which check failed and what must be fixed. Do not proceed to test verification or integration.
 
-### Step 0.5: Optional DAG Organization
+### Step 0.5: History Check
 
 Show the current history:
 ```bash
@@ -49,9 +49,13 @@ jj log -r 'trunk()..@' --no-pager \
   --template 'change_id.short(8) ++ "  " ++ description.first_line() ++ "\n"'
 ```
 
-If `toorg:` commits are present, ask:
+**Any surviving `toorg(...)` scaffold is a bug, not a choice.** Graph execution consolidates each task into one properly-described change as its spec review passes (see the Change Consolidation section of `jj-superpowers:subagent-driven-development`), so history should already be clean by the time you get here. A `toorg(...)` prefix means a consolidation step was skipped — squash it into its owning change and describe it now. Do not carry a scaffold into a PR.
 
-> "Your `toorg:` commits are visible above. Would you like to organize them into a logical jj DAG before proceeding?
+Also scan every description against the Change Description Rules in `jj-superpowers:jujutsu` (canonical) and fix violations here — after merge the plan directory is gone, and any reference to it becomes a dead pointer.
+
+If history is clean but you want a different *shape* (splitting a large change, reordering into a narrative DAG, parallel branches), ask:
+
+> "History above is clean. Would you like to reorganize it into a different DAG shape before proceeding?
 >
 > - **Yes** — invoke `jj-organizing-history`, then return here
 > - **No** — proceed as-is (commits will be renamed to semantic descriptions in Step 2.5)"
@@ -60,7 +64,7 @@ Wait for user choice. If yes: **REQUIRED SUB-SKILL:** Use jj-superpowers:jj-orga
 
 Use the decision-checkpoint pattern from `jj-superpowers:using-superpowers`: present the choices through the harness-native ask/question tool when available.
 
-If no `toorg:` commits are present (work is already organized), skip this step.
+If history is already consolidated and you do not want a different DAG shape, skip this step.
 
 ### Step 1: Verify Tests
 

@@ -7,7 +7,7 @@ description: Use when an approved Full-tier design is too large or too uncertain
 
 ## Overview
 
-Some Full-tier designs are too large or too uncertain to plan as one `project-network.dot` up front. This skill runs the **plan-one-phase loop**: build an ordered roadmap once, then for each phase plan it, execute it, fold what you learned back into the roadmap, and only then move on. You never plan all phases in advance — later phases are shaped by what earlier phases actually produce.
+Some designs are too large or too uncertain to plan as one `project-network.dot` up front. This skill runs the **plan-one-phase loop**: build an ordered roadmap once, then for each phase plan it, execute it, fold what you learned back into the roadmap, and only then move on. You never plan all phases in advance — later phases are shaped by what earlier phases actually produce.
 
 This is a technique skill. It **delegates**: it does not reimplement planning or execution.
 

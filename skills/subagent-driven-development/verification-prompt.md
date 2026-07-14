@@ -2,7 +2,7 @@
 
 Use this template when dispatching a verification subagent for a `verify` node.
 
-**Purpose:** Run the exact commands from a `verify-*.md` file once all upstream spec reviews have passed.
+**Purpose:** Run the exact commands from a `verify-*.md` file once every upstream task has passed its spec review.
 
 ```
 Task tool (cheap model unless debugging is required):
@@ -22,7 +22,7 @@ Task tool (cheap model unless debugging is required):
     Do not modify source files.
     Do not add, remove, or substitute commands.
     Do not invoke another agent harness through any channel — not the shell
-    (`claude`, `codex`, `gemini`, `opencode`, Copilot CLI) and not MCP tools (e.g.
+    (`claude`, `codex`, `opencode`) and not MCP tools (e.g.
     `mcp__codex__codex`). Having the tool available is not permission to use it.
     If another agent, role, model, or broader context is needed, report BLOCKED;
     the orchestrator owns further dispatch.
