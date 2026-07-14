@@ -55,7 +55,7 @@ The lite loop:
 - **Convergence is a zero-Major round**, not a quiet first pass — a fresh Major always forces another resolve-and-re-review cycle; Minors fold in-place and Nits drop without looping.
 - No ledger, predicate, baseline, or triage. No files. Keep it in the conversation.
 
-**Ensembling (optional, default-on when available):** after the subagent loop converges (a zero-Major round), an external-harness ensemble pass may run the **same lens-based review** through any available external harness. An ensemble pass's **Major** findings re-open the subagent loop; external **Minor/Nit** findings fold-and-go (or drop) and do **not** re-open it. **Skip silently if no harness is available.** The combined loop terminates when an ensemble pass yields zero Major. (Brief by design — the authoritative description lives in brainstorming.)
+**Ensembling (optional, default-on when available):** after the subagent loop converges (a zero-Major round), an external-harness ensemble pass may run the **same lens-based review** through any available external harness. An ensemble pass's **Major** findings re-open the subagent loop; external **Minor/Nit** findings fold-and-go (or drop) and do **not** re-open it. **Skip silently if no harness is available.** The combined loop terminates when an ensemble pass yields zero Major. (Brief by design — `jj-superpowers:brainstorming` is authoritative for the **loop**; `jj-superpowers:choosing-model-and-effort` is authoritative for the **harness** — detection, harness choice, model and effort, and the reviewer-only gate.)
 
 Switch to full mode the moment you need to measure a metric, attribute *which* change helped, or carry state across many rounds.
 

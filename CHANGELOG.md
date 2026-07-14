@@ -4,7 +4,13 @@
 
 ### Added
 
+- `choosing-model-and-effort` skill: dispatch model/effort selection, the Fable provenance rule, wall-vs-speculative escalation, and the external-harness (Codex MCP) review gate. Carries a `models.md` reference with two benchmark frontiers.
 - Deno harness installer for global jj-superpowers links/config across Claude Code, Codex, Agy, Pi, Oh My Pi, and OpenCode.
+
+### Changed
+
+- `subagent-driven-development` no longer says "Implementations: strongest model"; model and effort are chosen per `choosing-model-and-effort`.
+- The no-nested-harness rule now covers **any** delegation channel, not just the shell — MCP tools (e.g. `mcp__codex__codex`) are explicitly included.
 
 ### Removed
 

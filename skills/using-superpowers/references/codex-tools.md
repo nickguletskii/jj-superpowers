@@ -24,10 +24,15 @@ Current Codex releases enable subagent workflows by default. If your Codex build
 does not expose subagent tools, use the skill's no-subagent fallback path instead
 of pretending dispatch succeeded.
 
-Do not emulate missing subagent tools by running `codex`, `claude`, `gemini`,
-`opencode`, Copilot CLI, or another agent harness from the shell. Subagent
-dispatch must use the harness-native subagent tool, or the orchestrator must use
-the skill's local/no-subagent fallback.
+Do not emulate missing subagent tools by reaching for another agent harness
+through any channel — not the shell (`codex`, `claude`, `gemini`, `opencode`,
+Copilot CLI) and not MCP tools (e.g. `mcp__codex__codex`). Subagent dispatch must
+use the harness-native subagent tool, or the orchestrator must use the skill's
+local/no-subagent fallback.
+
+Calling *out* to an external harness for ensemble review is a different thing,
+governed by `jj-superpowers:choosing-model-and-effort`. It is a review channel,
+not a substitute for subagent dispatch.
 
 Codex custom agents live in `.codex/agents/*.toml` for project-scoped agents or
 `~/.codex/agents/*.toml` for personal agents. Each file defines `name`,

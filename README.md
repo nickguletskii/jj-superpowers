@@ -120,6 +120,7 @@ See [`.copilot-plugin/INSTALL.md`](.copilot-plugin/INSTALL.md).
 - **jujutsu** - Comprehensive jj reference (daily workflow, revsets, GitLab integration, git→jj mapping)
 
 **Meta**
+- **choosing-model-and-effort** - Pick the cheapest model/effort that clears the task; when an external harness (Codex) is worth calling
 - **writing-skills** - Create new skills following best practices
 - **using-superpowers** - Introduction to the skills system
 

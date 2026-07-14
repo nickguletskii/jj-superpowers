@@ -63,6 +63,8 @@ Skills use Claude Code tool names. Non-CC platforms translate tools as follows:
 - **OpenCode:** plugin bootstrap maps common tools compactly; use OpenCode's native skill tool and subagent `@mention` system
 - **GitHub Copilot CLI:** see `references/copilot-tools.md`
 
+This is about running jj-superpowers *inside* another harness — tool-name mapping only. Calling *out* to an external harness for a second opinion (ensemble review) is a different thing entirely and is owned by `jj-superpowers:choosing-model-and-effort`. Do not conflate the two senses of "harness".
+
 ## Command Invocation Discipline
 
 Do not pack discovery, filtering, variable assignment, redirection, and output
@@ -148,6 +150,7 @@ Rush auto-resolves **user checkpoints only**. Automated review nodes (`spec_revi
 | `BLOCKED` / `SCOPE: unrelated` | "note as separate task for later" + continue (recorded) |
 | `design_review` structural flaw | floor #2 — halt |
 | `spec_review`/`verify`/`quality_review`/`simplification` failure | auto-route-back, retry ≤ N=3, then floor #4 — halt (if diagnosed structural at any attempt → floor #2 immediately) |
+| Model/effort escalation | earned by a wall → take one step; speculative → floor #3 halt |
 | Finishing integration choice (PR/push/merge) | floor #1 — halt (outward-facing) |
 
 **Activation.** User-initiated ("rush", "autonomous mode") at or after design approval — the Rush boundary is *after* design approval, so clarifying-question and design-approval gates are never auto-resolved. The agent may offer Rush once when ambiguity is low (no nag). Explicit "pause" → `Manual`. A floor halt suspends auto-advance but does not clear the level. **Recording / read order on resume:** `roadmap.md` (Agile, authoritative if present), else the Waterfall design-doc header, else default `Manual`; every transition rewrites the record. Rush is inert at Trivial/Small (their only gate, design approval, is above the boundary); a Trivial/Small task self-escalated to Full becomes Rush- and Agile-eligible.

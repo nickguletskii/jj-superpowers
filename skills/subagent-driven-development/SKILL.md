@@ -210,13 +210,9 @@ Code-quality reviewers inspect the verified group and the verification report. T
 
 ## Model Selection
 
-Use the least powerful model that can handle each role:
+Use the least powerful model that can handle each role — implementers included. "It is an implementation" is not a reason to reach for the strongest model.
 
-- Mechanical tasks with clear files and APIs: fast, cheap model.
-- Implementations: strongest model.
-- Integration tasks, ambiguous failures, or cross-file coordination: standard model.
-- Graph repair, design judgment, and code-quality review: strongest available model.
-- Verification summarization with long logs: cheap model if no debugging is needed; stronger model if failure diagnosis is required.
+Pick model and effort per node from the dispatch table in `jj-superpowers:choosing-model-and-effort`, which also owns the Fable provenance rule, availability handling, and escalation. Do not restate it here.
 
 ## Handling Implementer Status
 
@@ -344,7 +340,7 @@ Never:
 - Run both `simplification` and `quality_review` with overlapping duplication mandates — duplication detection is owned solely by `simplification`; `quality_review` is maintainability/production-risk only.
 - Treat implementer task-local checks as group verification.
 - Let implementers run `cargo check`, `cargo build`, `cargo test`, or other contended group commands unless the task file documents a concrete exception. The one sanctioned exception is an API-stub task gated by a `design_review` node, which may run a narrow, task-file-documented scoped type-check so consumers fan out against a compiling stub.
-- Let any subagent invoke `claude`, `codex`, `gemini`, `opencode`, Copilot CLI, or another agent harness from the shell.
+- Let any subagent invoke another agent harness through any channel — the shell (`claude`, `codex`, `gemini`, `opencode`, Copilot CLI) or MCP tools (e.g. `mcp__codex__codex`). Having the tool available is not permission to use it.
 - Dump verbose command output when quiet, structured, scoped, or filtered output would answer the question.
 - Have implementers run jj commands other than `jj commit [FILES] -m 'toorg: [description]'`.
 - Let an implementer silently modify out-of-scope files.
