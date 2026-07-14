@@ -43,7 +43,7 @@ Redundant, contradictory, or unverifiable documentation MUST be deleted or fixed
 
 **No exceptions:**
 - Don't keep outdated docs "for reference"
-- Don't add docs that restate what code clearly expresses
+- Don't add docs that restate what code clearly expresses — code explains *what*, docs explain *why*. This is the file's single statement of that rule; the rest of this skill assumes it rather than repeating it.
 - Don't leave TODO docs — either write the doc or don't create the file
 - Don't document what the type system already enforces
 
@@ -150,12 +150,9 @@ Unreferenced docs are stale docs. If you can't find the code a doc references, t
 
 ### Comment reference discipline
 
-Code comments MUST be **self-contained**: they explain the code in front of the reader without sending them to another document to make sense.
+What may and may not appear *inside a code comment* — transient artifacts, the `impl: REQ-` carve-out, self-containment — is owned by `jj-superpowers:writing-comments` (its rule 1). Apply that rule; it is not restated here.
 
-- **MUST NOT reference planning artifacts.** No mention of `docs/superpowers/` specs or plans, brainstorming/design/plan filenames, or "the design". Those are ephemeral planning docs, not a stable code reference; a comment that depends on one rots the moment the plan is archived.
-- **MUST NOT use internal section/paragraph cross-references** — no `§` symbol, no "see section 4.2", no design-doc subsection numbers. The code is the artifact; a comment may not outsource its meaning to a numbered heading.
-- **The only permitted durable references** are: a link to a durable in-repo doc the [Bidirectional Referencing](#bidirectional-referencing) rules already sanction (`// See DOCS.md#auth-flow`, an ADR), or — in a project with an agent-spec ecosystem — a **requirement-ID anchor into the agent spec** used purely as a code↔spec sync marker (e.g. `// impl: REQ-XXX-001` at the primary implementation site, or a bare `REQ-XXX-001` in rationale). No file paths on the spec anchor.
-- A spec/book reference is a **sync anchor, not a substitute** for explaining the code: write the self-contained explanation, then add the anchor if the code satisfies a normative requirement.
+This skill owns the other half: which **targets** are durable enough to be linked at all. The [Bidirectional Referencing](#bidirectional-referencing) rules above sanction `DOCS.md` sections and ADRs. Planning artifacts (`docs/superpowers/` plans, brainstorming/design filenames) are not doc targets this skill sanctions, so a comment may not anchor to one.
 
 ## Maintenance
 
@@ -185,19 +182,16 @@ Use diagrams only when they add clarity beyond what a list or table provides.
 
 | Excuse | Reality |
 |---|---|
-| "Someone might need this later" | Add it when they need it. YAGNI applies to docs. |
+| "Someone might need this later" | Write it when they do. Speculative docs rot before they are read. |
 | "It's not hurting anyone" | Stale docs mislead. Wrong assumptions waste time. |
 | "More documentation is better" | Wrong docs are worse than no docs. |
 | "I'll update it later" | Later never comes. Update now or delete. |
-| "This comment explains what the code does" | Code explains what. Comments explain why. |
 | "It's just a template" | Templates without content are noise. Fill it or don't create it. |
 | "The old docs aren't wrong, just incomplete" | Incomplete docs are stale docs. Complete or delete. |
 | "I don't want to delete someone else's work" | Outdated docs waste everyone's time including the author. |
-| "This doc adds context" | Context that duplicates code isn't adding — it's contradicting. |
 
 ## Red Flags — STOP
 
-- Writing a comment that restates the code
 - Creating a doc file that duplicates an existing one
 - Leaving a TODO in documentation
 - Adding architecture docs without linking to code
@@ -210,7 +204,6 @@ Use diagrams only when they add clarity beyond what a list or table provides.
 
 ## Common Mistakes
 
-- **Don't write docs that restate code** — Comments explain why, not what
 - **Don't create multiple docs for the same topic** — One source of truth
 - **Don't leave stale docs** — Delete or update
 - **Don't skip checking for existing docs** — Search before creating

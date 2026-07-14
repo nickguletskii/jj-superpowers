@@ -40,14 +40,27 @@ Inspect the diff and the reported verification. Do not rerun the same commands u
 
 For planned `subagent-driven-development` graph execution, the upstream `verify` node owns compile, test, lint, type-check, build, and smoke-test execution for its group. Do not assign that ownership to implementers.
 
+## Mandate Scope
+
+This template serves two callers. One checklist item is gated on which one dispatched you:
+
+- **General-purpose review** — ad hoc/manual review via `jj-superpowers:requesting-code-review`. The full checklist applies, **including Duplication**.
+- **`quality_review` fallback** — a `subagent-driven-development` graph node dispatched with this template because no named `sdd-quality-reviewer` agent exists. **Skip the Duplication section entirely.** That graph's `simplification` node is the sole owner of duplication detection; `quality_review` is maintainability and production-risk only. Reporting duplication here re-acquires a mandate the graph explicitly forbids, and double-reports every finding against the `simplification` node.
+
+**How to tell which you are:** you are the `quality_review` fallback if the request carries a `VERIFICATION_REPORT` field, cites a `quality_review` node, or names a verified task group — the graph's quality-review prompt always supplies these, and an ad hoc request never does. Otherwise you are a general-purpose review.
+
 ## Review Checklist
 
 **Code Quality:**
 - Clean separation of concerns?
 - Proper error handling?
 - Type safety (if applicable)?
-- DRY principle followed?
 - Edge cases handled?
+
+**Duplication** *(general-purpose review only — skip when invoked as a `quality_review` fallback; see Mandate Scope)*:
+- Does this change reimplement something that already exists in-repo, in the standard library, or in a current dependency's public API?
+- Is logic duplicated across the changed files rather than extracted?
+- For the taxonomy, apply `jj-superpowers:deslopify` (its under-engineering / duplication section) rather than re-deriving one.
 
 **Architecture:**
 - Sound design decisions?

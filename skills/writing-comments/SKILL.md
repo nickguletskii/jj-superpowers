@@ -22,13 +22,20 @@ A comment lives as long as the code. Anything that will outlive its referent —
 **Forbidden in comments:**
 - Ticket / task / Jira / issue IDs (`TASK-1029`, `PROJ-991`, `JIRA-44`)
 - PR or commit references, review-thread mentions
-- Paths to docs/specs/handoffs/agent-blog files (`docs/superpowers/handoffs/...`, `docs/.../design.md §3.2`)
+- Paths to docs/specs/handoffs/agent-blog files (`docs/superpowers/handoffs/...`, `docs/.../design.md §3.2`), or "the design"/"the plan" — planning artifacts are ephemeral; a comment that leans on one rots the moment the plan is archived
+- Internal section/paragraph cross-references — no `§`, no "see section 4.2", no design-doc subsection numbers. The code is the artifact; a comment may not outsource its meaning to a numbered heading.
 - "Created for X", "Added in sprint Y", author names, dates-written
 - `TODO(ticket)` / `FIXME(ticket)` — describe the work, not the tracker
 
 **Why:** These are provenance, and provenance lives in version control, not in the source. Git blame, PR history, and the tracker already hold it. In the code it goes stale, points at deleted files, and adds noise.
 
-**The one carve-out:** stable, in-repo requirement IDs that are part of the spec system (`// impl: REQ-VID-001`) are allowed — they're a maintained index, not transient provenance. A ticket ID is not.
+**A comment must be self-contained:** it explains the code in front of the reader without sending them to another document to make sense.
+
+**The permitted durable references** — a *sync anchor*, never a substitute for the self-contained explanation:
+- A stable, in-repo requirement ID from the spec system (`// impl: REQ-VID-001`) — a maintained index, not transient provenance. A ticket ID is not. No file path on the anchor.
+- A link to a durable in-repo doc target that `jj-superpowers:documentation` sanctions (`// See DOCS.md#auth-flow`, an ADR). That skill owns which targets qualify.
+
+Write the explanation first, then add the anchor if the code satisfies a normative requirement.
 
 A bare `// TODO: revisit caching strategy` is fine. `// TODO(jira PROJ-991): revisit caching strategy` is not — strip the tracker ref.
 
