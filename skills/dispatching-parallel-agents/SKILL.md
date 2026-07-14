@@ -71,9 +71,11 @@ Each prompt needs:
 - **Evidence:** error output, test names, stack traces, or search terms.
 - **Output:** root cause, evidence, recommended fix, files changed if any, and verification run.
 
-Always include this constraint: do not invoke `claude`, `codex`, `gemini`,
-`opencode`, Copilot CLI, or any other agent harness from the shell. Subagents
-must report `NEEDS_CONTEXT` or `BLOCKED` if more delegation seems necessary.
+Always include this constraint: do not invoke another agent harness through any
+channel — not the shell (`claude`, `codex`, `gemini`, `opencode`, Copilot CLI)
+and not MCP tools (e.g. `mcp__codex__codex`). Having the tool available is not
+permission to use it. Subagents must report `NEEDS_CONTEXT` or `BLOCKED` if more
+delegation seems necessary.
 
 Example:
 
@@ -116,4 +118,4 @@ When agents return:
 - Letting agents edit overlapping files.
 - Trusting summaries without checking evidence or diffs.
 - Running contended commands in multiple agents when one batched verification would do.
-- Letting subagents create nested agent sessions by invoking an agent CLI from the shell.
+- Letting subagents create nested agent sessions by invoking an agent harness through any channel — an agent CLI from the shell, or an MCP tool (e.g. `mcp__codex__codex`).

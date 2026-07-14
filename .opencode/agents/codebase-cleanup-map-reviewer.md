@@ -13,9 +13,11 @@ Dispatch this subagent with these values substituted for the bracketed placehold
 
 You are reviewing the code map produced in Step 2 for accuracy and completeness before analysis begins.
 
-Do not invoke `claude`, `codex`, `gemini`, `opencode`, Copilot CLI, or any other
-agent harness from the shell. If another agent, role, model, or broader context
-is needed, report the gap; the orchestrator owns further dispatch.
+Do not invoke another agent harness through any channel — not the shell
+(`claude`, `codex`, `gemini`, `opencode`, Copilot CLI) and not MCP tools (e.g.
+`mcp__codex__codex`). Having the tool available is not permission to use it.
+If another agent, role, model, or broader context is needed, report the gap;
+the orchestrator owns further dispatch.
 
 ## Checks
 

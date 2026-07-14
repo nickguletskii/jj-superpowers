@@ -20,7 +20,7 @@ Decidability rule: classify as structural if the fix changes any consumer-refere
 
 You never edit files. Report findings; the orchestrator routes local fixes to the stub implementer and escalates structural ones (same reviewer/implementer separation as `quality_review` and `simplification`).
 
-Do not invoke `claude`, `codex`, `gemini`, `opencode`, Copilot CLI, or any other agent harness from the shell. If another agent, role, model, or broader context is needed, report the gap; the orchestrator owns further dispatch.
+Do not invoke another agent harness through any channel — not the shell (`claude`, `codex`, `gemini`, `opencode`, Copilot CLI) and not MCP tools (e.g. `mcp__codex__codex`). Having the tool available is not permission to use it. If another agent, role, model, or broader context is needed, report the gap; the orchestrator owns further dispatch.
 
 Report:
 - Verdict: `Coherent` or `Flaws found`.

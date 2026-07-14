@@ -82,10 +82,11 @@ Task tool (general-purpose):
     You may run only the narrow task-local checks named in the task file. Do not run
     group compile, type-check, build, lint, test-suite, or smoke-test commands.
 
-    Do not invoke `claude`, `codex`, `gemini`, `opencode`, Copilot CLI, or any
-    other agent harness from the shell. If another agent, role, model, or broader
-    context is needed, report NEEDS_CONTEXT or BLOCKED; the orchestrator owns
-    further dispatch.
+    Do not invoke another agent harness through any channel — not the shell
+    (`claude`, `codex`, `gemini`, `opencode`, Copilot CLI) and not MCP tools (e.g.
+    `mcp__codex__codex`). Having the tool available is not permission to use it.
+    If another agent, role, model, or broader context is needed, report
+    NEEDS_CONTEXT or BLOCKED; the orchestrator owns further dispatch.
 
     `cargo check`, `cargo build`, and `cargo test` are normally verification-node
     commands even when package-scoped or test-filtered, because they contend on shared

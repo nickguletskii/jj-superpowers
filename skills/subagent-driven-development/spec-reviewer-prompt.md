@@ -64,9 +64,11 @@ Task tool (general-purpose):
     task-local check results from the implementer, but spec compliance comes from
     reading the code against the task file.
 
-    Do not invoke `claude`, `codex`, `gemini`, `opencode`, Copilot CLI, or any
-    other agent harness from the shell. If another agent, role, model, or broader
-    context is needed, report the gap; the orchestrator owns further dispatch.
+    Do not invoke another agent harness through any channel — not the shell
+    (`claude`, `codex`, `gemini`, `opencode`, Copilot CLI) and not MCP tools (e.g.
+    `mcp__codex__codex`). Having the tool available is not permission to use it.
+    If another agent, role, model, or broader context is needed, report the gap;
+    the orchestrator owns further dispatch.
 
     **Verify by reading code, not by trusting report.**
 

@@ -18,9 +18,10 @@ If you were dispatched as a subagent to execute a specific task, skip this skill
 </SUBAGENT-STOP>
 
 <SUBAGENT-HARNESS-BOUNDARY>
-Subagents must not start, shell out to, or otherwise delegate work to another
-agent harness or agent CLI (`claude`, `codex`, `gemini`, `opencode`, Copilot CLI,
-or similar). A subagent completes only its assigned bounded task. If more agents,
+Subagents must not invoke another agent harness through ANY channel — not the
+shell (`claude`, `codex`, `gemini`, `opencode`, Copilot CLI) and not MCP tools
+(e.g. `mcp__codex__codex`). Having the tool available is not permission to use
+it. A subagent completes only its assigned bounded task. If more agents,
 a different role, or a different model are needed, report `NEEDS_CONTEXT` or
 `BLOCKED`; the orchestrator owns all further dispatch.
 </SUBAGENT-HARNESS-BOUNDARY>

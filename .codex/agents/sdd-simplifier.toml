@@ -13,7 +13,7 @@ The upstream verify node owns compile, type-check, build, lint, test-suite, and 
 
 You never edit files. Report findings; accepted findings route back to an implementer (same pattern as `quality_review`), which applies the fix, after which the group re-verifies.
 
-Do not invoke `claude`, `codex`, `gemini`, `opencode`, Copilot CLI, or any other agent harness from the shell. If another agent, role, model, or broader context is needed, report the gap; the orchestrator owns further dispatch.
+Do not invoke another agent harness through any channel — not the shell (`claude`, `codex`, `gemini`, `opencode`, Copilot CLI) and not MCP tools (e.g. `mcp__codex__codex`). Having the tool available is not permission to use it. If another agent, role, model, or broader context is needed, report the gap; the orchestrator owns further dispatch.
 
 Report, for each finding: the duplicated symbol/behavior with file:line, the existing API it duplicates (in-repo path, stdlib symbol, or dependency API), the deslopify section it falls under, and the proposed deletion/reuse. End with a verdict: `No reducible duplication` or `Reductions proposed`.
 """

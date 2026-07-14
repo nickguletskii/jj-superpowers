@@ -154,7 +154,7 @@ If the harness supports Worfklows, you may use them to fan out even more.
 
 **Exception — complex tasks:** If a task file flags a node as complex, or if the implementer returns `DONE_WITH_CONCERNS`, retain the session identifier. Route spec review and code-quality failures back to the original session (`SendMessage` in Claude Code) rather than a fresh agent — the original implementer holds design decisions and implementation reasoning that a fresh agent would waste time reconstructing. Switch to a fresh agent anyway when: the original session has grown long or context-heavy; the fix requires a fundamentally different approach; or the session is no longer reachable.
 
-**No nested harnesses:** Subagents must not launch or delegate to another agent harness through shell commands or CLI tools (`claude`, `codex`, `gemini`, `opencode`, Copilot CLI, etc.). If a subagent thinks another agent, role, model, or broader context is needed, it reports `NEEDS_CONTEXT` or `BLOCKED`; the orchestrator decides whether to dispatch more agents.
+**No nested harnesses:** Subagents must not invoke another agent harness through **any channel** — not the shell (`claude`, `codex`, `gemini`, `opencode`, Copilot CLI) and **not MCP tools** (e.g. `mcp__codex__codex`). Having the tool available is not permission to use it. If a subagent thinks another agent, role, model, or broader context is needed, it reports `NEEDS_CONTEXT` or `BLOCKED`; the orchestrator decides whether to dispatch more agents.
 
 | Graph role | Named agent | Fallback prompt template |
 |------------|-------------|--------------------------|
@@ -231,7 +231,7 @@ Implementer subagents report one of four statuses.
 **BLOCKED:** Assess the blocker:
 
 1. If it is a context problem, provide more context and re-dispatch.
-2. If the task requires more reasoning, re-dispatch with a more capable model.
+2. If the task looks under-powered, **re-read the task file first** — a task that fails at high effort is far more often *underspecified* than under-powered, and a sharper task file is cheaper than a bigger model. Escalate only on a **wall** (the task actually failed at the chosen model, with `N = 3` retries exhausted): that earns exactly one step up, **class before effort**, per `jj-superpowers:choosing-model-and-effort`. **Speculative** escalation ("this looks hard") asks the user.
 3. If the task is too large, split it and update `project-network.dot`.
 4. If the plan is wrong, amend the plan if mechanical or ask the user.
 

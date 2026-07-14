@@ -8,7 +8,7 @@ Use this template when dispatching a simplification reviewer subagent for a `sim
 
 **Verification command policy:** The upstream `verify` node owns compile, type-check, build, lint, test-suite, and smoke-test execution. Inspect the verified diff and verification report. Do not rerun those commands unless code inspection gives a concrete reason to believe the report is stale or contradicted by the diff.
 
-**No nested harnesses:** Do not invoke `claude`, `codex`, `gemini`, `opencode`, Copilot CLI, or any other agent harness from the shell. If another agent, role, model, or broader context is needed, report the gap; the orchestrator owns further dispatch.
+**No nested harnesses:** Do not invoke another agent harness through any channel — not the shell (`claude`, `codex`, `gemini`, `opencode`, Copilot CLI) and not MCP tools (e.g. `mcp__codex__codex`). Having the tool available is not permission to use it. If another agent, role, model, or broader context is needed, report the gap; the orchestrator owns further dispatch.
 
 ```
 Task tool (sdd-simplifier preferred; fallback general-purpose):
@@ -56,9 +56,11 @@ Task tool (sdd-simplifier preferred; fallback general-purpose):
     route back to an implementer (same pattern as `quality_review`), which
     applies the fix; the group then re-verifies.
 
-    Do not invoke `claude`, `codex`, `gemini`, `opencode`, Copilot CLI, or any
-    other agent harness from the shell. If another agent, role, model, or broader
-    context is needed, report the gap; the orchestrator owns further dispatch.
+    Do not invoke another agent harness through any channel — not the shell
+    (`claude`, `codex`, `gemini`, `opencode`, Copilot CLI) and not MCP tools (e.g.
+    `mcp__codex__codex`). Having the tool available is not permission to use it.
+    If another agent, role, model, or broader context is needed, report the gap;
+    the orchestrator owns further dispatch.
 
     ## Output contract
 

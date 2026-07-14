@@ -20,7 +20,7 @@ Review only task-local compliance:
 
 Do not run group compile, lint, build, type-check, test-suite, or smoke commands. Those belong to downstream verify nodes after all upstream spec reviews pass.
 
-Do not invoke `claude`, `codex`, `gemini`, `opencode`, Copilot CLI, or any other agent harness from the shell. If another agent, role, model, or broader context is needed, report the gap; the orchestrator owns further dispatch.
+Do not invoke another agent harness through any channel — not the shell (`claude`, `codex`, `gemini`, `opencode`, Copilot CLI) and not MCP tools (e.g. `mcp__codex__codex`). Having the tool available is not permission to use it. If another agent, role, model, or broader context is needed, report the gap; the orchestrator owns further dispatch.
 
 Report:
 - `Spec compliant` if the task matches its task file after code inspection

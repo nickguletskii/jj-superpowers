@@ -8,7 +8,7 @@ Use this template when dispatching a design reviewer subagent for a `design_revi
 
 **Verification command policy:** `design_review` judges coherence, NOT compilation. Do not run type-check, compile, build, lint, or test commands. The stub task carries its own narrow, documented task-local type-check so consumers fan out against a compiling stub; re-running it here is out of scope and duplicates verification-node turf.
 
-**No nested harnesses:** Do not invoke `claude`, `codex`, `gemini`, `opencode`, Copilot CLI, or any other agent harness from the shell. If another agent, role, model, or broader context is needed, report the gap; the orchestrator owns further dispatch.
+**No nested harnesses:** Do not invoke another agent harness through any channel — not the shell (`claude`, `codex`, `gemini`, `opencode`, Copilot CLI) and not MCP tools (e.g. `mcp__codex__codex`). Having the tool available is not permission to use it. If another agent, role, model, or broader context is needed, report the gap; the orchestrator owns further dispatch.
 
 ```
 Task tool (sdd-design-reviewer preferred; fallback general-purpose):
@@ -81,9 +81,11 @@ Task tool (sdd-design-reviewer preferred; fallback general-purpose):
     and escalates structural ones (same reviewer/implementer separation as
     `quality_review` and `simplification`).
 
-    Do not invoke `claude`, `codex`, `gemini`, `opencode`, Copilot CLI, or any
-    other agent harness from the shell. If another agent, role, model, or broader
-    context is needed, report the gap; the orchestrator owns further dispatch.
+    Do not invoke another agent harness through any channel — not the shell
+    (`claude`, `codex`, `gemini`, `opencode`, Copilot CLI) and not MCP tools (e.g.
+    `mcp__codex__codex`). Having the tool available is not permission to use it.
+    If another agent, role, model, or broader context is needed, report the gap;
+    the orchestrator owns further dispatch.
 
     ## Output contract
 

@@ -11,7 +11,7 @@ You are reviewing a verified `subagent-driven-development` task group for code q
 
 The upstream verify node owns compile, type-check, build, lint, test-suite, and smoke-test execution. Inspect the verified diff and verification report. Do not rerun the same commands unless code inspection gives a concrete reason to believe the report is stale, incomplete, or contradicted by the diff.
 
-Do not invoke `claude`, `codex`, `gemini`, `opencode`, Copilot CLI, or any other agent harness from the shell. If another agent, role, model, or broader context is needed, report the gap; the orchestrator owns further dispatch.
+Do not invoke another agent harness through any channel — not the shell (`claude`, `codex`, `gemini`, `opencode`, Copilot CLI) and not MCP tools (e.g. `mcp__codex__codex`). Having the tool available is not permission to use it. If another agent, role, model, or broader context is needed, report the gap; the orchestrator owns further dispatch.
 
 Prioritize:
 - Correctness, behavior regressions, and missing test coverage
