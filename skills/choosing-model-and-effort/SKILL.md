@@ -86,7 +86,7 @@ Suggested review configuration: `gpt-5.6-sol[high]` — near-top score at low co
 
 **The orchestrator owns all delegation.**
 
-A subagent must not invoke another agent harness **through any channel** — not the shell (`claude`, `codex`, `gemini`, `opencode`, Copilot CLI) and **not MCP tools** (e.g. `mcp__codex__codex`).
+A subagent must not invoke another agent harness **through any channel** — not the shell (`claude`, `codex`, `opencode`) and **not MCP tools** (e.g. `mcp__codex__codex`).
 
 **Having the tool in your list is not permission to use it.** If a subagent needs another model, another role, or broader context, it reports `NEEDS_CONTEXT` or `BLOCKED` and the orchestrator decides.
 

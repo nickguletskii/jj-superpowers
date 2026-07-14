@@ -71,7 +71,7 @@ Skills are discovered automatically. Codex activates them when:
 Codex subagents should receive bounded task prompts. They should skip
 `using-superpowers` and load only skills directly relevant to the assigned task.
 They must not start nested agent sessions by running `codex`, `claude`,
-`gemini`, `opencode`, Copilot CLI, or any other agent harness from the shell; if
+`gemini`, `opencode`, or any other agent harness from the shell; if
 more delegation is needed, the orchestrator dispatches it through Codex's native
 subagent tool.
 

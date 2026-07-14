@@ -10,7 +10,7 @@ Create `jj-superpowers.toml` in the jj config directory:
 
 ```toml
 [[--scope]]
---when.env = { "CLAUDE_CODE_ENV" = "1", "OPENCODE_ENV" = "1", "CODEX_ENV" = "1", "GITHUB_COPILOT_CLI_ENV" = "1" }
+--when.env = { "CLAUDE_CODE_ENV" = "1", "OPENCODE_ENV" = "1", "CODEX_ENV" = "1" }
 --when.env-any = true
 
 [ui]
@@ -34,5 +34,4 @@ Set the matching environment variable before launching the agent:
 - Claude Code: `CLAUDE_CODE_ENV=1`
 - OpenCode: `OPENCODE_ENV=1`
 - Codex: `CODEX_ENV=1`
-- GitHub Copilot CLI: `GITHUB_COPILOT_CLI_ENV=1`
 

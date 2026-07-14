@@ -101,7 +101,7 @@ skill tool. Subagents get bounded task prompts and should not load
 `using-superpowers` unless the task explicitly asks them to work on skill
 orchestration itself.
 They must not start nested agent sessions by running `opencode`, `codex`,
-`claude`, `gemini`, Copilot CLI, or any other agent harness from the shell; if
+`claude`, `codex`, `opencode`, or any other agent harness from the shell; if
 more delegation is needed, the orchestrator dispatches it through OpenCode's
 native subagent mechanism.
 

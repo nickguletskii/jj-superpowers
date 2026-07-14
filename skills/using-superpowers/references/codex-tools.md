@@ -25,8 +25,8 @@ does not expose subagent tools, use the skill's no-subagent fallback path instea
 of pretending dispatch succeeded.
 
 Do not emulate missing subagent tools by reaching for another agent harness
-through any channel — not the shell (`codex`, `claude`, `gemini`, `opencode`,
-Copilot CLI) and not MCP tools (e.g. `mcp__codex__codex`). Subagent dispatch must
+through any channel — not the shell (`codex`, `claude`, `opencode`)
+and not MCP tools (e.g. `mcp__codex__codex`). Subagent dispatch must
 use the harness-native subagent tool, or the orchestrator must use the skill's
 local/no-subagent fallback.
 

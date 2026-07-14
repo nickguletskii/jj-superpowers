@@ -11,7 +11,7 @@ Task tool (haiku model):
     a change graph. Do NOT read or modify source files, make code decisions,
     or interpret plan documents.
     Do NOT invoke another agent harness through any channel — not the shell
-    (`claude`, `codex`, `gemini`, `opencode`, Copilot CLI) and not MCP tools (e.g.
+    (`claude`, `codex`, `opencode`) and not MCP tools (e.g.
     `mcp__codex__codex`). Having the tool available is not permission to use it.
     If another agent, role, model, or broader context is needed, report ERROR;
     the orchestrator owns further dispatch.
