@@ -1,6 +1,6 @@
 ---
 name: iterative-planning
-description: Use when an approved Full-tier design is too large or too uncertain for one up-front plan — for example whole-project task-node count exceeds ~10–12, a later phase's task list can't be written without guessing because it depends on an artifact an earlier phase produces, or the whole project would exceed one comfortable execution session
+description: Use when a project is too big or too unknown to plan in one go, so it is planned and built one phase at a time. Triggers on "plan this in phases", "this is too big to plan up front", "break this into milestones", "plan the next phase", "do it iteratively/incrementally", "we'll know more after the first part ships", "roadmap this", or an approved design that would not fit in one execution session.
 ---
 
 # Iterative Planning (Agile phase loop)
@@ -8,6 +8,8 @@ description: Use when an approved Full-tier design is too large or too uncertain
 ## Overview
 
 Some designs are too large or too uncertain to plan as one `project-network.dot` up front. This skill runs the **plan-one-phase loop**: build an ordered roadmap once, then for each phase plan it, execute it, fold what you learned back into the roadmap, and only then move on. You never plan all phases in advance — later phases are shaped by what earlier phases actually produce.
+
+**Reach for this when** the whole project would exceed one comfortable execution session, a later phase's task list can't be written without guessing because it depends on an artifact an earlier phase produces, or the whole-project `task` count runs past ~10–12.
 
 This is a technique skill. It **delegates**: it does not reimplement planning or execution.
 
@@ -57,20 +59,20 @@ In Agile, **this skill** owns the subagent-vs-inline decision. It is made **once
 
 ## Phase sizing heuristic (advisory, not a gate)
 
-A phase is a vertically-sliced, independently-verifiable increment delivering a coherent working capability:
-- **Floor (~3 task nodes):** reach a real `verify` gate and deliver a usable increment, not a single trivial edit. Merge smaller phases unless a hard sequencing boundary forces the split.
-- **Ceiling (~8 task nodes):** one plan + execution cycle should fit comfortably in one execution session.
-- Tildes, not assertions: a coherent 8–9 node capability is fine. Prefer keeping a capability whole over splitting to hit the number; split only at a natural verify boundary. Each phase builds on the **integrated** result of prior phases.
+A phase is a vertically-sliced, independently-verifiable increment delivering a coherent working capability. Count `task` nodes — the only work nodes a phase graph authors:
+- **Floor (~3 `task` nodes):** reach a real `verify` node and deliver a usable increment, not a single trivial edit. Merge smaller phases unless a hard sequencing boundary forces the split.
+- **Ceiling (~8 `task` nodes):** one plan + execution cycle should fit comfortably in one execution session.
+- Tildes, not assertions: a coherent 8–9 task capability is fine. Prefer keeping a capability whole over splitting to hit the number; split only at a natural `verify` boundary. Each phase builds on the **integrated** result of prior phases.
 
 ## Terminal phase failure
 
-If a phase's graph cannot reach its `final`, **never** silently skip it or proceed to the next phase (later phases build on integrated prior results):
+A phase reaches `final` when every `verify` node in its graph has passed. If it cannot, **never** silently skip the phase or proceed to the next one (later phases build on integrated prior results):
 - **Structural** (`BLOCKED_STRUCTURAL`) → mark the phase `[blocked]`, return to brainstorming for that phase's design (floor #2). Downstream phases do **not** start.
 - **Stuck mechanical failure** (verify/quality exhausts the mechanical retry budget) → mark `[blocked]` (floor #4).
 
 ## Mid-phase resume contract
 
-A phase is a normal plan with its own `project-network.dot`; the **phase graph** is the intra-phase resume state (readiness re-derived from the graph + what is filed in jj, exactly as any non-Agile resume). `roadmap.md` tracks **phase granularity only**: `[planned]` / `[in progress]` / `[blocked]` / `[done]`. A floor halt mid-phase leaves the phase `[in progress]`; a resumed session re-reads that phase's graph to continue. No new intra-phase persistence is introduced.
+A phase is a normal plan with its own `project-network.dot`. The **phase graph** is the intra-phase resume state (readiness re-derived from the graph + what is filed in jj, exactly as any non-Agile resume). `roadmap.md` tracks **phase granularity only**: `[planned]` / `[in progress]` / `[blocked]` / `[done]`. A floor halt mid-phase leaves the phase `[in progress]`; a resumed session re-reads that phase's graph to continue. No new intra-phase persistence is introduced.
 
 ## Roadmap-drift guardrail (Rush × Agile)
 

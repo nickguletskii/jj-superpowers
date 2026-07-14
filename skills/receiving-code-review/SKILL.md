@@ -53,7 +53,7 @@ your human partner: "Fix 1-6"
 You understand 1,2,3,6. Unclear on 4,5.
 
 ❌ WRONG: Implement 1,2,3,6 now, ask about 4,5 later
-✅ RIGHT: "I understand items 1,2,3,6. Need clarification on 4 and 5 before proceeding."
+✅ RIGHT: "Understand 1,2,3,6. Need clarification on 4 and 5 before implementing."
 ```
 
 ## Source-Specific Handling
@@ -85,13 +85,17 @@ IF conflicts with your human partner's prior decisions:
 
 **your human partner's rule:** "External feedback - be skeptical, but check carefully"
 
-## YAGNI Check for "Professional" Features
+## Check Reality Before Building What a Reviewer Asks For
+
+A reviewer asking you to "implement it properly" is sometimes asking for overengineering. The overengineering taxonomy — abstractions with one implementation, configurability for hypothetical needs, compatibility wrappers nobody requested — is owned by `jj-superpowers:deslopify` (its overengineering section). Apply that rubric rather than re-deriving one.
+
+The reception-specific move is to check reality before building:
 
 ```
 IF reviewer suggests "implementing properly":
   grep codebase for actual usage
 
-  IF unused: "This endpoint isn't called. Remove it (YAGNI)?"
+  IF unused: "Nothing calls this endpoint. Should we remove it instead?"
   IF used: Then implement properly
 ```
 
@@ -114,7 +118,7 @@ FOR multi-item feedback:
 
 Treat review feedback about oversized files as architectural feedback, not formatting feedback.
 
-- The file-size discipline (the ~500/1000-line thresholds) is owned by `jj-superpowers:deslopify` — see its canonical file-size rule. A touched file that crosses those thresholds should trigger a decomposition check.
+- The file-size discipline is owned by `jj-superpowers:deslopify` — load its canonical file-size rule for the thresholds. A touched file that crosses them should trigger a decomposition check.
 - Splitting is not cosmetic: it improves readability, reviewability, and makes agent edits safer because each unit fits in context more easily.
 - Break files apart by responsibility, not by arbitrary line count. Extract logical units with explicit interfaces and self-contained behavior.
 
@@ -125,7 +129,7 @@ If a reviewer flags file size, do not dismiss it with "the code is still clear" 
 Push back when:
 - Suggestion breaks existing functionality
 - Reviewer lacks full context
-- Violates YAGNI (unused feature)
+- Asks you to build on a feature nothing actually uses
 - Technically incorrect for this stack
 - Legacy/compatibility reasons exist
 - Conflicts with your human partner's architectural decisions
@@ -171,75 +175,18 @@ If you pushed back and were wrong:
 
 State the correction factually and move on.
 
-## Common Mistakes
+## Worked Example: Verification Beats Agreement
 
-| Mistake | Fix |
-|---------|-----|
-| Performative agreement | State requirement or just act |
-| Blind implementation | Verify against codebase first |
-| Batch without testing | One at a time, test each |
-| Assuming reviewer is right | Check if breaks things |
-| Avoiding pushback | Technical correctness > comfort |
-| Partial implementation | Clarify all items first |
-| Can't verify, proceed anyway | State limitation, ask for direction |
-| Treating a file past the `jj-superpowers:deslopify` size thresholds as acceptable | Split into logical units before merge |
-
-## Common Rationalizations
-
-| Excuse | Reality |
-|--------|---------|
-| "The reviewer is right, I'll just implement everything" | Blindly implementing wrong feedback ships bugs. Verify each point technically against the code first. |
-| "It's faster to just agree and apply it" | Applying an incorrect suggestion is slower — rework plus the bug it introduced. Speed comes from correctness. |
-| "I should thank the reviewer warmly first" | Performative gratitude is noise. Respond with technical substance, not affect. |
-| "Pushing back seems confrontational" | Technically-grounded disagreement is the job. Silent compliance with a wrong call is the failure. |
-| "The feedback is vague but I'll guess what they meant" | Guessing encodes a wrong assumption. Ask, or state your interpretation explicitly before acting. |
-
-## Red Flags - STOP
-
-- I'm writing "Great catch!" / "You're absolutely right!" before evaluating
-- I'm applying a change I can't technically justify
-- I haven't verified the reviewer's claim against the code
-- I'm changing behavior I believe is correct just to satisfy a comment
-- I'm implementing some items while still unclear on others
-- I'm about to type "Thanks" instead of stating the fix
-
-**All of these mean: STOP — verify the feedback technically before acting.**
-
-## Real Examples
-
-**Performative Agreement (Bad):**
 ```
 Reviewer: "Remove legacy code"
+
 ❌ "You're absolutely right! Let me remove that..."
+✅ "Checking... build target is 10.15+, this API needs 13+. Need legacy for backward
+    compat. Current impl has wrong bundle ID - fix it or drop pre-13 support?"
 ```
 
-**Technical Verification (Good):**
-```
-Reviewer: "Remove legacy code"
-✅ "Checking... build target is 10.15+, this API needs 13+. Need legacy for backward compat. Current impl has wrong bundle ID - fix it or drop pre-13 support?"
-```
-
-**YAGNI (Good):**
-```
-Reviewer: "Implement proper metrics tracking with database, date filters, CSV export"
-✅ "Grepped codebase - nothing calls this endpoint. Remove it (YAGNI)? Or is there usage I'm missing?"
-```
-
-**Unclear Item (Good):**
-```
-your human partner: "Fix items 1-6"
-You understand 1,2,3,6. Unclear on 4,5.
-✅ "Understand 1,2,3,6. Need clarification on 4 and 5 before implementing."
-```
+The good response verified the claim against the codebase, found the reviewer lacked context, and returned a technical question instead of a change.
 
 ## GitHub Thread Replies
 
 When replying to inline review comments on GitHub, reply in the comment thread (`gh api repos/{owner}/{repo}/pulls/{pr}/comments/{id}/replies`), not as a top-level PR comment.
-
-## The Bottom Line
-
-**External feedback = suggestions to evaluate, not orders to follow.**
-
-Verify. Question. Then implement.
-
-No performative agreement. Technical rigor always.

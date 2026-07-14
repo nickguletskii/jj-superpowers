@@ -21,11 +21,11 @@ Dispatch jj-superpowers:code-reviewer subagent to catch issues before they casca
 - Before refactoring (baseline check)
 - After fixing complex bug
 
-## Planned Graph Implementation
+## Relationship to Planned Graphs
 
-For planned graph execution, code quality review belongs to `quality_review` nodes. Use `subagent-driven-development/code-quality-reviewer-prompt.md` for those nodes.
+For planned graph execution, code quality review belongs to `quality_review` nodes — use `subagent-driven-development/code-quality-reviewer-prompt.md` there, and follow the review cadence the plan graph defines.
 
-This skill is for ad hoc/manual review requests outside that planned graph gate, or for explicit user-requested review. It is not mandatory after every graph task.
+This skill is for ad hoc/manual review outside that gate, or for explicit user-requested review. It is not mandatory after every graph task. Outside a graph quality gate, request manual review before integration and after substantial ad hoc batches.
 
 ## How to Request
 
@@ -57,16 +57,19 @@ Use Task tool with jj-superpowers:code-reviewer type, fill template at `code-rev
 When the template labels this section `CHANGE_ID` but the scope is not a revision, treat that field as `REVIEW_SCOPE` and replace revision-only inspection commands with the supplied range, file list, or current `@` diff. When using a file list or current `@` diff, include the exact files or diff text/context needed for review in the request body. When using a revision or range, include the command the reviewer should use to inspect it.
 
 **3. Act on feedback:**
-- Fix Critical issues immediately
-- Fix Important issues before proceeding
-- Note Minor issues for later
-- Push back if reviewer is wrong (with reasoning)
+
+Reception is its own discipline. When the review comes back, load `jj-superpowers:receiving-code-review` — it owns verifying feedback before implementing, when and how to push back, implementation order, and the no-performative-agreement rule.
+
+Severity routing for reviews requested through this skill:
+- Critical — fix immediately; blocks everything
+- Important — fix before proceeding
+- Minor — note for later
 
 ## Required Review Lens: File Size and Decomposition
 
 The reviewer must evaluate file boundaries, not just correctness.
 
-- Apply the file-size discipline (the ~500/1000-line thresholds) owned by `jj-superpowers:deslopify` — see its canonical file-size rule. Flag touched files that cross those thresholds unless there is a strong, explicit reason not to split them.
+- Apply the file-size discipline owned by `jj-superpowers:deslopify` — load its canonical file-size rule for the thresholds. Flag touched files that cross them unless there is a strong, explicit reason not to split them.
 - Ask whether parsing, validation, orchestration, rendering, state management, and I/O are being mixed in one file when they could be separate logical units.
 - Prefer extracting self-contained units with narrow interfaces so each file is easier for humans and agents to read, review, and modify.
 
@@ -96,35 +99,9 @@ You: [Fix progress indicators]
 [Continue to Task 3]
 ```
 
-## Integration with Workflows
+## Related Skills
 
-**Subagent-Driven Development:**
-- Planned graph implementation uses `quality_review` nodes for code quality review.
-- Use `subagent-driven-development/code-quality-reviewer-prompt.md` at those nodes.
-- Use this skill only for ad hoc/manual review outside the planned graph gate, or when the user explicitly asks.
+- `jj-superpowers:receiving-code-review` — what to do with the findings once the reviewer returns them, including how to push back when the reviewer is wrong (technical reasoning, not deference; verify the claim against the code first)
+- `jj-superpowers:deslopify` — canonical file-size rule and duplication/overengineering taxonomy the reviewer applies
 
-**Executing Plans:**
-- Use the review cadence defined by the plan graph.
-- If working outside a graph quality gate, request manual review before integration or after substantial ad hoc batches.
-
-**Ad-Hoc Development:**
-- Review before merge
-- Review when stuck
-- Review after substantial changes
-
-## Red Flags
-
-**Never:**
-- Skip review because "it's simple"
-- Ignore Critical issues
-- Proceed with unfixed Important issues
-- Argue with valid technical feedback
-- Treat a touched file that crosses the `jj-superpowers:deslopify` file-size thresholds as normal
-- Keep unrelated responsibilities together because "the tests pass"
-
-**If reviewer wrong:**
-- Push back with technical reasoning
-- Show code/tests that prove it works
-- Request clarification
-
-See template at: requesting-code-review/code-reviewer.md
+Template: `requesting-code-review/code-reviewer.md`

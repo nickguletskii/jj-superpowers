@@ -1,6 +1,6 @@
 ---
 name: designing-with-types-and-abstractions
-description: Use when designing or refactoring APIs, internal interfaces, stateful workflows, or concurrent systems where ad hoc branching, flat data, hidden state, fallback behavior, or imperative orchestration are making the code hard to extend, verify, or optimize
+description: Use when designing or refactoring an API, interface, state machine, or concurrent system — and when adding a new backend, provider, plugin, or variant means editing a growing `if`/`match`/`switch`. Triggers on "design the API", "how should I model this", "make illegal states unrepresentable", "extract an interface/trait", "this switch keeps growing", domain state held in booleans/nulls/flags, or choosing a data layout for a hot path.
 ---
 
 # Designing With Types and Abstractions

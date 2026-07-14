@@ -43,7 +43,7 @@ Any output = unresolved merge conflicts remain. Edit the conflict markers in the
 
 ### Step 0.5: History Check
 
-Show the current history:
+Show the current history (**the history command** — Steps 2 and 2.5 re-run this):
 ```bash
 jj log -r 'trunk()..@' --no-pager \
   --template 'change_id.short(8) ++ "  " ++ description.first_line() ++ "\n"'
@@ -58,7 +58,9 @@ If history is clean but you want a different *shape* (splitting a large change, 
 > "History above is clean. Would you like to reorganize it into a different DAG shape before proceeding?
 >
 > - **Yes** — invoke `jj-organizing-history`, then return here
-> - **No** — proceed as-is (commits will be renamed to semantic descriptions in Step 2.5)"
+> - **No** — proceed as-is"
+
+This is now an optional refinement of already-good history, not a rescue operation on a pile of deferred commits.
 
 Wait for user choice. If yes: **REQUIRED SUB-SKILL:** Use jj-superpowers:jj-organizing-history. Return here after it completes.
 
@@ -66,16 +68,27 @@ Use the decision-checkpoint pattern from `jj-superpowers:using-superpowers`: pre
 
 If history is already consolidated and you do not want a different DAG shape, skip this step.
 
-### Step 1: Verify Tests
+### Step 1: Confirm Verification Is Green
 
-**Before presenting options, verify tests pass:**
+**Before presenting options, confirm you have valid passing verification evidence** — per the Iron Law in `jj-superpowers:verification-before-completion`, valid means the run postdates the last change that could affect it.
 
-```bash
-# Run project's test suite
-pnpm run test / cargo test / pytest / go test ./...
+**Do not re-run the suite by reflex.** If this branch came through a plan graph, its `verify` nodes already ran the project's contended commands, and those results stand unless the tree moved afterward. Re-running a suite that cannot return a different answer costs wall-clock and blocks anything else contending on the build.
+
+```
+Has the tree changed since the last green verification, in a way that could change the result?
+(source, config, dependencies, or the tests themselves — NOT comments, docs, or
+ commit reorganization that leaves the tree contents identical)
+
+  NO  -> cite that run and continue to Step 1.5.
+  YES -> run the project's suite now:
+         pnpm run test / cargo test / pytest / go test ./...
+  NO EVIDENCE AT ALL (e.g. Trivial/Small tier, or ad hoc work)
+      -> run the named verification command for this work.
 ```
 
-**If tests fail:**
+Note that Step 0.5 history organization (`jj-organizing-history`) rewrites *commits*, not file contents — a reorganized branch with an unchanged tree does not need re-verification.
+
+**If verification fails:**
 ```
 Tests failing (<N> failures). Must fix before completing:
 
@@ -86,7 +99,7 @@ Cannot proceed with merge/PR until tests pass.
 
 Stop. Don't proceed to Step 2.
 
-**If tests pass:** Continue to Step 1.5.
+**If verification is green:** Continue to Step 1.5.
 
 ### Step 1.5: Spec drift check (when applicable)
 
@@ -116,22 +129,17 @@ Both directories use ISO-date subdirectories with HHMM-prefixed filenames. Drift
 
 ### Step 2: Identify the Work
 
-Find the changes to be integrated:
+Re-run **the history command** (Step 0.5) to find the changes to be integrated. It will show one of these shapes:
 
-```bash
-jj log -r 'trunk()..@' --no-pager \
-  --template 'change_id.short(8) ++ "  " ++ description.first_line() ++ "\n"'
-```
+**Consolidated** (graph execution): one properly-described change per task node, no scaffolds. This is the expected shape — descriptions were written as each task passed spec review.
 
-This will show one of two shapes:
+**Organized DAG** (ran `jj-organizing-history`): identify `scope0` (scope merge), `plan0` (plan change), the described implementation sub-routes, and `temp0` (temp/handoff change).
 
-**Organized DAG** (ran `jj-organizing-history`): identify `scope0` (scope merge), `plan0` (plan change), `toreview:` sub-routes (completed implementation), `temp0` (temp/handoff change).
+**Unconsolidated** (inline or ad hoc work that never went through a graph): raw `toorg` commits. Note their IDs — they still need consolidating and describing in Step 2.5.
 
-**Unorganized** (skipped reorganization): identify `toorg:` commits. Note their IDs for Step 2.5. There is no scope/plan/temp structure.
+### Step 2.5: User Review
 
-### Step 2.5: User Review and Commit Rename
-
-For each implementation commit identified in Step 2 (whether `toreview:` or `toorg:`), show its diff and ask the user to review it before proceeding.
+For each implementation commit identified in Step 2, show its diff and ask the user to review it before proceeding.
 
 **Give the user commands to review each commit:**
 
@@ -149,25 +157,17 @@ Please review the changes above and let me know when you're happy with them.
 
 If the user reports issues: stop, fix them, re-run Steps 0–2, and re-present the review commands.
 
-**Once the user confirms all changes are OK**, replace each `toreview:` or `toorg:` prefix with a semantic change description:
+**Describing any remaining scaffolds.** Consolidated history already carries real descriptions, so there is normally nothing to rename here. If Step 2 found `toorg` commits (unconsolidated ad hoc work), squash and describe them now, following the Change Description Rules in `jj-superpowers:jujutsu`:
 
 ```bash
 jj describe -r <id> -m "<semantic description>"
 ```
 
-Semantic change description rules:
-- Strip the `toreview: ` or `toorg: ` prefix
-- Use conventional commit format where the project uses it (e.g. `feat: add user model`, `fix: resolve auth race`, `refactor: extract helper`)
-- Otherwise use an imperative short sentence (`add user model`, `resolve auth race`)
-- Keep it under 72 characters; no trailing period
-
-After renaming all commits, verify the log looks clean:
+Re-run **the history command** (Step 0.5) to confirm the log is clean, then confirm no scaffold remains:
 ```bash
-jj log -r 'trunk()..@' --no-pager \
-  --template 'change_id.short(8) ++ "  " ++ description.first_line() ++ "\n"'
+jj log -r 'trunk()..@ & (description(glob:"toorg*") | description(glob:"todo:*"))' --no-pager
 ```
-
-No `toreview:` or `toorg:` lines should remain.
+This must return empty. Any output is a change about to enter a PR with a meaningless description.
 
 ### Step 3: Present Options
 
@@ -310,41 +310,6 @@ Already abandoned in Step 4. Verify:
 jj log -r 'trunk()..@' --no-pager
 ```
 
-## Quick Reference
-
-| Option | Push | Keep scope | Abandon temp | Abandon all |
-|--------|------|------------|--------------|-------------|
-| 1. Create PR | ✓ (before push) | ✓ | - | - |
-| 2. Integrate | ✓ | - | ✓ | ✓ |
-| 3. Keep as-is | - | ✓ | - | - |
-| 4. Discard | - | - | - | ✓ |
-
-## Common Mistakes
-
-**Skipping pre-flight DAG checks**
-- **Problem:** Divergent changes, conflicts, or unmerged `@` content end up in the PR or integrated to trunk
-- **Fix:** Always run Step 0 before anything else
-
-**Skipping test verification**
-- **Problem:** Merge broken code, create failing PR
-- **Fix:** Always verify tests before offering options
-
-**Skipping user review**
-- **Problem:** Unreviewed or incorrectly-described changes get integrated
-- **Fix:** Always show all diffs and wait for explicit confirmation before renaming and proceeding
-
-**Open-ended questions**
-- **Problem:** "What should I do next?" → ambiguous
-- **Fix:** Present exactly 4 structured options
-
-**Forgetting to abandon temp change first**
-- **Problem:** Scratch/handoff files end up in the PR
-- **Fix:** Always abandon temp *before* creating the bookmark and pushing (Option 1)
-
-**No confirmation for discard**
-- **Problem:** Accidentally delete work
-- **Fix:** Require typed "discard" confirmation
-
 ## Red Flags
 
 **Never:**
@@ -358,8 +323,8 @@ jj log -r 'trunk()..@' --no-pager
 
 **Always:**
 - Verify tests before offering options
-- Show all `toreview:` diffs and wait for explicit user confirmation
-- Rename all `toreview:` descriptions to semantic change descriptions before proceeding
+- Show every implementation diff and wait for explicit user confirmation
+- Ensure no `toorg` scaffold survives — every change carries its real description before proceeding
 - Present exactly 4 options
 - Get typed confirmation for Option 4
 - Abandon temp change before pushing for Option 1

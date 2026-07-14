@@ -1,6 +1,6 @@
 ---
 name: dispatching-parallel-agents
-description: Use when the user has authorized subagents and there are 2+ independent investigations with disjoint context, no shared mutable state, and no project-network.dot plan
+description: Use when several unrelated things need investigating at once and subagents are authorized — multiple failing tests across different subsystems, independent code-archaeology questions, or map/reduce exploration before a design or cleanup decision. Triggers on "investigate these in parallel", "fan out", "look into X, Y and Z", or 2+ root-cause hypotheses checkable without touching shared files. If the plan has a `project-network.dot`, use `subagent-driven-development` instead.
 ---
 
 # Dispatching Parallel Agents
@@ -72,7 +72,7 @@ Each prompt needs:
 - **Output:** root cause, evidence, recommended fix, files changed if any, and verification run.
 
 Always include this constraint: do not invoke another agent harness through any
-channel — not the shell (`claude`, `codex`, `gemini`, `opencode`, Copilot CLI)
+channel — not the shell (`claude`, `codex`, `opencode`)
 and not MCP tools (e.g. `mcp__codex__codex`). Having the tool available is not
 permission to use it. Subagents must report `NEEDS_CONTEXT` or `BLOCKED` if more
 delegation seems necessary.

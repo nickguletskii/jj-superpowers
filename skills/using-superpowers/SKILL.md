@@ -19,7 +19,7 @@ If you were dispatched as a subagent to execute a specific task, skip this skill
 
 <SUBAGENT-HARNESS-BOUNDARY>
 Subagents must not invoke another agent harness through ANY channel — not the
-shell (`claude`, `codex`, `gemini`, `opencode`, Copilot CLI) and not MCP tools
+shell (`claude`, `codex`, `opencode`) and not MCP tools
 (e.g. `mcp__codex__codex`). Having the tool available is not permission to use
 it. A subagent completes only its assigned bounded task. If more agents,
 a different role, or a different model are needed, report `NEEDS_CONTEXT` or
@@ -36,21 +36,24 @@ This is not negotiable. This is not optional. You cannot rationalize your way ou
 
 ## Instruction Priority
 
-jj-superpowers skills override default system prompt behavior, but **user instructions always take precedence**:
+1. **User's explicit instructions** (direct requests) — highest priority
+2. **Project conventions** (CLAUDE.md, AGENTS.md, `.agents/`, project skills)
+3. **jj-superpowers skills**
+4. **Your system prompt** — lowest priority
 
-1. **User's explicit instructions** (CLAUDE.md, GEMINI.md, AGENTS.md, direct requests) — highest priority
-2. **jj-superpowers skills** — override default system behavior where they conflict
-3. **Default system prompt** — lowest priority
+If CLAUDE.md or AGENTS.md says "don't use TDD" and a skill says "always use TDD," follow the project. The user is in control.
 
-If CLAUDE.md, GEMINI.md, or AGENTS.md says "don't use TDD" and a skill says "always use TDD," follow the user's instructions. The user is in control.
+**Conventions: layers 2 and 3 beat layer 4.** Code style, comments, documentation, tests, and commit descriptions are owned by the project and by these skills — *not* by your system prompt's coding conventions. Where a skill or the project speaks on a convention, follow it and do not fall back to a system-prompt default.
+
+**Efficiency and safety: layer 4 can win.** If jj-superpowers guidance is wasteful, contradictory, or unsafe — including where it conflicts with provider guidance for operating efficiently — follow the provider guidance, tell the user what you saw, and ask them to notify jj-superpowers maintainers.
+
+These two are the whole rule, and they are not in tension: **the escape hatch exists for how you operate, never for what the code should look like.** A provider default that says "match the surrounding code's comment density" does not override `writing-comments`; a provider default that says "don't burn a subagent on a one-line lookup" does override a skill that would.
+
+One convention is important enough to be repeated in the session bootstrap, because the provider default is *actively wrong*: **never attribute a change to an LLM, model, or agent** (no `Co-Authored-By`, no "Generated with", no model names), and keep descriptions to one short title line. See `jj-superpowers:jujutsu`.
 
 ## How to Access Skills
 
 **In Claude Code:** Use the `Skill` tool. When you invoke a skill, its content is loaded and presented to you—follow it directly. Never use the Read tool on skill files.
-
-**In Gemini CLI:** Skills activate via the `activate_skill` tool. Gemini loads skill metadata at session start and activates the full content on demand.
-
-**In GitHub Copilot CLI:** Use the `skill` tool. Skills are discovered automatically from the plugin's `skills/` directory.
 
 **In other environments:** Check your platform's documentation for how skills are loaded.
 
@@ -59,9 +62,7 @@ If CLAUDE.md, GEMINI.md, or AGENTS.md says "don't use TDD" and a skill says "alw
 Skills use Claude Code tool names. Non-CC platforms translate tools as follows:
 
 - **Codex:** see `references/codex-tools.md`
-- **Gemini CLI:** tool mapping loaded automatically via GEMINI.md; reference `references/gemini-tools.md`
 - **OpenCode:** plugin bootstrap maps common tools compactly; use OpenCode's native skill tool and subagent `@mention` system
-- **GitHub Copilot CLI:** see `references/copilot-tools.md`
 
 This is about running jj-superpowers *inside* another harness — tool-name mapping only. Calling *out* to an external harness for a second opinion (ensemble review) is a different thing entirely and is owned by `jj-superpowers:choosing-model-and-effort`. Do not conflate the two senses of "harness".
 
@@ -191,6 +192,53 @@ digraph skill_flow {
 }
 ```
 
+## Routing Map
+
+Your platform already injects every skill's description. The question is not *what exists*, it is *what do I reach for now*. Find your situation; invoke the skill.
+
+**Building something**
+- Starting a feature, component, or behavior change — any creative work → `brainstorming`
+- Design approved, need an implementation plan → `writing-plans`
+- Plan too big or too uncertain for one pass (>~10-12 task nodes; a later phase depends on an artifact an earlier one produces) → `iterative-planning`
+- Plan includes `project-network.dot` and you are executing it now → `subagent-driven-development`
+- Executing a written plan in a separate session with review checkpoints → `executing-plans`
+- About to write implementation code → `test-driven-development`
+- Designing an API, interface, or state machine; adding one more branch to a growing `if`/`match` → `designing-with-types-and-abstractions`
+
+**Something is wrong**
+- Bug, test failure, or unexpected behavior → `systematic-debugging`
+- Open-ended objective, many candidate causes, flaky behavior, or a metric to move → `hypothesis-driven-improvement`
+
+**Wrapping up**
+- About to claim "done", "fixed", or "passing" → `verification-before-completion`
+- Want finished work reviewed → `requesting-code-review`
+- Received review feedback → `receiving-code-review`
+- Implementation complete, needs integrating or a PR → `finishing-a-development-branch`
+
+**Version control (jj)**
+- Any version control in a jj repo → `jujutsu`
+- Splitting, cleaning, or reordering history for review → `jj-organizing-history`
+- Hunk-level split or partial squash → `jj-hunk`
+
+**Code and docs quality**
+- "Clean this up", remove slop, general quality pass → `deslopify`
+- Broad dead-code or dedup sweep across many directories → `codebase-cleanup`
+- Writing or fixing docs; you had to read five files to understand one thing → `documentation`
+- Writing or cleaning code comments → `writing-comments`
+
+**Specs and project layout**
+- Authoring or amending a spec, glossary, or invariants → `writing-specs`
+- Any source edit in a project that has `.agents/layout.yaml` → `spec-code-sync`
+- Auditing spec-vs-code drift or orphan references → `spec-drift-detector`
+- Setting up or auditing `.agents/layout.yaml`, `AGENTS.md`, project skills → `project-layout`
+
+**Running the agent itself**
+- Choosing a model or effort for a subagent; hit a wall; want a second opinion → `choosing-model-and-effort`
+- 2+ independent investigations, subagents authorized, no plan graph → `dispatching-parallel-agents`
+- Command may flood context — builds, tests, logs, broad searches → `tool-output-discipline`
+- Running Python, `uv`, packages, or virtualenvs → `uv-guide`
+- Creating or editing a skill → `writing-skills`
+
 ## Tracking Progress
 
 Track multi-step and subagent-driven work against the **durable artifact** — the
@@ -210,28 +258,17 @@ These thoughts mean STOP—you're rationalizing:
 
 | Thought | Reality |
 |---------|---------|
-| "This is just a simple question" | Questions are tasks. Check for skills. |
-| "I need more context first" | Skill check comes BEFORE clarifying questions. |
-| "Let me explore the codebase first" | Skills tell you HOW to explore. Check first. |
-| "I can check git/files quickly" | Files lack conversation context. Check for skills. |
-| "Let me gather information first" | Skills tell you HOW to gather information. |
-| "This doesn't need a formal skill" | If a skill exists, use it. |
-| "I remember this skill" | Skills evolve. Read current version. |
-| "This doesn't count as a task" | Action = task. Check for skills. |
-| "The skill is overkill" | Simple things become complex. Use it. |
-| "I'll just do this one thing first" | Check BEFORE doing anything. |
-| "This feels productive" | Undisciplined action wastes time. Skills prevent this. |
-| "I know what that means" | Knowing the concept ≠ using the skill. Invoke it. |
+| "Just a simple question" / "doesn't count as a task" / "the skill is overkill" | Questions and actions are tasks. Simple things become complex. Check. |
+| "Let me explore / gather context / check the files first" | Skills tell you HOW to explore and gather. Check BEFORE, including before clarifying questions. |
+| "I remember this skill" / "I know what that means" | Skills evolve, and knowing the concept ≠ using the skill. Invoke it. |
+| "I'll just do this one thing first" / "this feels productive" | Undisciplined action wastes time. Check before doing anything. |
 
 ## Skill Priority
 
-When multiple skills could apply, use this order:
+When multiple skills could apply, **process skills go first** (`brainstorming`, `systematic-debugging`) — they determine HOW to approach the task — then the execution and domain skills they hand off to.
 
-1. **Process skills first** (brainstorming, debugging) - these determine HOW to approach the task
-2. **Implementation skills second** (frontend-design, mcp-builder) - these guide execution
-
-"Let's build X" → brainstorming first, then implementation skills.
-"Fix this bug" → debugging first, then domain-specific skills.
+"Let's build X" → brainstorming first, then planning and implementation skills.
+"Fix this bug" → systematic-debugging first, then domain-specific skills.
 
 ## Skill Types
 

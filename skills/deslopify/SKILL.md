@@ -13,18 +13,34 @@ Code should say what it means and mean what it says. Slop is code that's redunda
 
 ## When to Use
 
-**Only on explicit user request.** Not automatic. When the user says:
+This skill runs in two modes. Establish which one you are in before doing anything.
+
+### Rubric mode — automatic, no user request needed
+
+Review and planning nodes load this skill as their **rubric** and cite its sections. They do not ask permission first, and they do not restate its checks. Current callers:
+
+- `jj-superpowers:subagent-driven-development` `simplification` nodes (via the `sdd-simplifier` agent or `simplification-prompt.md`) — apply **section E**, the sole owner of duplication detection in a planned graph.
+- `jj-superpowers:requesting-code-review` and `jj-superpowers:receiving-code-review` — apply the canonical **file-size rule** in section F.
+- `jj-superpowers:writing-plans` and `jj-superpowers:executing-plans` — apply the file-size rule when sizing touched files.
+
+In rubric mode you are a **reviewer**, not a cleaner: apply only the sections the caller cites, report findings with evidence, and **do not** run the Process below, ask a scoping question, or edit code. The caller owns what happens to the findings.
+
+### Sweep mode — explicit user request only
+
+A standalone cleanup pass over a scope the user names. Triggered when the user says:
 - "deslopify this code"
 - "review for quality"
 - "clean up unnecessary code"
 - "this code is sloppy, improve it"
+
+Sweep mode runs the full Process below, including the scoping question and the approval gate. **Never start a sweep on your own initiative** — an unrequested sweep rewrites code the user did not ask you to touch.
 
 **Not for:**
 - Large dead-code or deduplication cleanup → use the "Large Cleanup Mode" below
 - Which tests to write → `jj-superpowers:test-driven-development` and `what-to-test.md`
 - Debugging failures → `jj-superpowers:systematic-debugging`
 
-## Scoping
+## Scoping (sweep mode)
 
 Ask the user what scope to review. Default suggestion: recently changed files. Offer whole-directory if they want thoroughness.
 
@@ -89,7 +105,7 @@ Abstractions and configurability added for hypothetical future use.
 - **Legacy shims**: Compatibility adapters for APIs no longer needed
 - **Compatibility wrappers where API compatibility wasn't requested**: Wrappers preserving an interface no consumer requires
 
-**Fix:** YAGNI. Remove until the second use case exists or the consumer is real.
+**Fix:** Remove it until a second use case actually exists, or the consumer is real.
 
 ### E. Under-engineering / Duplication
 
@@ -121,7 +137,9 @@ Files and modules structured in ways that obscure rather than reveal the codebas
 
 **Fix:** Split long files by responsibility. Organize flat modules into subdirectories that reflect the domain. Move comprehensive test suites to dedicated test files; keep only invariant/intent tests near the implementation.
 
-## Process
+## Process (sweep mode)
+
+Rubric-mode callers skip this entirely — they cite sections and report findings; they do not scope, approve, or edit.
 
 ```dot
 digraph deslopify {
@@ -146,33 +164,10 @@ digraph deslopify {
 
 **Step 5:** Run tests and build. Verify nothing broke.
 
-## Rationalization Table
+## Guardrails
 
-| Excuse | Reality |
-|--------|---------|
-| "I might need this later" | Add it when you need it |
-| "It's not hurting anything" | Slop accumulates and obscures meaning |
-| "What if we want configurability?" | YAGNI — add it when the second case appears |
-| "This test documents behavior" | Tests that restate implementation don't document — they echo |
-| "Deleting tests feels wrong" | Tests that test nothing consume CI time and attention |
-| "The existing code works" | Working code with hidden assumptions is a time bomb |
-| "We'll clean it up later" | Later never comes. Clean it now or accept the slop |
-| "This fallback handles the edge case" | Does it? Or does it hide a bug? Fail fast |
-| "It's just a long file" | Long files mix responsibilities and obscure meaning |
-| "Flat is simpler" | Flat directories with 20+ files aren't simple, they're chaotic |
-
-## Common Mistakes
-
-- **Don't remove tests without checking they're truly redundant** — not just poorly named
+- **Don't remove tests without checking they're truly redundant** — a bad name is not the same as a bad test
 - **Don't refactor code that's about to be replaced** — ask the user first
 - **Don't break public API without checking backwards compatibility**
 - **Don't treat linter-detectable issues as slop** — use the linter, that's what it's for
-- **Don't deslopify code you don't understand** — read before removing
-- **Don't split files by arbitrary line count** — split by responsibility
 - **Don't cache prematurely** — but don't skip caching just because something seems cheap. Repeated operations add up (e.g., text shaping per frame). When an API provides a caching mechanism, there's usually a reason. Implementing performance correctly up front is often better than guessing why things are slow later.
-
-## The Bottom Line
-
-**Remove what obscures meaning. Keep what provides it.**
-
-Slop is any code that makes the codebase harder to understand without adding corresponding value. A test that echoes the implementation, a branch that silently handles what should be an error, an abstraction for one use case — these all obscure meaning.

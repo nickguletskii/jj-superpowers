@@ -18,6 +18,10 @@ Use this skill for:
 
 Use `jj-superpowers:jj-hunk` for low-level hunk selection. Use `jj-superpowers:jujutsu` for general jj command syntax and safety.
 
+## Change Description Discipline
+
+Change descriptions are governed by the **Change Description Rules** in `jj-superpowers:jujutsu` — they apply to every description in every repo, not just to reorganized history. Load that skill and follow it. In short: no LLM/model/agent attribution, one short title line with no prose body, and no transient workflow artifacts (node ids, phase numbers, plan paths, scaffold prefixes).
+
 ## Safety Rules
 
 - Record the starting operation ID before rewrites: `jj op log --no-graph -T id -n 1 --no-pager`.
@@ -30,7 +34,7 @@ Use `jj-superpowers:jj-hunk` for low-level hunk selection. Use `jj-superpowers:j
 
 | Situation | Mode |
 |---|---|
-| `toorg:` implementation commits after planned work | Reorganize `toorg:` commits |
+| Unconsolidated `toorg` commits from inline or ad hoc work | Reorganize `toorg:` commits |
 | Existing committed history has mixed concerns | Clean committed history |
 | One change should become independent siblings | Parallel split |
 | One change should become a dependency chain | Sequential/hunk split via `jj-hunk` |
@@ -47,8 +51,8 @@ Use `jj-superpowers:jj-hunk` for low-level hunk selection. Use `jj-superpowers:j
 4. Present the proposed DAG and assignments to the user using the decision-checkpoint pattern.
 5. Build the DAG using the `jj-superpowers:subagent-driven-development` skill's `jj-dag-builder-prompt.md` and the skill-relative `resources/dot-to-jj-dag/dot-to-jj-dag.py` script.
 6. Move content into target `todo:` nodes with `jj squash --from <toorg-id> --into <target-id> <files> -u`.
-7. Rename completed nodes to `toreview: <label>` and abandon empty `toorg:` commits.
-8. Verify no `toorg:` lines remain, `@` is empty, and no divergent/conflicted changes exist.
+7. Describe each completed node with its real, final description (see Change Description Discipline above) and abandon empty `toorg` commits. There is no intermediate label — describe it once, correctly.
+8. Verify **no scaffold survives** — `jj log -r 'trunk()..@ & (description(glob:"toorg*") | description(glob:"todo:*"))'` must return empty. Then confirm `@` is empty and no divergent/conflicted changes exist.
 
 ## Clean Committed History
 

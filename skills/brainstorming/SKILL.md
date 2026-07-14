@@ -11,16 +11,36 @@ Start by understanding the current project context, then ask questions one at a 
 
 ## Anti-Pattern: "This Is Too Simple To Need A Design"
 
-Every project goes through this process. A todo list, a single-function utility, a config change — all of them. "Simple" projects are where unexamined assumptions cause the most wasted work. The design can be short (a few sentences for truly simple projects), but you MUST present it and get approval unless user explictly allows autonomous work.
+Every task gets a **design and an approval** — a todo list, a single-function utility, a config change, all of them. "Simple" tasks are where unexamined assumptions cause the most wasted work. For a truly simple task the design is a few sentences, but you MUST present it and get approval unless the user explicitly allows autonomous work.
+
+**What scales is the ceremony, not the gate.** Design approval is universal; the spec document, the API-surface brainstorm, and the adversarial review loop are not. See the Tier Gate. The opposite failure — running Full-tier ceremony on a one-line change — wastes exactly the time this skill exists to save, and is just as much a defect as skipping the design.
 
 ## Checklist
 
-You MUST complete each of these items in order, tracking progress against this checklist itself — not the harness task/todo tracker (it doesn't survive subagent dispatch; see `jj-superpowers:using-superpowers`):
+Work through these in order, tracking progress against this checklist itself — not the harness task/todo tracker (it doesn't survive subagent dispatch; see `jj-superpowers:using-superpowers`).
 
-1. **Explore project context** — check files, docs, recent commits (only if instructed to by user), relevant skills, rules, dependencies and guidance. Find existing abstractions, helpers, utilities, interfaces, traits to be reused. **If `.agents/layout.yaml` exists**, also read it and list the capability/plane specs likely affected by the work (use `code_map` to filter by paths the work will touch). Load full `SPEC.yaml` only for the specs that look most relevant. Create a JSONL file containing a coarse list of relevant symbols (files, classes, functions, variables, etc...) to avoid re-exploring during later stages
+**Scale the checklist to the work.** Steps 1, 2, 5, 6 and 11 run for *every* task. The rest are **Full-tier only** — see the Tier Gate below for exactly which steps each tier skips. Running a 3-reviewer adversarial spec loop on a typo fix is a defect, not diligence.
+
+| Step | Trivial | Small | Full |
+|------|---------|-------|------|
+| 1 Explore context | light | light | full (+ symbol cache) |
+| 2 Clarifying questions | ✅ | ✅ | ✅ |
+| 3 Propose 2-3 approaches | skip | if design choice exists | ✅ |
+| 4 API surface & abstractions | skip | skip | ✅ |
+| 5 Present design + approval | ✅ (a few sentences) | ✅ | ✅ (sectioned) |
+| 6 Triage tier | ✅ | ✅ | ✅ |
+| 7 Write design doc | skip | skip | ✅ |
+| 8 Spec self-review | skip | skip | ✅ |
+| 9 Adversarial spec review | skip | skip | ✅ |
+| 10 User reviews written spec | skip | skip | ✅ |
+| 11 Transition to implementation | ✅ | ✅ | ✅ |
+
+Steps 7–10 operate on a written spec document. **Trivial and Small produce no spec document, so steps 7–10 have nothing to operate on and are skipped outright** — not performed against the conversational design.
+
+1. **Explore project context** — check files, docs, recent commits (only if instructed to by user), relevant skills, rules, dependencies and guidance. Find existing abstractions, helpers, utilities, interfaces, traits to be reused. **If `.agents/layout.yaml` exists**, also read it and list the capability/plane specs likely affected by the work (use `code_map` to filter by paths the work will touch). Load full `SPEC.yaml` only for the specs that look most relevant. **Full tier only:** create a JSONL file containing a coarse list of relevant symbols (files, classes, functions, variables) to avoid re-exploring during later stages — at Trivial/Small the exploration is small enough that the cache costs more than it saves.
 2. **Ask clarifying questions** — one at a time, understand purpose/constraints/success criteria. For questions where you have multiple answer proposals, use your system's "ask questions" tool
-3. **Propose 2-3 approaches** — with trade-offs and your recommendation
-4. **Brainstorm API surface and abstractions** — explore project context again to find any existing implementations of proposed additions; inventory current public and internal APIs, identify ad hoc branching and leaky boundaries, and propose interface changes that make the work generic instead of special-cased. **If the project has agent specs and the design changes normative behavior** (new requirement, changed requirement, new capability/plane, typed API change in a code-as-spec module), classify the change:
+3. **Propose 2-3 approaches** — with trade-offs and your recommendation. **Skip at Trivial** (there is no design choice to make). At Small, do this only when a real design choice exists.
+4. **Brainstorm API surface and abstractions** *(Full tier only — Trivial/Small are defined by having no new architecture or cross-file design risk)* — explore project context again to find any existing implementations of proposed additions; inventory current public and internal APIs, identify ad hoc branching and leaky boundaries, and propose interface changes that make the work generic instead of special-cased. **If the project has agent specs and the design changes normative behavior** (new requirement, changed requirement, new capability/plane, typed API change in a code-as-spec module), classify the change:
    - **New capability or plane** — note that `writing-specs` must author it BEFORE implementation begins. If the capability has 15 or more requirements OR has obvious sub-areas with distinct code paths, prompt: "Should this capability start with sub-specs, or start flat and graduate when it reaches 15 requirements?"
    - **Spec amendment** — note which `REQ-`/`INV-` IDs change and **which spec file they live in** (parent `SPEC.yaml` or a specific sub-spec, e.g., `chat-workspace/streaming`). The design doc MUST include a "spec amendment block" listing the affected IDs and the specific sub-spec file so `writing-plans` schedules the correct `spec-update` task.
      Include a spec amendment block in the design doc using this format:
@@ -35,10 +55,10 @@ You MUST complete each of these items in order, tracking progress against this c
    **If the work includes user-facing interactions** (a screen, panel, form, editor, CLI flow, dashboard), also brainstorm the UI design entities — load `ui-interaction-design.md` (in this skill's directory). Produce the required core (user stories, user flows, navigation/IA map, key states, error/warning surfacing, progress & responsiveness), bias every flow toward low-friction/forgiving defaults for a forgetful, lazy user, and choose a navigation/layout paradigm deliberately. Normative UI behavior (state machines, interaction contracts, error/progress semantics) is formalized via `jj-superpowers:writing-specs`.
 5. **Present design** — in sections scaled to their complexity, get user approval after each section. Use your system's "ask questions" tool.
 6. **Triage implementation tier and planning strategy** — after design approval, PROPOSE a tier (Trivial / Small / Full) with reasoning; the user may veto via your system's "ask questions" tool, but your proposal is the default (no mandatory round-trip). **Then, only if you set the Full tier**, PROPOSE a planning strategy (Waterfall / Agile) — same propose/override pattern, no mandatory round-trip; Trivial/Small are inherently single-shot and have no strategy. Step 6 is **after** the step-5 design-approval gate, so both the triage-tier and the strategy proposals are **within Rush's scope** (if Rush was activated at design approval, it auto-resolves them per the canonical Rush-resolution table — see the Triage Gate below).
-7. **Write design doc** — save to `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md` for the Full tier; for Trivial/Small keep the approved design and verification command in the conversation
-8. **Spec self-review** — quick inline check for placeholders, contradictions, ambiguity, scope (see below). Don't be afraid to go back to asking questions and approvals.
-9. **Adversarial self-review** — run the convergent review loop (`jj-superpowers:hypothesis-driven-improvement` Simple In-Line Mode) over the spec with rotating lenses, then ensemble with external harnesses when available (see below; harness detection, harness choice, and model/effort are owned by `jj-superpowers:choosing-model-and-effort`).
-10. **User reviews written spec** — ask user to review the spec file before proceeding. **This gate respects the autonomy level:** under Rush it auto-passes (the step-9 automated adversarial spec-review loop still runs); under Manual it pauses and asks as today.
+7. **Write design doc** *(Full tier only)* — save to `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md`. Trivial/Small keep the approved design and verification command in the conversation and skip straight to step 11.
+8. **Spec self-review** *(Full tier only)* — quick inline check of the written spec for placeholders, contradictions, ambiguity, scope (see below). Don't be afraid to go back to asking questions and approvals.
+9. **Adversarial self-review** *(Full tier only)* — run the convergent review loop (`jj-superpowers:hypothesis-driven-improvement` Simple In-Line Mode) over the spec with rotating lenses, then ensemble with external harnesses when available (see below; harness detection, harness choice, and model/effort are owned by `jj-superpowers:choosing-model-and-effort`).
+10. **User reviews written spec** *(Full tier only)* — ask user to review the spec file before proceeding. **This gate respects the autonomy level:** under Rush it auto-passes (the step-9 automated adversarial spec-review loop still runs); under Manual it pauses and asks as today.
 11. **Transition to implementation** — route by planning strategy: **Agile** → invoke `jj-superpowers:iterative-planning` (it owns the phase loop in place of a single `writing-plans` call); **Waterfall** (and any non-Full tier) → invoke `jj-superpowers:writing-plans` to create the implementation plan, or proceed using your system's recommended workflow (confirm with user using "ask questions" tool)
 
 ## Process Flow
@@ -123,9 +143,9 @@ Tier and strategy are **two orthogonal axes** of one gate — keep them visibly 
 
 **Manual is unchanged.** Without Rush, every gate above still pauses and asks exactly as before.
 
-> **Worked Trivial example:** "Fix a typo'd error string in one file." Single obvious file, no new abstraction, one-command verification (e.g. the project's test/lint command on that file), no design risk. Propose **Trivial**, get design approval as always, then edit the file inline in this session and run the named verify command. No spec, no `writing-plans`, no subagents.
+> **Worked Trivial example:** "Fix a typo'd error string in one file." Single obvious file, no new abstraction, one-command verification, no design risk. Propose **Trivial**, state the one-sentence design ("change the string in `src/err.rs` to X; verify with `cargo test -p foo`"), get approval, edit inline, run the verify command. That is the *whole* interaction. No symbol cache, no 2-3 approaches, no API-surface brainstorm, no spec file, no adversarial review, no `writing-plans`, no subagents. If you find yourself doing any of those on a task like this, you have mis-triaged.
 
-**Guardrails preserved at every tier.** Design approval (the HARD-GATE), file-scope discipline, and named verification apply at Trivial, Small, and Full alike. The only thing triage varies is the amount of planning ceremony.
+**Guardrails preserved at every tier.** Design approval (the HARD-GATE), file-scope discipline, and named verification apply at Trivial, Small, and Full alike. The only thing triage varies is the amount of planning ceremony — and it varies it *a lot*: Trivial is steps 1, 2, 5, 6, 11 and nothing else.
 
 **Small-tier dispatch reuses the existing implementer contract.** A Small-tier direct dispatch MUST use the `sdd-implementer` named agent (fallback: the `implementer-prompt.md` prompt), passing the **approved design + exact file scope + verify command** as the dynamic context *in place of* a task file. This is non-negotiable: it carries over file-scope enforcement, the contended-command boundary, the no-nested-harness rule, the implementer status protocol (`DONE`/`BLOCKED`/…), and the "search before building a helper" discipline. Small tier changes *what context the implementer receives* (a conversational design, not a task file), never *which disciplines apply*.
 
@@ -133,65 +153,25 @@ Tier and strategy are **two orthogonal axes** of one gate — keep them visibly 
 
 **Self-escalation.** Any tier hitting unexpected uncertainty mid-flight stops and **re-triages upward** (Trivial→Small→Full as warranted), or asks the user. Trivial/Small produced no spec or graph, so escalation to Full means writing them then — name that cost when escalating.
 
-## The Process
+## Technique
 
-**Understanding the idea:**
+The Checklist above is *what* to do. This is *how* to do the conversational parts well.
 
-- Check out the current project state first (files, docs, recent commits (only if the user requests it), relevant skills, rules, dependencies and guidance)
-- Collect a list of existing relevant traits, interfaces and other symbols; ground on existing project patterns (unless the user asks for a fresh pattern/refactoring)
-- Ask questions one at a time to refine the idea
-- Prefer multiple choice questions when possible, but open-ended is fine too
-- Only one question per message - if a topic needs more exploration, break it into multiple questions
-- Prefer using your harness's tools to ask questions: this makes it easier for users to reply
-- Focus on understanding: purpose, constraints, limitations, scope, backward compatibility requirements (or lack thereof), focus
-- Determine how exhaustive testing should be: don't cargo-cult TDD, only use tests when invariants can't be checked using type system/compiler/linting
+**Asking questions (step 2).** One question per message — if a topic needs more exploration, break it into several. Prefer multiple choice; use your harness's ask/question tool so the user can just click. Aim at purpose, constraints, scope, and backward-compatibility needs. Settle how much testing the work warrants: don't cargo-cult TDD — reach for tests when an invariant *can't* be enforced by the type system, compiler, or linter.
 
-**Exploring approaches:**
+**Proposing approaches (step 3).** Lead with your recommendation and say why. Where a choice has an obviously superior answer, batch those into one yes/no confirmation to save a round-trip — but still show the alternatives; if the user says no, fall back to presenting them one at a time.
 
-- Propose 2-3 different approaches with trade-offs
-- Before presenting the approaches, try to figure out which choices have obviously superior approaches and group them into a single confirmation question and present it as a yes/no question to save time. If the user replies "no", fall back to presenting approaches one-by-one. Just make sure that you present the different options too.
-- Present options conversationally with your recommendation and reasoning, prefer using your harness's tools to ask questions:
-- Lead with your recommended option and explain why
+**Brainstorming the API surface (step 4).** `jj-superpowers:designing-with-types-and-abstractions` owns *how* to shape types and interfaces — load it rather than re-deriving. This step adds three things it can't know:
 
-**Brainstorming the API surface:**
+- **Search before you build.** Before proposing any new helper, utility, or type, search the codebase, standard library, and current dependencies for something that already does it. Reuse unless there's a documented reason not to, and record what you reused in the design.
+- **Inventory what exists.** Walk the current public and internal APIs, data shapes, and call boundaries before deciding what stays stable and what changes. Look for manual branching, duplicated code paths, and leaky internals that should become one abstraction instead of accumulating another branch.
+- **Design for independent implementation.** A consumer must be usable from its interface alone, with any invariant the types can't carry written down. This is what lets parallel implementer subagents start against a stub without waiting for each other — it is a scheduling constraint, not just good taste.
 
-- See the `designing-with-types-and-abstractions` skill for general guidance
-- **Search before you build:** before proposing any new helper, utility, or type, search the codebase, the standard library, and the current dependencies for something that already does it. Reuse it unless there is a documented reason not to, and record the reused utilities in the design.
-- Inventory the current public and internal APIs, data shapes, and call boundaries before deciding what should stay stable and what should change
-- Look for manual branching, duplicated code paths, leaky internal APIs, and backend-specific conditionals that should become a shared abstraction instead of accumulating more branches
-- Propose the interface, trait, type, and module boundary changes needed to make the current work scope generic and extensible
-- For Rust, prefer traits, enums, exhaustive pattern matching, and static dispatch by default; use dynamic dispatch only at true runtime selection boundaries
-- For TypeScript, prefer interfaces, discriminated unions, explicit capability types, and exhaustive pattern matching so the compiler can rule out invalid combinations
-- Encode as many invariants as possible in the type system; avoid designs that depend on callers remembering hidden rules
-- Think in interfaces first, then implementations
-- Each unit should be self-contained: a method, type, or module should be understandable and verifiable without reading external invariants or unrelated code
-- Core principle: you should be able to reason about each API unit independently. Any consumers of an API unit should not have to be aware of the API's implementation, only its interface. Any additional invariants not encoded in the type system must be documented. This way, parallel implementation subagents can start performing implementations without waiting for the dependent APIs to be implemented by other subagents.
-- Keep files short, split existing long files to keep code readable
+**Presenting the design (step 5).** Scale each section to its complexity — a few sentences when it's straightforward, up to 200–300 words when it's genuinely nuanced. Ask after each section whether it reads right. Cover architecture, components, data flow, error handling, and testing; plus implementation topology (independent units, shared interfaces, sequencing, verification gates) and which commands belong to implementation vs verification.
 
-**Presenting the design:**
+For user-facing work also cover navigation, layout, shortcuts, and per-surface key states — and the three non-negotiables: **errors/warnings surfaced**, **progress reported** for long work, and the **UI never freezing**. See `ui-interaction-design.md`.
 
-- Once you believe you understand what you're building, present the design
-- Scale each section to its complexity: a few sentences if straightforward, up to 200-300 words if nuanced
-- Ask after each section whether it looks right so far
-- Cover: architecture, components, data flow, error handling, testing
-- For user-facing work, also cover: navigation, layout, shortcuts, the key states per surface, and the three non-negotiable UI requirements — **errors/warnings surfaced to the UI**, **progress reported** for long/async work, and the **UI never freezing** (work never blocks the render thread). See `ui-interaction-design.md`.
-- Cover implementation topology: independent units, shared interfaces, sequencing constraints, and verification gates the planner must preserve
-- Cover tooling: which commands belong to implementation vs verification, and how verbose tools should produce concise/structured output
-- Be ready to go back and clarify if something doesn't make sense
-
-**Design for isolation and clarity:**
-
-- Break the system into smaller units that each have one clear purpose, communicate through well-defined interfaces, and can be understood and tested independently
-- For each unit, you should be able to answer: what does it do, how do you use it, and what does it depend on?
-- Can someone understand what a unit does without reading its internals? Can you change the internals without breaking consumers? If not, the boundaries need work.
-- Smaller, well-bounded units are also easier for you to work with - you reason better about code you can hold in context at once, and your edits are more reliable when files are focused. When a file grows large, that's often a signal that it's doing too much.
-
-**Working in existing codebases:**
-
-- Explore the current structure before proposing changes. Follow existing patterns, but propose cleaner designs/abstractions if possible.
-- Where existing code has problems that affect the work (e.g., a file that's grown too large, unclear boundaries, tangled responsibilities), include targeted improvements as part of the design - the way a good developer improves code they're working in.
-- Don't propose unrelated refactoring. Stay focused on what serves the current goal, but propose relevant improvements, e.g. by introducing abstractions instead of creating ad-hoc solutions/branches.
-- Check whether existing traits/interfaces can be used or extended to avoid introducing new API shapes (prefer generic boundaries to reduce cognitive load).
+**In existing codebases.** Follow established patterns, but propose a cleaner abstraction where one is warranted. Where existing code actively obstructs the work (a file that's grown too large, tangled responsibilities), fold a targeted improvement into the design — the way a good engineer improves code they're already in. Don't propose unrelated refactoring.
 
 ## After the Design
 
@@ -226,7 +206,7 @@ Keep the step 8 spec self-review above (your own fresh-eyes pass). Then run a **
 
 **Convergence = a review round that surfaces zero Major findings.** On that round, fold in any outstanding Minors (you, the orchestrator, edit the spec doc directly — there is no implementer here) and drop Nits, with **no confirming round on the Minors**. Minors remain subject to the accept/refute gate: a Minor-looking finding that is actually wrong may be refuted with justification.
 
-*Lenses.* Each round dispatches ~**3 reviewers**, each assigned a **distinct lens** from this encouraged menu: correctness/soundness, completeness/missing-requirements, ambiguity/interpretability, API & design soundness, concurrency, parallelism, performance, DRYness/duplication, ease of abstraction & extensibility, testability/verification, over/under-engineering (YAGNI). Pick the ~3 most relevant (or high-risk) to this spec and **rotate lens assignments across rounds** for diversity. Reviewers read the immutable spec read-only, so they fan out safely.
+*Lenses.* Each round dispatches ~**3 reviewers**, each assigned a **distinct lens** from this encouraged menu: correctness/soundness, completeness/missing-requirements, ambiguity/interpretability, API & design soundness, concurrency, parallelism, performance, DRYness/duplication, ease of abstraction & extensibility, testability/verification, over- and under-engineering. Pick the ~3 most relevant (or high-risk) to this spec and **rotate lens assignments across rounds** for diversity. Reviewers read the immutable spec read-only, so they fan out safely.
 
 *External-harness ensembling.* After the subagent loop converges (a zero-Major round), run a **default-on-when-available** ensemble pass at the **orchestrator** level (the subagent no-other-harness rule is unaffected — that governs the reviewer subagents, not you). This skill owns the review **loop**; `jj-superpowers:choosing-model-and-effort` owns the **harness** — detection, harness choice, model and effort, and the reviewer-only gate. Do not restate them here.
 
@@ -235,26 +215,17 @@ Keep the step 8 spec self-review above (your own fresh-eyes pass). Then run a **
 - External **Minor/Nit** findings are folded-and-go (or dropped) exactly like subagent Minors/Nits, and **do NOT re-open the loop** — only an ensemble **Major** re-opens it.
 - If **no** external harness is available, **skip silently**. The user may opt out.
 
-**User Review Gate:**
-After the spec review loop passes, ask the user to review the written spec before proceeding:
+**User Review Gate (step 10):**
 
 > "Spec written to `<path>`. Please review it and let me know if you want to make any changes before we start writing out the implementation plan."
 
-Wait for the user's response. If they request changes, make them and re-run the spec review loop. Only proceed once the user approves.
+If they request changes, make them and re-run the review loop. Only proceed once approved.
 
-**This gate respects the autonomy level** (see the Rush Boundary and Autonomy notes above): under **Rush** it **auto-passes** without waiting on user sign-off — but the step-9 automated adversarial spec-review loop above **still runs**. Under **Manual** it pauses and asks as today.
+**Transition (step 11):** Full/Waterfall → `jj-superpowers:writing-plans`. Full/Agile → `jj-superpowers:iterative-planning` (it owns the phase loop in place of a single `writing-plans` call). Invoke no other skill; the strategy-selected one is the next step. Trivial/Small → take the inline or direct-subagent path per the Triage Gate and run the named verification before claiming completion — and remember the off-graph spec-sync rule: invoke `spec-code-sync` before any source edit when the project has `.agents/layout.yaml`.
 
-**Implementation:**
+## Two Biases
 
-- For the Full tier, route by the planning strategy chosen in step 6: **Waterfall** → invoke `jj-superpowers:writing-plans` to create a detailed implementation plan; **Agile** → invoke `jj-superpowers:iterative-planning`, which owns the phase loop in place of a single `writing-plans` call. Do NOT invoke any other skill; the strategy-selected skill is the next step.
-- For Trivial/Small tiers, use the approved inline or direct-subagent path per the Triage Gate and run the named verification before claiming completion. Remember the off-graph spec-sync requirement: invoke `spec-code-sync` before any source edit when the project has `.agents/layout.yaml`.
+Everything else in this skill is a step. These two are judgment calls you make continuously:
 
-## Key Principles
-
-- **One question at a time** - Don't overwhelm with multiple questions
-- **Multiple choice preferred** - Easier to answer than open-ended when possible
-- **YAGNI ruthlessly** - Remove unnecessary features from all designs, but without omitting requested items silently
-- **Minimize friction for user-facing work** - Assume a forgetful, lazy user: autosave, remembered state, smart defaults, undo-over-confirm; always surface errors/warnings, report progress, and never freeze the UI
-- **Explore alternatives** - Always propose 2-3 approaches before settling
-- **Incremental validation** - Present design, get approval before moving on
-- **Be flexible** - Go back and clarify when something doesn't make sense
+- **Cut what nobody asked for.** Strip speculative features from every design — but never silently drop something the user *did* ask for. Say out loud what you are cutting and why.
+- **Assume a forgetful, lazy user** on anything user-facing: autosave, remembered state, smart defaults, undo over confirm.

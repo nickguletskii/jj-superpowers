@@ -99,7 +99,7 @@ This is the **only** sanctioned use of plain `jj new`. Every other "start fresh"
 
 ### 3. Always force non-interactive mode
 
-Every `jj` command that can open an editor must be made non-interactive:
+Every `jj` command that can open an editor must be made non-interactive. Never run an interactive or editor-opening command — there is no "manual fallback" to fall back to.
 
 | ❌ Opens editor | ✅ Non-interactive form |
 |---|---|
@@ -113,8 +113,6 @@ Every `jj` command that can open an editor must be made non-interactive:
 
 Always add `--no-pager` to `jj log`, `jj diff`, `jj show`, and `jj op log`.
 
-Never run an interactive or editor-opening command — there is no "manual fallback" to fall back to. Use the non-interactive forms above; for `jj split` / `jj squash -i`, use the `jj-hunk` skill; for `jj resolve`, use `--list` / `--tool` or edit conflict markers directly.
-
 ### 4. Distinguish "insert before `@`" from "create a sibling"
 
 When separating part of `@` into a new change, decide the graph intent first:
@@ -127,77 +125,83 @@ When separating part of `@` into a new change, decide the graph intent first:
 
 ### 5. Verify graph shape after any history rewrite
 
-After splitting, rebasing, abandoning, or otherwise rewriting history:
+Before any history-rewriting operation (split, squash, rebase, clean-history), snapshot the working-copy commit ID. Afterwards, diff the snapshot against the new `@` to confirm the visible file content is unchanged, and confirm the parent/ancestor relationship matches your intent.
 
-- capture the pre-rewrite working-copy commit ID with `jj log -r @ -T 'commit_id ++ "\n"' --no-graph --no-pager`
-- after the rewrite, run `jj diff --from <old-@-commit-id> --to @ --no-pager` and confirm it is empty when content should be unchanged
-- inspect `jj log -r 'parents(@) | @' --no-graph --no-pager` to confirm the parent/ancestor relationship matches your intent
+```bash
+# Step 1: capture working copy commit ID BEFORE rewriting
+PRE_ID=$(jj log -r @ -T 'commit_id' --no-graph --no-pager)
+
+# ... perform history-rewriting operations (jj-hunk split, jj rebase, etc.) ...
+
+# Step 2: verify working copy content is unchanged AFTER rewriting
+jj diff --from "$PRE_ID" --to "$(jj log -r @ -T 'commit_id' --no-graph --no-pager)" --no-pager
+# Empty output = working copy content is identical ✓
+# Any output = something unintentionally changed — use jj undo to recover
+
+# Step 3: confirm the new graph shape is what you intended
+jj log -r 'parents(@) | @' --no-graph --no-pager
+```
+
+Use this pattern before and after every `jj-hunk split` or other split-style rewrite, before and after `jj-organizing-history` or `jj rebase` runs, and any time the correctness of the working copy is uncertain after DAG manipulation.
+
+### 6. Never run context-polluting or destructive commands blindly
+
+- **No full diffs inline.** Do not run `jj show`, `jj diff`, or any command that emits full hunk content into the agent context — hand the command off to the user instead. **Exception:** bounded `--stat` summaries (e.g. `jj show -r <id> --stat --no-pager`, `jj diff --stat --no-pager`) are allowed — they list only changed files and line counts, not diff bodies.
+- **No `jj abandon` / `jj op abandon` unless the user explicitly asked.** `jj abandon` can discard work, and `jj op abandon` compacts old history and is **not reversible**.
+- **Never blind-`jj undo` / `jj op restore` to escape a state you don't understand.** They are safe recovery tools (see the recovery workflow below), but rolling back *without first reading `jj op log`* can discard good work. Inspect the op log first; surface to the user if the correct target is unclear.
 
 See [workflows.md](references/workflows.md) for detailed non-interactive patterns.
 
 ### Red Flags - STOP
 
-These are self-check thoughts that mean you are about to break a safety rule above. Each maps back to an existing prohibition — if you catch yourself thinking one, **stop before running the command**.
+These are self-check thoughts that mean you are about to break a safety rule above. If you catch yourself thinking one, **stop before running the command** — surface to the user or use the safe alternative.
 
-- "I'll just `jj abandon` / `jj op abandon` to clean this up" — STOP: `jj op abandon` is **not reversible** and `jj abandon` can discard work; do not run them unless the user explicitly asked.
-- "Let me `jj edit <old-change>` / `jj checkout` / `jj co` real quick" — STOP: that moves `@` onto an existing change — a forbidden `@`-move (rule 2).
-- "I'll `jj next` / `jj prev` to step around the graph" — STOP: those move `@` along the graph — forbidden without explicit user permission (rule 2).
-- "I'll `jj new` to start fresh here" — STOP: plain `jj new` moves `@` to the new change; use `jj new --no-edit --insert-after ... --insert-before ...` instead (rule 2 / rule 4). **Only exception:** when `children(@)` is non-empty (`@` has descendants), plain `jj new` is the *required* way to make `@` a leaf before editing — see the rule 2 exception.
-- "I'll blind-`jj undo` / `jj op restore` to escape a state I don't understand" — STOP: `jj undo`/`jj op restore` are safe recovery tools (see the operation-log recovery workflow below), but rolling back *without first checking `jj op log`* can discard good work; inspect the op log first, and surface to the user if the correct target is unclear.
-- "I'll run a full `jj show` / `jj diff` inline to check" — STOP: that pollutes the agent context with full hunks; use the bounded `--stat` exception (e.g. `jj show -r <id> --stat --no-pager`) or give the user the command to run.
-- "I'll `jj split -o @-` to extract this quickly" — STOP: that leaves the remainder as a sibling that no longer depends on the extracted change; insert a predecessor and `jj squash` into it instead (rule 4).
-- "I'll just run `jj describe` / `jj squash -i` / `jj split` / *bare* `jj resolve` / `jj diffedit`" — STOP: those open an editor or interactive UI; use the non-interactive forms in rule 3 (or edit files directly). (`jj resolve --list` and `jj resolve --tool :ours|:theirs` are non-interactive and allowed.)
-- "I'll drop to raw `git` for this one" — STOP: use `jj`; raw `git` is only for an operation the user explicitly requested that `jj` cannot do (rule 1).
+- "Let me `jj edit <old-change>` / `jj checkout` / `jj co` / `jj next` / `jj prev` real quick" → moves `@` (rule 2).
+- "I'll `jj new` to start fresh here" → plain `jj new` moves `@`; use `jj new --no-edit --insert-after ... --insert-before ...` (rules 2, 4). **Only exception:** `children(@)` is non-empty, where plain `jj new` is the *required* way to make `@` a leaf before editing.
+- "I'll `jj split -o @-` to extract this quickly" → leaves the remainder as a sibling (rule 4).
+- "I'll just run `jj describe` / `jj squash -i` / `jj split` / *bare* `jj resolve` / `jj diffedit`" → opens an editor or interactive UI (rule 3). (`jj resolve --list` and `jj resolve --tool :ours|:theirs` are non-interactive and allowed.)
+- "I'll drop to raw `git` for this one" → rule 1.
+- "I'll run a full `jj show` / `jj diff` inline to check" → use the bounded `--stat` form or hand the command to the user (rule 6).
+- "I'll just `jj abandon` / `jj op abandon` to clean this up", or "I'll blind-`jj undo` / `jj op restore` to escape this state" → rule 6.
 
-**All of these mean: STOP — do not run the command; surface to the user or use the safe alternative.**
+## When This Skill Applies
 
-## Triggering This Skill
+Use jj when the repository uses jujutsu (a `.jj/` directory is present, or CLAUDE.md specifies jj), or when the user asks for it. **Once activated, use jj for ALL version control operations** — do not fall back to git.
 
-This skill activates when:
-1. **Repository uses jujutsu**: Check for `.jj/` directory or CLAUDE.md specifying jj usage
-2. **User explicitly requests**: User mentions "jujutsu", "jj", or asks to use jj commands
-3. **Version control operations**: When performing commits, branches, rebasing in jj repos
+```bash
+test -d .jj && echo "Jujutsu repo" || echo "Not jj repo"
+grep -i "jujutsu\|jj" CLAUDE.md
+```
 
-**Once activated, use jj for ALL version control operations** - do not fall back to git commands.
+If it is not clearly a jj repo, ask the user before switching from git. If it is a jj repo but `CLAUDE.md` is missing or doesn't mention jj, run [Initial Repository Setup](#initial-repository-setup).
 
 ## Initial Repository Setup
 
-When first working with a jj repository that **does not yet have a `CLAUDE.md`** (or has one that doesn't mention jujutsu), the agent should collect key information and write it to the repository's root `CLAUDE.md`. This ensures all future sessions have the context they need.
-
-### When to Run Setup
-
-- You detect a `.jj/` directory but `CLAUDE.md` is missing or doesn't mention jj/jujutsu
-- The user explicitly asks you to set up or initialize the repo for AI-assisted development
-
-### Information to Collect
-
-Run these commands to gather repository context:
+Run when you detect a `.jj/` directory but `CLAUDE.md` is missing or doesn't mention jj/jujutsu, or when the user asks you to set up the repo for AI-assisted development. Collect repo context and write it to the root `CLAUDE.md` so future sessions have it.
 
 ```bash
-# 1. Confirm jj repo and get basic info
+# Confirm jj repo and get basic info
 jj version
 jj root
 
-# 2. Main branch / trunk detection
+# Main branch / trunk detection
 jj log -r 'trunk()' --no-graph --limit 1 --no-pager
 
-# 4. Current bookmarks
+# Current bookmarks
 jj bookmark list
 
-# 5. Project language/framework (check for config files)
+# Project language/framework
 ls -1 Cargo.toml package.json pyproject.toml go.mod pom.xml build.gradle Makefile CMakeLists.txt 2>/dev/null
 
-# 6. Existing build/test commands (inspect the relevant config file)
-# e.g., for Rust: grep -A5 '\[scripts\]\|\[alias\]' Cargo.toml .cargo/config.toml 2>/dev/null
-# e.g., for Node: jq '.scripts' package.json 2>/dev/null
+# Build/test commands (inspect the relevant config file)
+# e.g. Rust: grep -A5 '\[scripts\]\|\[alias\]' Cargo.toml .cargo/config.toml 2>/dev/null
+# e.g. Node: jq '.scripts' package.json 2>/dev/null
 
-# 7. Existing conventions (check for config/style files)
+# Existing conventions (config/style files)
 ls -1 .editorconfig .prettierrc* .eslintrc* rustfmt.toml .clang-format 2>/dev/null
 ```
 
-### What to Write to `CLAUDE.md`
-
-Create or update the repository's root `CLAUDE.md` with the collected information. Use this template as a guide, adapting it to the project:
+Then create or update the root `CLAUDE.md`, adapting this template:
 
 ```markdown
 # Project Name
@@ -220,31 +224,21 @@ This project uses **jujutsu (jj)** for version control. Use `jj` commands instea
 - <any detected or stated conventions, e.g., commit message style, branch naming>
 ```
 
-### Guidelines
-
-- **Don't overwrite existing content**: If `CLAUDE.md` already exists with other content, append or merge the jj-related section rather than replacing everything
-- **Be accurate**: Only include information you actually confirmed from commands — don't guess at build commands or conventions
-- **Keep it concise**: The file should be a quick reference, not exhaustive documentation
-- **Ask when uncertain**: If you can't determine something (e.g., the test command), note it as `<not detected — ask user>` or ask the user directly
+- **Don't overwrite existing content**: append or merge the jj section rather than replacing the file.
+- **Be accurate**: only include what you confirmed from commands — don't guess at build commands or conventions.
+- **Keep it concise**: a quick reference, not exhaustive documentation.
+- **Ask when uncertain**: note undetectable items as `<not detected — ask user>` or ask the user.
 
 ## Core Mental Model
 
-### Changes vs Commits
-
 | Git (Commits) | Jujutsu (Changes) |
 |---------------|------------------|
-| Commits have hashes that change on rewrite | Changes have stable IDs that persist |
-| Staging area for selective commits | Working copy is automatically tracked |
+| Commits have hashes that change on rewrite | Changes have stable IDs that persist through rebases and rewrites |
+| Staging area for selective commits | Working copy is a change, automatically amended as you edit (respects `.gitignore`) |
 | HEAD points to current commit | `@` is the working copy change |
-| Branches required for collaboration | Bookmarks optional, used for remotes |
+| Branches required for collaboration | Bookmarks optional, used for remote sync |
 
-### Key Principles
-
-1. **Working copy is a commit**: The working copy is always a change, automatically amended as you edit
-2. **No staging area**: All file modifications are tracked automatically (respects `.gitignore`)
-3. **Stable change IDs**: Change IDs persist through rebases and rewrites
-4. **Operation log**: Every jj operation is logged and reversible via `jj undo`
-5. **Bookmarks for sharing**: Bookmarks (like git branches) are used for remote sync
+Every jj operation is logged in the operation log and is reversible via `jj undo`. Descendants rebase automatically.
 
 ## Quick Command Reference
 
@@ -269,31 +263,41 @@ jj new --no-edit -m "Refactor: helper" --insert-after @- --insert-before @
 # File selected paths from @ into an existing destination change
 jj squash --from @ --into <change-id> path/to/file1 path/to/file2 -u
 
-# Rebase specific changes when needed
+# Fetch before rebasing
 jj git fetch
 jj rebase -o 'trunk()'
 jj rebase -s <change> -o <base>
 ```
 
-`jj edit`, `jj next`, `jj prev`, and plain `jj new` move `@` and are forbidden (safety rule 2); the only sanctioned plain-`jj new` is making `@` a leaf when it has descendants (rule 2 exception). Use the non-interactive, `@`-preserving patterns below and in `references/workflows.md`.
+### Finding Your Changes
+
+```bash
+# All unmerged changes (using trunk() alias)
+jj log -r 'trunk()..@' --no-pager
+
+# Changes with bookmarks
+jj log -r 'bookmarks() & ::@' --no-pager
+
+# Your authored changes
+jj log -r 'mine()' --no-pager
+```
+
+See [revsets.md](references/revsets.md) for powerful query syntax.
 
 ### Viewing Changes and Diffs
 
 ```bash
-# Machine-parseable git-style diff (recommended default)
+# Machine-parseable git-style diff (correct flags when a diff is genuinely needed)
 jj diff --git --color=never --no-pager    # Current change vs parent
 
-# Summary statistics
-jj diff --stat --no-pager                  # File change summary
+# Summary statistics — file change summary (which files, how many lines)
+jj diff --stat --no-pager
 
 # Diff between specific changes
 jj diff --from <change-1> --to <change-2> --git --color=never --no-pager
 ```
 
-**When to use each:**
-- `--git --color=never --no-pager`: **Default** — machine-parseable git-style diff without color codes or pager interruption
-- `--stat --no-pager`: Quick file change summary (which files, how many lines changed)
-- Never run bare `jj diff` — it can invoke a pager; always pass `--no-pager`.
+Full-hunk diffs must not be run inline (safety rule 6) — prefer `--stat`, or hand the command to the user.
 
 ### Bookmark (Branch) Management
 
@@ -342,7 +346,7 @@ jj squash -u
 # Squash specific change into its parent (keep the parent's description)
 jj squash -r <change-id> -u
 
-# Abandon change (like git reset, but safer)
+# Abandon change — destructive, only on explicit user request (safety rule 6)
 jj abandon <change-id>
 
 # Undo last operation
@@ -356,8 +360,6 @@ jj op log --no-pager
 
 Use these when working in `@` and filing specific work into a pre-planned destination change without opening an editor.
 
-The `-u` / `--use-destination-message` flag tells `jj` to keep the **destination** change's description and discard the source's, so filing a scratch `@` into a pre-described destination never prompts for a combined message. (Squashing all content out of `@` never loses work: `jj` auto-creates a fresh empty `@` as the new tip.)
-
 ```bash
 # Move all of @ into a destination change (keep the destination's description)
 jj squash --from @ --into <rev> -u
@@ -366,25 +368,21 @@ jj squash --from @ --into <rev> -u
 jj squash --from @ --into <rev> path/to/file1.rs path/to/file2.rs -u
 
 # Update the destination's description (never opens editor)
-jj describe -r <rev> -m "toreview: my step"
+jj describe -r <rev> -m "feat(auth): add login endpoint"
 
 # Full pattern: write → file → mark done
 # 1. Edit files in @
 # 2. jj squash --from @ --into <rev> <paths> -u
-# 3. jj describe -r <rev> -m "toreview: <description>"
+# 3. jj describe -r <rev> -m "<semantic description>"
 ```
 
-**Why `-u` matters**: the destination is already described (e.g. `toreview: <step>`) while `@` holds only a scratch message. Without `-u`, squashing a described `@` into a described destination prompts for a combined description; `-u` keeps the destination's description and drops the source's, so the filing stays non-interactive. It does **not** affect whether `@` survives — `jj` always replaces an emptied `@` with a fresh empty change.
+**Why `-u` matters**: `-u` / `--use-destination-message` keeps the **destination** change's description and discards the source's. The destination is typically already described (e.g. `feat(auth): add login endpoint`) while `@` holds only a scratch message; without `-u`, squashing a described `@` into a described destination prompts for a combined message. `-u` does **not** affect whether `@` survives — squashing all content out of `@` never loses work, because `jj` always replaces an emptied `@` with a fresh empty change as the new tip.
 
 ### Operation Log and Recovery
-
-The operation log records every jj operation and makes them fully reversible.
 
 ```bash
 # View the operation log (most recent first)
 jj op log --no-pager
-
-# Limit to recent operations
 jj op log --no-pager --limit 5
 
 # Show what changed in a specific operation
@@ -415,141 +413,12 @@ jj --at-op=<operation_id> log
 jj op restore <operation_id>
 ```
 
-**Important:**
-- `jj op restore` and `jj undo` are safe — they create new operations rather than destroying history
-- `jj op abandon` compacts old history and is NOT reversible — **never use it** unless explicitly requested by the user
-- Use `jj op log` instead of guessing what happened — every mutation is recorded
-
-### Verifying History Rewrites Didn't Change the Working Copy
-
-Before any history-rewriting operation (split, squash, rebase, clean-history), snapshot the working copy commit ID. Afterwards, diff the snapshot against the new `@` to confirm the visible file content is unchanged.
-
-```bash
-# Step 1: capture working copy commit ID BEFORE rewriting
-PRE_ID=$(jj log -r @ -T 'commit_id' --no-graph --no-pager)
-
-# ... perform history-rewriting operations (jj-hunk split, jj rebase, etc.) ...
-
-# Step 2: verify working copy is unchanged AFTER rewriting
-jj diff --from "$PRE_ID" --to "$(jj log -r @ -T 'commit_id' --no-graph --no-pager)" --no-pager
-# Empty output = working copy content is identical ✓
-# Any output = something unintentionally changed — use jj undo to recover
-```
-
-Use this pattern:
-- Before and after every `jj-hunk split` operation or other split-style history rewrite
-- Before and after `jj-organizing-history` or `jj rebase` runs
-- Any time the correctness of the working copy is uncertain after DAG manipulation
-
-## Common Workflows
-
-### Creating Atomic Changes
-
-```bash
-# Edit files in the current working copy
-vim src/feature.rs
-
-# Describe the current change without moving @
-jj describe -m "Add feature X"
-
-# If the user explicitly wants a fresh successor change afterwards:
-jj commit -m "Add feature X"
-```
-
-### Splitting Unrelated Changes (Non-Interactive)
-
-When you have multiple unrelated changes in working copy, do not default to sibling extraction.
-Choose the graph you want first:
-
-```bash
-# Insert a new predecessor before @ when @ should keep depending on it
-jj new --no-edit -m "First change" --insert-after @- --insert-before @
-# note the new change ID from command output, then file selected paths into it
-jj squash --from @ --into <new-change-id> file1.rs file2.rs -u
-
-# Describe the remaining working-copy change once only the second concern remains
-jj describe -m "Second change"
-```
-
-For parallel siblings instead, use `jj-organizing-history` or a sibling-specific workflow. Never run `jj split` (interactive diff editor) — use the `jj-hunk` skill for hunk-level splits.
-
-### Updating Change After Review
-
-Prefer keeping `@` in place and filing current edits into the target change:
-
-```bash
-jj squash --from @ --into <change-id> path/to/file.rs -u
-jj describe -r <change-id> -m "Updated: address review feedback"
-```
-
-If direct amendment of another change is required, ask first because `jj edit <change-id>` reassigns `@`.
-
-### Finding Your Changes
-
-```bash
-# All unmerged changes (using trunk() alias)
-jj log -r 'trunk()..@' --no-pager
-
-# Recent changes
-jj log -r 'ancestors(@, 10)' --no-pager
-
-# Changes with bookmarks
-jj log -r 'bookmarks() & ::@' --no-pager
-
-# Your authored changes
-jj log -r 'mine()' --no-pager
-```
-
-See [revsets.md](references/revsets.md) for powerful query syntax.
-
+`jj op restore` and `jj undo` are safe — they create new operations rather than destroying history.
 
 ## Reference Documentation
 
-Load these references as needed:
+Load these only when their content is needed for the current task:
 
-- **[workflows.md](references/workflows.md)** - Comprehensive daily workflows, splitting, rebasing, conflict resolution
-- **[git-to-jj.md](references/git-to-jj.md)** - Git command mappings and migration guide
-- **[revsets.md](references/revsets.md)** - Revset query language for finding and filtering changes
-
-## Checking Repository Type
-
-Before using jj commands, verify the repository uses jujutsu:
-
-```bash
-# Check for .jj directory
-test -d .jj && echo "Jujutsu repo" || echo "Not jj repo"
-
-# Or check CLAUDE.md for jj specification
-grep -i "jujutsu\|jj" CLAUDE.md
-```
-
-If CLAUDE.md explicitly specifies using jj, proceed with jj commands. Otherwise, ask user before switching from git.
-
-If this is a jj repo but `CLAUDE.md` is missing or doesn't mention jj, follow the [Initial Repository Setup](#initial-repository-setup) steps to collect repo info and create it.
-
-## Key Advantages Over Git
-
-1. **Simpler mental model**: No staging area, working copy is always a commit
-2. **Stable change IDs**: History rewrites don't change change IDs
-3. **Safe operations**: Operation log makes everything reversible
-4. **Flexible history**: Changes and bookmarks are decoupled
-5. **Automatic tracking**: No need for `git add`
-6. **Elegant rebasing**: Descendants rebase automatically
-
-## Tips
-
-1. **Never run full diffs inline**: Do not run `jj show`, `jj diff`, or any diff command that emits full hunk content into the agent context — this pollutes context with large diffs. Hand the command off to the user instead. **Exception:** bounded `--stat` summaries (e.g. `jj show -r <id> --stat --no-pager`, `jj diff --stat --no-pager`) are allowed — they list only changed files and line counts, not diff bodies.
-2. **Never run interactive or editor-opening commands**: `jj split`, `jj squash -i`, `jj diffedit`, bare `jj resolve`, and bare `jj describe`/`jj commit` all block on an editor or interactive UI — use the non-interactive forms (rule 3) or the `jj-hunk` skill.
-3. **Use revsets for precision**: `jj log -r 'trunk()..@'` shows exactly what needs pushing
-4. **Trust operation log**: If uncertain, `jj op log` shows what happened; `jj undo` reverses it
-5. **Describe changes clearly**: Good descriptions make history readable
-6. **Fetch before rebasing**: `jj git fetch` then `jj rebase -o 'trunk()'`
-7. **Create new changes explicitly**: When you need a new change, prefer `jj new --no-edit --insert-after ... --insert-before ...` with explicit anchors over plain `jj new`.
-
-## When to Load References
-
-- **workflows.md**: When user asks about daily operations, splitting changes, rebasing, or conflict resolution
-- **git-to-jj.md**: When user asks "how do I do X in jj?" or needs git command translations
-- **revsets.md**: When user needs to find specific changes or query history
-
-Load references only when their content is needed for the current task.
+- **[workflows.md](references/workflows.md)** — daily workflows, splitting, rebasing, conflict resolution
+- **[git-to-jj.md](references/git-to-jj.md)** — git command mappings and migration guide ("how do I do X in jj?")
+- **[revsets.md](references/revsets.md)** — revset query language for finding and filtering changes

@@ -1,6 +1,6 @@
 ---
 name: tool-output-discipline
-description: Use when running CLI tools that may produce noisy, long, human-readable, or hard-to-filter output
+description: Use before running builds, test suites, logs, or broad searches — `cargo`, `bazel`, `npm`, `tsc`, `pytest`, `kubectl`, CI and service logs, repo-wide grep — and after any command floods the context. Triggers on truncated or cut-off output, a huge tool result, a permission-gated command that keeps needing approval, or piping a big dump into `grep`/`head`.
 ---
 
 # Tool Output Discipline

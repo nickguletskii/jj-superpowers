@@ -9,7 +9,6 @@ A personal fork of [superpowers](https://github.com/obra/superpowers) by Jesse V
 - **jj workflow** — keeps one working copy while implementation produces `toorg:` commits; optional organization into a reviewable jj DAG is handled later by `jj-organizing-history`.
 - **No visual companion** — brainstorming is text-only.
 - **jj skill library** — includes `jj-hunk`, `jj-organizing-history`, and `jujutsu` reference skills.
-- **GitHub Copilot CLI support** — plugin manifest and tool mapping for Copilot CLI.
 
 ## How it works
 
@@ -66,16 +65,6 @@ Fetch and follow instructions from https://raw.githubusercontent.com/nickguletsk
 Fetch and follow instructions from https://raw.githubusercontent.com/nickguletskii/jj-superpowers/refs/heads/main/.opencode/INSTALL.md
 ```
 
-### Gemini CLI
-
-```bash
-gemini extensions install https://github.com/nickguletskii/jj-superpowers
-```
-
-### GitHub Copilot CLI
-
-See [`.copilot-plugin/INSTALL.md`](.copilot-plugin/INSTALL.md).
-
 ## The Basic Workflow
 
 1. **brainstorming** - Activates before writing code. Refines rough ideas through questions, explores alternatives, presents design in sections for validation. Saves design document.
@@ -96,33 +85,53 @@ See [`.copilot-plugin/INSTALL.md`](.copilot-plugin/INSTALL.md).
 
 ### Skills Library
 
-**Testing**
+All 30 skills. `using-superpowers` carries a routing map from situation → skill.
+
+**Design & planning**
+- **brainstorming** - Socratic design refinement before any creative work
+- **writing-plans** - Graph-based implementation plans (`project-network.dot`, task files, verification gates)
+- **iterative-planning** - Phase a design that's too large or too uncertain for one up-front plan
+- **designing-with-types-and-abstractions** - Interfaces, ADTs, explicit state; make illegal states unrepresentable
+- **writing-specs** - Author/amend capability specs, plane specs, glossary, invariants
+
+**Execution**
+- **subagent-driven-development** - Execute a `project-network.dot` graph with two-stage review (spec compliance, then code quality)
+- **executing-plans** - Batch execution with human checkpoints
 - **test-driven-development** - RED-GREEN-REFACTOR cycle (includes testing anti-patterns reference)
+- **spec-code-sync** - Keep specs and code in step before any source edit in a `.agents/layout.yaml` project
 
-**Debugging**
-- **systematic-debugging** - 4-phase root cause process (includes root-cause-tracing, defense-in-depth, condition-based-waiting techniques)
-- **verification-before-completion** - Ensure it's actually fixed
+**Debugging & improvement**
+- **systematic-debugging** - 4-phase root cause process (root-cause-tracing, defense-in-depth, condition-based-waiting)
+- **hypothesis-driven-improvement** - Converge on open-ended objectives: flaky behavior, metric targets, adversarial review loops
+- **verification-before-completion** - Evidence before assertions; ensure it's actually fixed
 
-**Collaboration**
-- **brainstorming** - Socratic design refinement
-- **writing-plans** - Detailed implementation plans
-- **executing-plans** - Batch execution with checkpoints
-- **dispatching-parallel-agents** - Ad hoc parallel investigations when subagents are authorized
+**Review & integration**
 - **requesting-code-review** - Pre-review checklist
-- **receiving-code-review** - Responding to feedback
-- **jj-organizing-history** - Post-implementation jj DAG organization and history cleanup
-- **finishing-a-development-branch** - PR/integrate decision workflow
-- **subagent-driven-development** - Fast iteration with two-stage review (spec compliance, then code quality)
+- **receiving-code-review** - Respond to feedback with rigor, not performative agreement
+- **finishing-a-development-branch** - PR/integrate/discard decision workflow
+
+**Code & docs quality**
+- **deslopify** - Remove slop: suspicious logic, tautological tests, over- and under-engineering
+- **codebase-cleanup** - Broad dead-code removal and dedup sweeps with evidence and approval gates
+- **documentation** - Write, update, and prune code documentation
+- **writing-comments** - Comments that earn their keep; strip restatement and transient references
 
 **jujutsu**
-- **jj-hunk** - Programmatic hunk selection (jj-hunk tool)
-- **jj-organizing-history** - Organize `toorg:` commits, clean jj history, and split changes
 - **jujutsu** - Comprehensive jj reference (daily workflow, revsets, GitLab integration, git→jj mapping)
+- **jj-organizing-history** - Organize `toorg:` commits, clean jj history, and split changes
+- **jj-hunk** - Programmatic hunk-level splitting and squashing (jj-hunk tool)
+
+**Project layout & specs**
+- **project-layout** - Bootstrap/audit `.agents/layout.yaml`, `AGENTS.md`, spec dirs, project skills
+- **spec-drift-detector** - Audit drift between specs, code, citations, and tech-debt queues
 
 **Meta**
-- **choosing-model-and-effort** - Pick the cheapest model/effort that clears the task; when an external harness (Codex) is worth calling
+- **using-superpowers** - How to find and use skills; situation → skill routing map
+- **choosing-model-and-effort** - Pick the cheapest model/effort that clears the task; when an external harness is worth calling
+- **dispatching-parallel-agents** - Ad hoc parallel investigations when subagents are authorized
+- **tool-output-discipline** - Ask tools for the smallest useful output; command output is context
+- **uv-guide** - Run Python with `uv`; packages, virtualenvs, sandbox/cache permissions
 - **writing-skills** - Create new skills following best practices
-- **using-superpowers** - Introduction to the skills system
 
 ## Philosophy
 

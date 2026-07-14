@@ -13,7 +13,7 @@ Task tool (general-purpose):
     You are a plan document reviewer. Verify this plan is complete and ready for graph-based implementation.
 
     Do not invoke another agent harness through any channel — not the shell
-    (`claude`, `codex`, `gemini`, `opencode`, Copilot CLI) and not MCP tools (e.g.
+    (`claude`, `codex`, `opencode`) and not MCP tools (e.g.
     `mcp__codex__codex`). Having the tool available is not permission to use it.
     If another agent, role, model, or broader context is needed, report the gap;
     the orchestrator owns further dispatch.
@@ -29,7 +29,7 @@ Task tool (general-purpose):
     | Completeness | TODOs, placeholders, incomplete tasks, missing steps |
     | Spec Alignment | Plan covers spec requirements, no major scope creep |
     | Task Decomposition | Tasks have clear boundaries, file scopes are explicit, steps are actionable |
-    | Graph Validity | No orphan nodes, no cycles, every task reaches the terminal chain `spec_review -> verify -> [simplification?] -> quality_review -> final`. `simplification` is optional and appears only when a verified group introduced new helpers/abstractions; when present, that group's `quality_review` depends on it rather than directly on `verify`. When the graph has an API-stub task that other tasks consume, a `design_review` node depends on the stub's `spec_review` and gates the start of every consumer task |
+    | Graph Validity | Only `task` and `verify` nodes are authored — review gates are implied and MUST NOT appear as nodes. No cycles, no orphan tasks, every `task` reaches a `verify`. A consumed API-stub task carries `stub=true`; a verify whose task group introduced new helpers/abstractions carries `simplify=true`. See `subagent-driven-development` Graph Validation for the canonical list |
     | File Contention | Parallel-ready task nodes do not touch overlapping files |
     | Verification Ownership | Compile/test/lint/build/type-check commands live in verify files, not implementer tasks |
     | Buildability | Could an engineer follow this plan without getting stuck? |

@@ -79,7 +79,7 @@ afterEach(() => session.destroy());
 **Why this is wrong:**
 - Production class polluted with test-only code
 - Dangerous if accidentally called in production
-- Violates YAGNI and separation of concerns
+- Builds what nobody asked for, and muddies separation of concerns
 - Confuses object lifecycle with entity lifecycle
 
 **The fix:**
