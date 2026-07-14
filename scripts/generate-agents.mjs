@@ -9,6 +9,38 @@ const repoRoot = path.resolve(
 const sourceDir = path.join(repoRoot, "agents");
 const codexDir = path.join(repoRoot, ".codex", "agents");
 const opencodeDir = path.join(repoRoot, ".opencode", "agents");
+const preamblePath = path.join(sourceDir, "_preamble.md");
+
+const PREAMBLE_START = "<!-- BEGIN SHARED PREAMBLE - generated, do not edit -->";
+const PREAMBLE_END = "<!-- END SHARED PREAMBLE -->";
+
+// Prepended verbatim to every agent body. Byte-identical and first-in-prompt across
+// all agents, so it forms a shared prefix that providers can serve from cache.
+function loadPreamble() {
+  return fs
+    .readFileSync(preamblePath, "utf8")
+    .replace(/^<!--[\s\S]*?-->\n*/, "")
+    .trim();
+}
+
+// Claude Code consumes agents/*.md directly, while .codex/.opencode are generated from
+// them. So the preamble is SYNCED into the source bodies (between markers) rather than
+// only injected downstream — otherwise Claude would be the one platform missing it.
+// Idempotent: re-running replaces the marked block instead of stacking copies.
+function withPreamble(body, preamble) {
+  const block = `${PREAMBLE_START}\n\n${preamble}\n\n${PREAMBLE_END}`;
+  const existing = new RegExp(
+    `${escapeRegExp(PREAMBLE_START)}[\\s\\S]*?${escapeRegExp(PREAMBLE_END)}`,
+  );
+  if (existing.test(body)) {
+    return body.replace(existing, block);
+  }
+  return `${block}\n\n${body}`;
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
 
 function parseAgentFile(filePath) {
   const raw = fs.readFileSync(filePath, "utf8");
@@ -118,6 +150,9 @@ function main() {
   fs.mkdirSync(codexDir, { recursive: true });
   fs.mkdirSync(opencodeDir, { recursive: true });
 
+  const preamble = loadPreamble();
+
+  // `_preamble.md` is excluded by this pattern — it is shared text, not an agent.
   const sourceFiles = fs
     .readdirSync(sourceDir)
     .filter((file) => /^[a-z0-9-]+\.md$/.test(file))
@@ -125,6 +160,7 @@ function main() {
 
   for (const file of sourceFiles) {
     const sourcePath = path.join(sourceDir, file);
+    const raw = fs.readFileSync(sourcePath, "utf8");
     const agent = parseAgentFile(sourcePath);
     const name = agent.frontmatter.name;
 
@@ -133,6 +169,15 @@ function main() {
     }
     if (!agent.frontmatter.description) {
       throw new Error(`${sourcePath} is missing frontmatter description`);
+    }
+
+    agent.body = withPreamble(agent.body, preamble);
+
+    // Sync the source file itself — Claude Code reads these directly.
+    const frontmatterBlock = raw.match(/^---\n[\s\S]*?\n---\n/)[0];
+    const synced = `${frontmatterBlock}\n${agent.body}\n`;
+    if (synced !== raw) {
+      fs.writeFileSync(sourcePath, synced);
     }
 
     fs.writeFileSync(

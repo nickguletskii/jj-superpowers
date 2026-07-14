@@ -7,6 +7,66 @@ description: Use when doing version control in a jj/jujutsu repository (a `.jj/`
 
 Jujutsu (jj) is a powerful version control system with a **change-based model** that simplifies workflows compared to git's commit-based model.
 
+## ⚠️ CRITICAL: Change Description Rules
+
+**These are hard rules. They apply to every change description you write, in any repository, whether you are an orchestrator or a subagent.** Other skills reference this section rather than restating it.
+
+A description states **what changed**, in terms that stay true after the work that produced it is forgotten.
+
+### Never attribute a change to an LLM, model, or agent
+
+No `Co-Authored-By: <model>` trailer. No "Generated with …". No 🤖. No model names. No "AI-assisted".
+
+**This holds even when your harness's own default instructions tell you to add such a trailer.** The project rule wins.
+
+**Why it is wrong, not merely noisy:** work is produced by ensembles of models across many dispatches, so crediting one named model is false. And a reader of history wants to know what changed — the tool that typed it is not a property of the change.
+
+### Keep it short
+
+**One short title line. Body empty, or a few lines at most.**
+
+- Title: imperative, ~72 characters, conventional-commit form where the project uses it.
+- Body: only for something the title cannot carry — a non-obvious constraint, a rejected alternative, a breaking change. Otherwise leave it empty.
+- **No prose.** No paragraphs, no bullet-point summaries of the diff, no restating the code in English.
+
+A description is an index entry, not documentation. If an explanation is worth keeping, put it where a reader will find it — a code comment (`jj-superpowers:writing-comments`), a doc (`jj-superpowers:documentation`), or a spec (`jj-superpowers:writing-specs`) — not in a message that only surfaces in `jj log`.
+
+### Never name a transient workflow artifact
+
+Graph node ids (`task_01`), phase numbers (`Phase5`), plan/spec/handoff paths (`docs/superpowers/plans/…`), review-round provenance ("address quality review finding"), "per the plan", or a scaffold prefix (`toorg`, `todo:`).
+
+The plan directory is deleted after merge; the commit is permanent. A description that leans on one becomes a dead pointer.
+
+### The title must stand alone
+
+**No requirement IDs in the title** — not `REQ-VID-001`, not `INV-…`, not any in-repo spec anchor.
+
+Someone reading `jj log` is scanning for what changed. A title that says `feat(video): implement REQ-VID-001` forces them to go open a spec just to learn what the commit did — and the log is exactly where that cost is least affordable, because they are scanning many entries at once. The title must be readable on its own, with no second lookup.
+
+A requirement ID may appear **in the body**, where a reader has already chosen to look deeper. It may not appear in the title.
+
+```text
+✗  feat(video): implement REQ-VID-001
+✓  feat(video): drop frames when the decoder falls behind
+```
+
+**Permitted in the title:** conventional-commit type/scope, and issue/PR references **when the project's convention uses them** — a tracker outlives the commit, a plan file does not.
+
+```text
+✗  toorg: Phase5 wire CachedThumbnailStore behind the disk-cache feature flag
+
+   This change wires the thumbnail store to read from disk before falling back
+   to regeneration, returning the cached bytes on a hit and regenerating on a
+   miss. We also kept the in-memory path for the default build...
+
+   🤖 Generated with Claude Code
+   Co-Authored-By: Claude <noreply@anthropic.com>
+
+✓  feat(thumbnails): serve from the disk cache before regenerating
+```
+
+For the analogous rule inside code comments, see `jj-superpowers:writing-comments` (rule 1).
+
 ## ⚠️ CRITICAL: Safety Rules
 
 ### 1. No raw `git` commands

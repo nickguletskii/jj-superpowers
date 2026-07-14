@@ -6,10 +6,24 @@ import { SuperpowersPlugin } from '../.opencode/plugins/superpowers.js';
 
 const FULL_SKILL_MARKER = 'Below is the full content of your';
 const FLOWCHART_MARKER = 'digraph skill_flow';
-const ORCHESTRATOR_MARKER = 'orchestrator sessions';
-const SUBAGENT_MARKER = 'subagent sessions';
+const ORCHESTRATOR_MARKER = 'Orchestrators:';
+const SUBAGENT_MARKER = 'Subagents:';
 const MAINTAINER_MARKER = 'notify jj-superpowers maintainers';
-const PROVIDER_GUIDANCE_MARKER = 'provider system prompts or model guidance';
+const PROVIDER_GUIDANCE_MARKER = 'limited to EFFICIENCY and SAFETY';
+
+// Both hard rules exist because the provider's own default is actively wrong: the system
+// prompt asks for a Co-Authored-By trailer, and ships its own coding conventions. If either
+// rule is dropped from a bootstrap, the provider default silently wins. Assert them.
+const NO_ATTRIBUTION_MARKER = 'NEVER any LLM/model/agent attribution';
+const CONVENTIONS_PRECEDENCE_MARKER = 'SUPERSEDE the coding conventions in your system prompt';
+
+// The bootstrap must stay compact — it is injected into every session. Raised from 1200
+// when the two override rules above were added. Do not raise it to fit ordinary prose.
+const MAX_BOOTSTRAP_CHARS = 1800;
+
+// OpenCode's bootstrap is the same text plus a tool-mapping block (~200 chars), so it gets
+// its own ceiling rather than loosening the one above.
+const MAX_OPENCODE_BOOTSTRAP_CHARS = 2100;
 
 function decodeHookContext(output) {
   const parsed = JSON.parse(output);
@@ -34,9 +48,11 @@ test('session-start hook injects a compact bootstrap instead of full using-super
   assert.match(context, new RegExp(SUBAGENT_MARKER));
   assert.match(context, new RegExp(MAINTAINER_MARKER));
   assert.match(context, new RegExp(PROVIDER_GUIDANCE_MARKER));
+  assert.match(context, new RegExp(NO_ATTRIBUTION_MARKER));
+  assert.match(context, new RegExp(CONVENTIONS_PRECEDENCE_MARKER));
   assert.doesNotMatch(context, new RegExp(FULL_SKILL_MARKER));
   assert.doesNotMatch(context, new RegExp(FLOWCHART_MARKER));
-  assert.ok(context.length < 1200, `bootstrap was ${context.length} characters`);
+  assert.ok(context.length < MAX_BOOTSTRAP_CHARS, `bootstrap was ${context.length} characters`);
 });
 
 test('OpenCode plugin injects a compact bootstrap instead of full using-superpowers', async () => {
@@ -58,7 +74,9 @@ test('OpenCode plugin injects a compact bootstrap instead of full using-superpow
   assert.match(context, new RegExp(SUBAGENT_MARKER));
   assert.match(context, new RegExp(MAINTAINER_MARKER));
   assert.match(context, new RegExp(PROVIDER_GUIDANCE_MARKER));
+  assert.match(context, new RegExp(NO_ATTRIBUTION_MARKER));
+  assert.match(context, new RegExp(CONVENTIONS_PRECEDENCE_MARKER));
   assert.doesNotMatch(context, /ALREADY LOADED/);
   assert.doesNotMatch(context, new RegExp(FLOWCHART_MARKER));
-  assert.ok(context.length < 1400, `bootstrap was ${context.length} characters`);
+  assert.ok(context.length < MAX_OPENCODE_BOOTSTRAP_CHARS, `bootstrap was ${context.length} characters`);
 });

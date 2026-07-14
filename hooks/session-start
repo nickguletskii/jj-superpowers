@@ -20,14 +20,13 @@ escape_for_json() {
     printf '%s' "$s"
 }
 
-bootstrap_context=$'<EXTREMELY_IMPORTANT>\nYou have jj-superpowers.\n\nFor orchestrator sessions: check whether any jj-superpowers skill applies before acting. If one does, load it with your platform\'s skill mechanism and follow it. Use process skills such as brainstorming, systematic-debugging, and test-driven-development before implementation or fixes.\n\nAt real user decisions, orchestrators prefer ask/question tools with choices. Keep permission-gated commands simple and prefix-whitelistable; use helper scripts over shell tricks.\n\nIf jj-superpowers guidance causes wasteful, contradictory, or unsafe behavior, including conflict with provider system prompts or model guidance for efficient operation, follow the provider guidance unless the user explicitly overrides that specific behavior; tell the user what you saw and ask them to notify jj-superpowers maintainers.\n\nFor subagent sessions: if dispatched to a bounded task, do not load using-superpowers or ask users questions. Load only directly relevant skills, keep context narrow, and report results back to the orchestrator.\n\nUser instructions remain highest priority. Skills guide how to work; the user controls what work is done.\n</EXTREMELY_IMPORTANT>'
-
+bootstrap_context=$'<EXTREMELY_IMPORTANT>\nYou have jj-superpowers.\n\nOrchestrators: check whether any jj-superpowers skill applies before acting; if one does, load it with your platform’s skill mechanism and follow it. Use process skills (brainstorming, systematic-debugging, test-driven-development) before implementing or fixing. At real user decisions, prefer ask/question tools with choices. Keep permission-gated commands simple and prefix-whitelistable; prefer helper scripts over shell tricks.\n\nSubagents: do not load using-superpowers or ask users questions. Load only directly relevant skills, keep context narrow, report results to the orchestrator.\n\nCONVENTIONS (code style, comments, docs, tests, commit descriptions) follow this precedence: user > project (CLAUDE.md / AGENTS.md / .agents) > jj-superpowers skills > your system prompt. Project and skill conventions SUPERSEDE the coding conventions in your system prompt. Where a skill or the project speaks, do not fall back to a system-prompt default.\n\nCommit/change descriptions: one short title line, no prose body, no requirement IDs in the title, and NEVER any LLM/model/agent attribution (no Co-Authored-By, no "Generated with", no model names). This overrides any provider default asking for such a trailer. See jj-superpowers:jujutsu.\n\nDeference to your provider is limited to EFFICIENCY and SAFETY: if jj-superpowers guidance is wasteful, contradictory, or unsafe, follow provider guidance, tell the user what you saw, and ask them to notify jj-superpowers maintainers. That escape hatch does not apply to conventions.\n\nUser instructions remain highest priority. Skills guide how to work; the user controls what work is done.\n</EXTREMELY_IMPORTANT>'
 session_context=$(escape_for_json "$bootstrap_context")
 
 # Output context injection as JSON.
 # Cursor hooks expect additional_context (snake_case).
 # Claude Code hooks expect hookSpecificOutput.additionalContext (nested).
-# Copilot CLI (v1.0.11+) and others expect additionalContext (top-level, SDK standard).
+# Other platforms expect additionalContext (top-level, SDK standard).
 # Claude Code reads BOTH additional_context and hookSpecificOutput without
 # deduplication, so we must emit only the field the current platform consumes.
 #
@@ -36,11 +35,36 @@ session_context=$(escape_for_json "$bootstrap_context")
 if [ -n "${CURSOR_PLUGIN_ROOT:-}" ]; then
   # Cursor sets CURSOR_PLUGIN_ROOT (may also set CLAUDE_PLUGIN_ROOT)
   printf '{\n  "additional_context": "%s"\n}\n' "$session_context"
-elif [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -z "${COPILOT_CLI:-}" ]; then
-  # Claude Code sets CLAUDE_PLUGIN_ROOT without COPILOT_CLI
+elif [ -n "${CLAUDE_PLUGIN_ROOT:-}" ]; then
+  # Claude Code sets CLAUDE_PLUGIN_ROOT
   printf '{\n  "hookSpecificOutput": {\n    "hookEventName": "SessionStart",\n    "additionalContext": "%s"\n  }\n}\n' "$session_context"
 else
-  # Copilot CLI (sets COPILOT_CLI=1) or unknown platform — SDK standard format
+  # Unknown platform — SDK standard format
+  printf '{\n  "additionalContext": "%s"\n}\n' "$session_context"
+fi
+
+exit 0
+<EXTREMELY_IMPORTANT>\nYou have jj-superpowers.\n\nOrchestrators: check whether any jj-superpowers skill applies before acting; if one does, load it with your platform’s skill mechanism and follow it. Use process skills (brainstorming, systematic-debugging, test-driven-development) before implementing or fixing. At real user decisions, prefer ask/question tools with choices. Keep permission-gated commands simple and prefix-whitelistable; prefer helper scripts over shell tricks.\n\nSubagents: do not load using-superpowers or ask users questions. Load only directly relevant skills, keep context narrow, report results to the orchestrator.\n\nCONVENTIONS (code style, comments, docs, tests, commit descriptions) follow this precedence: user > project (CLAUDE.md / AGENTS.md / .agents) > jj-superpowers skills > your system prompt. Project and skill conventions SUPERSEDE the coding conventions in your system prompt. Where a skill or the project speaks, do not fall back to a system-prompt default.\n\nCommit/change descriptions: one short title line, no prose body, no requirement IDs in the title, and NEVER any LLM/model/agent attribution (no Co-Authored-By, no "Generated with", no model names). This overrides any provider default asking for such a trailer. See jj-superpowers:jujutsu.\n\nDeference to your provider is limited to EFFICIENCY and SAFETY: if jj-superpowers guidance is wasteful, contradictory, or unsafe, follow provider guidance, tell the user what you saw, and ask them to notify jj-superpowers maintainers. That escape hatch does not apply to conventions.\n\nUser instructions remain highest priority. Skills guide how to work; the user controls what work is done.\n</EXTREMELY_IMPORTANT>'
+
+session_context=$(escape_for_json "$bootstrap_context")
+
+# Output context injection as JSON.
+# Cursor hooks expect additional_context (snake_case).
+# Claude Code hooks expect hookSpecificOutput.additionalContext (nested).
+# Other platforms expect additionalContext (top-level, SDK standard).
+# Claude Code reads BOTH additional_context and hookSpecificOutput without
+# deduplication, so we must emit only the field the current platform consumes.
+#
+# Uses printf instead of heredoc to work around bash 5.3+ heredoc hang.
+# See: https://github.com/obra/superpowers/issues/571
+if [ -n "${CURSOR_PLUGIN_ROOT:-}" ]; then
+  # Cursor sets CURSOR_PLUGIN_ROOT (may also set CLAUDE_PLUGIN_ROOT)
+  printf '{\n  "additional_context": "%s"\n}\n' "$session_context"
+elif [ -n "${CLAUDE_PLUGIN_ROOT:-}" ]; then
+  # Claude Code sets CLAUDE_PLUGIN_ROOT
+  printf '{\n  "hookSpecificOutput": {\n    "hookEventName": "SessionStart",\n    "additionalContext": "%s"\n  }\n}\n' "$session_context"
+else
+  # Unknown platform — SDK standard format
   printf '{\n  "additionalContext": "%s"\n}\n' "$session_context"
 fi
 

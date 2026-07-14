@@ -11,7 +11,7 @@ Organize jj changes without losing work or moving `@` unexpectedly.
 
 Use this skill for:
 
-- Post-implementation `toorg:` commits that should become a reviewable DAG.
+- Unconsolidated `toorg` commits from inline or ad hoc work that should become a reviewable DAG. (Graph execution consolidates as it goes — see `jj-superpowers:subagent-driven-development` — so its history arrives here already clean.)
 - Arbitrary committed jj history that needs cleanup before review.
 - Splitting one change into logical pieces.
 - Deciding whether history should be linear, parallel, or left as-is.

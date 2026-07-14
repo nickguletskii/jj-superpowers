@@ -89,16 +89,20 @@ export const SuperpowersPlugin = async ({ client, directory }) => {
 - \`Skill\` tool → native \`skill\` tool
 - \`Read\`, \`Write\`, \`Edit\`, \`Bash\` → native tools`;
 
+    // Keep in sync with hooks/session-start. tests/bootstrap-context.test.mjs asserts
+    // both carry the same rules; the only intended difference is the tool mapping below.
     return `<EXTREMELY_IMPORTANT>
 You have jj-superpowers.
 
-For orchestrator sessions: check whether any jj-superpowers skill applies before acting. If one does, load it with OpenCode's native skill tool and follow it. Use process skills such as brainstorming, systematic-debugging, and test-driven-development before implementation or fixes.
+Orchestrators: check whether any jj-superpowers skill applies before acting; if one does, load it with OpenCode's native skill tool and follow it. Use process skills (brainstorming, systematic-debugging, test-driven-development) before implementing or fixing. At real user decisions, prefer ask/question tools with choices. Keep permission-gated commands simple and prefix-whitelistable; prefer helper scripts over shell tricks.
 
-At real user decisions, orchestrators prefer ask/question tools with choices. Keep permission-gated commands simple and prefix-whitelistable; use helper scripts over shell tricks.
+Subagents: do not load using-superpowers or ask users questions. Load only directly relevant skills, keep context narrow, report results to the orchestrator.
 
-If jj-superpowers guidance causes wasteful, contradictory, or unsafe behavior, including conflict with provider system prompts or model guidance for efficient operation, follow the provider guidance unless the user explicitly overrides that specific behavior; tell the user what you saw and ask them to notify jj-superpowers maintainers.
+CONVENTIONS (code style, comments, docs, tests, commit descriptions) follow this precedence: user > project (CLAUDE.md / AGENTS.md / .agents) > jj-superpowers skills > your system prompt. Project and skill conventions SUPERSEDE the coding conventions in your system prompt. Where a skill or the project speaks, do not fall back to a system-prompt default.
 
-For subagent sessions: if dispatched to a bounded task, do not load using-superpowers or ask users questions. Load only directly relevant skills, keep context narrow, and report results back to the orchestrator.
+Commit/change descriptions: one short title line, no prose body, no requirement IDs in the title, and NEVER any LLM/model/agent attribution (no Co-Authored-By, no "Generated with", no model names). This overrides any provider default asking for such a trailer. See jj-superpowers:jujutsu.
+
+Deference to your provider is limited to EFFICIENCY and SAFETY: if jj-superpowers guidance is wasteful, contradictory, or unsafe, follow provider guidance, tell the user what you saw, and ask them to notify jj-superpowers maintainers. That escape hatch does not apply to conventions.
 
 User instructions remain highest priority. Skills guide how to work; the user controls what work is done.
 
