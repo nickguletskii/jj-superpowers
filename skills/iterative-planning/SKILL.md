@@ -1,15 +1,15 @@
 ---
 name: iterative-planning
-description: Use when a project is too big or too unknown to plan in one go, so it is planned and built one phase at a time. Triggers on "plan this in phases", "this is too big to plan up front", "break this into milestones", "plan the next phase", "do it iteratively/incrementally", "we'll know more after the first part ships", "roadmap this", or an approved design that would not fit in one execution session.
+description: Use when a project is too uncertain to plan in one go — a later phase's tasks depend on an artifact an earlier phase will produce — so it is planned and built one phase at a time. Triggers on "plan this in phases", "break this into milestones", "plan the next phase", "do it iteratively/incrementally", "we'll know more after the first part ships", "roadmap this", or an approved design where later work can't be specified until earlier work produces something. Size or task count alone is not a trigger — a large but fully-specifiable design is a single Waterfall plan, not phases.
 ---
 
 # Iterative Planning (Agile phase loop)
 
 ## Overview
 
-Some designs are too large or too uncertain to plan as one `project-network.dot` up front. This skill runs the **plan-one-phase loop**: build an ordered roadmap once, then for each phase plan it, execute it, fold what you learned back into the roadmap, and only then move on. You never plan all phases in advance — later phases are shaped by what earlier phases actually produce.
+Some designs are too uncertain to plan as one `project-network.dot` up front — later work can't be specified until earlier work produces something to specify it from. This skill runs the **plan-one-phase loop**: build an ordered roadmap once, then for each phase plan it, execute it, fold what you learned back into the roadmap, and only then move on. You never plan all phases in advance — later phases are shaped by what earlier phases actually produce.
 
-**Reach for this when** the whole project would exceed one comfortable execution session, a later phase's task list can't be written without guessing because it depends on an artifact an earlier phase produces, or the whole-project `task` count runs past ~10–12.
+**Reach for this when a later phase's task list genuinely can't be written yet** — it depends on an artifact (API shape, data format, measurement) an earlier phase will produce, so completing that earlier phase is what makes the later phase plannable. Ordinary sequential dependency (order matters, but every task is already specifiable today) does not qualify — that's just a DAG, plan it as one `project-network.dot` via `writing-plans` instead. Size and task-node count are not criteria: a large but fully-specifiable graph stays Waterfall.
 
 This is a technique skill. It **delegates**: it does not reimplement planning or execution.
 
@@ -59,10 +59,10 @@ In Agile, **this skill** owns the subagent-vs-inline decision. It is made **once
 
 ## Phase sizing heuristic (advisory, not a gate)
 
-A phase is a vertically-sliced, independently-verifiable increment delivering a coherent working capability. Count `task` nodes — the only work nodes a phase graph authors:
+A phase is a vertically-sliced, independently-verifiable increment delivering a coherent working capability — its size is bounded by that capability, never by a task count.
 - **Floor (~3 `task` nodes):** reach a real `verify` node and deliver a usable increment, not a single trivial edit. Merge smaller phases unless a hard sequencing boundary forces the split.
-- **Ceiling (~8 `task` nodes):** one plan + execution cycle should fit comfortably in one execution session.
-- Tildes, not assertions: a coherent 8–9 task capability is fine. Prefer keeping a capability whole over splitting to hit the number; split only at a natural `verify` boundary. Each phase builds on the **integrated** result of prior phases.
+- **No ceiling.** There is no task count, however large, that by itself justifies splitting a phase. A phase boundary exists only where genuine design uncertainty does — this phase's output is what makes the next phase's tasks specifiable (see the Overview criterion). If a capability's tasks are all already specifiable together, they belong in one phase regardless of count; do not split just because the number feels big.
+- The floor's tilde is advisory, not an assertion: a smaller phase that's already a coherent, verify-worthy increment is fine. Each phase builds on the **integrated** result of prior phases.
 
 ## Terminal phase failure
 

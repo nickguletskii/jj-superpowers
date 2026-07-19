@@ -127,11 +127,11 @@ Tier and strategy are **two orthogonal axes** of one gate — keep them visibly 
 | **Waterfall** (default) | One `project-network.dot` for the whole project, as today. | `jj-superpowers:writing-plans` |
 | **Agile** | The plan-one-phase loop: brainstorm once, then plan-one-phase → execute → fold-learnings → plan-next. | `jj-superpowers:iterative-planning` |
 
-**Propose Agile** when scope signals indicate one graph would be unwieldy or premature — recommend Waterfall (even for Full) if none hold:
+**Propose Agile only for genuine design uncertainty** — recommend Waterfall (even for Full, even for a large graph) otherwise:
 
-- estimated **whole-project** task-node count **> ~10–12** (a single graph that large is hard to plan well up front and strains one execution session), or
-- **design uncertainty** — a later phase's task list cannot be written now without guessing, because it depends on an artifact (API shape, data format, measurement) an earlier phase will produce. Ordinary sequential dependency (order matters, but the later tasks are already specifiable) does **not** qualify, or
-- **expected context size** (all tasks + context docs + execution) would exceed one comfortable execution session.
+- **design uncertainty** — a later phase's task list cannot be written now without guessing, because it depends on an artifact (API shape, data format, measurement) an earlier phase will produce. Completing that earlier phase must actually change how the later phase gets planned. Ordinary sequential dependency (order matters, but the later tasks are already specifiable today) does **not** qualify — that's just edges in one DAG.
+
+If every phase's tasks could be written today without waiting on an earlier phase's output, there is no reason to phase it — write the whole thing as one `project-network.dot` and let the graph's own dependency edges sequence the work. Size and task count are not criteria: a large graph of already-specifiable tasks (however many, however parallel or sequential) is still a single Waterfall plan. Splitting it into phases would only add roadmap/fold-learnings ceremony around a DAG that didn't need it.
 
 ## Rush Boundary and Autonomy
 

@@ -199,7 +199,7 @@ Your platform already injects every skill's description. The question is not *wh
 **Building something**
 - Starting a feature, component, or behavior change — any creative work → `brainstorming`
 - Design approved, need an implementation plan → `writing-plans`
-- Plan too big or too uncertain for one pass (>~10-12 task nodes; a later phase depends on an artifact an earlier one produces) → `iterative-planning`
+- Plan too uncertain for one pass (a later phase's tasks depend on an artifact an earlier phase will produce — not just size or task count) → `iterative-planning`
 - Plan includes `project-network.dot` and you are executing it now → `subagent-driven-development`
 - Executing a written plan in a separate session with review checkpoints → `executing-plans`
 - About to write implementation code → `test-driven-development`
