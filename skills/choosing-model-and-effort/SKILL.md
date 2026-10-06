@@ -19,9 +19,10 @@ Concrete model ids, classes, and availability live in `models.md`; this file is 
 |---|---|---|
 | Easy, well-specified, mechanical; named files and APIs | `claude-sonnet-5-5` | low |
 | Standard implementation | `claude-sonnet-5-5` or `claude-opus-5-5` | medium |
-| Subtle, cross-file, integration, ambiguous failure | `claude-opus-5-5` | high |
-| Design judgment, graph repair, code-quality review | `claude-opus-5-5` | high–xhigh |
-| Hardest reasoning | `claude-opus-5-5` | xhigh–max |
+| Subtle, cross-file, integration, ambiguous failure | `claude-opus-5-5` | medium |
+| Design judgment, graph repair, code-quality review | `claude-opus-5-5` | medium |
+
+**Opus starts at `medium`, however hard the task looks.** Raise it to `high` only after Opus at `medium` has hit a wall on this task (see Escalation); `xhigh` and `max` likewise only after the level below hit one. Each raise is one escalation step.
 
 Model and effort are separate levers with different cost curves; treat them separately. A fast-class model that needs repeated retries or far more steps than the task warrants isn't cheaper — move the task up a class rather than raising its effort.
 

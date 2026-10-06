@@ -16,7 +16,7 @@ A **class** is a tier *within a family*, not a parity claim across families.
 |---|---|---|
 | fast | `claude-sonnet-5-5` | `gpt-6.1-luna` |
 | standard | `claude-opus-5-5` | `gpt-6.1-terra` |
-| frontier | `claude-opus-5-5` at `xhigh`–`max` | `gpt-6.1-sol` |
+| frontier | `claude-opus-5-5` at `high`+, only after `medium` hit a wall | `gpt-6.1-sol` |
 
 Opus 5.5 is the top Claude dispatch target; there is no separate frontier Claude model in this workflow.
 
