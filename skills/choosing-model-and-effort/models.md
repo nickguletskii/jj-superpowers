@@ -14,13 +14,14 @@ A **class** is a tier *within a family*, not a parity claim across families.
 
 | Class | Claude Code | Codex (via MCP) |
 |---|---|---|
-| fast | `claude-sonnet-5-5` | GPT-6.1 Luna |
-| standard | `claude-opus-5-5` | GPT-6.1 Terra |
-| frontier | `claude-fable-5-1` — **rationed** | GPT-6.1 Sol |
+| fast | `claude-sonnet-5-5` | `gpt-6.1-luna` |
+| standard | `claude-opus-5-5` | `gpt-6.1-terra` |
+| frontier | `claude-opus-5-5` at `xhigh`–`max` | `gpt-6.1-sol` |
+
+Opus 5.5 is the top Claude dispatch target; there is no separate frontier Claude model in this workflow.
 
 `claude-haiku-4-5` exists but is not a dispatch target for this workflow; use `claude-sonnet-5-5` at `low` for mechanical work.
 
 ## Availability
 
-- **`claude-fable-5-1` is rationed** and often unavailable. The provenance rule in `SKILL.md` governs it.
 - **Any model may be unavailable at any time.** Degrade to the nearest available option, announce the substitution, never substitute upward without permission.

@@ -1,6 +1,6 @@
 ---
 name: choosing-model-and-effort
-description: Use when choosing which model or reasoning effort to dispatch a subagent with, when a task failed and you are tempted to retry with a stronger model or higher effort, when a model is unavailable or rationed, or when considering an external harness (Codex MCP, gemini, opencode).
+description: Use when choosing which model or reasoning effort to dispatch a subagent with, when a task failed and you are tempted to retry with a stronger model or higher effort, when a model is unavailable, or when considering an external harness (Codex MCP, gemini, opencode).
 ---
 
 # Choosing Model and Effort
@@ -21,16 +21,9 @@ Concrete model ids, classes, and availability live in `models.md`; this file is 
 | Standard implementation | `claude-sonnet-5-5` or `claude-opus-5-5` | medium |
 | Subtle, cross-file, integration, ambiguous failure | `claude-opus-5-5` | high |
 | Design judgment, graph repair, code-quality review | `claude-opus-5-5` | high–xhigh |
-| Hardest reasoning | `claude-fable-5-1` | low–high — see provenance rule |
+| Hardest reasoning | `claude-opus-5-5` | xhigh–max |
 
 Model and effort are separate levers with different cost curves; treat them separately. A fast-class model that needs repeated retries or far more steps than the task warrants isn't cheaper — move the task up a class rather than raising its effort.
-
-## Fable Provenance Rule
-
-Dispatch `claude-fable-5-1` only if the orchestrator is itself running `claude-fable-5-1`. Fable is rationed, so this is about permission to spend it, not capability.
-
-- Orchestrator is not Fable → don't dispatch Fable, however hard the task looks.
-- Orchestrator is Fable → it may dispatch Fable implementers and verifiers, but most tasks should still go to sonnet/opus. Spend Fable on judgment, not bulk work.
 
 ## Escalation
 
@@ -44,13 +37,13 @@ Don't retry the same `(model, effort)` unchanged — change the instructions, co
 
 A wall is empirical: the cheap option was tried and failed, not merely doubted.
 
-Escalate class before effort. The top effort levels cost the most and buy the least on every model; a stronger class at lower effort usually beats a weaker one at `max`. If medium → high didn't help, higher won't.
+Escalate class before effort; once at `claude-opus-5-5`, the remaining step is effort. The top effort levels cost the most and buy the least on every model; a stronger class at lower effort usually beats a weaker one at `max`. If medium → high didn't help, higher won't.
 
 Before spending more, re-read the task. A task that fails at `opus[high]` is far more often underspecified than under-powered, and a sharper task file is cheaper than a bigger model.
 
 ## Availability
 
-Models can be unavailable — `claude-fable-5-1` especially.
+Any model can be unavailable.
 
 - Degrade to the nearest available option and say so. A silent downgrade on a hard task later looks like a genuine failure and gets misdiagnosed.
 - Don't substitute upward to a costlier model without permission; unavailability isn't a wall.
@@ -64,7 +57,7 @@ Use Codex as a reviewer, not to do the work. Its value is that a different model
 | Ensemble review / second opinion — `jj-superpowers:brainstorming` step 9, `jj-superpowers:hypothesis-driven-improvement` | On by default when available; no permission needed. Skip silently if unavailable. |
 | Doing the work — implementation, capability offload | Off-label; ask the user. |
 
-Detection: the codex MCP tool (`mcp__codex__codex`); the `gemini` and `opencode` CLIs if installed. Suggested review configuration: GPT-6.1 Sol at `high`.
+Detection: the codex MCP tool (`mcp__codex__codex`); the `gemini` and `opencode` CLIs if installed. Suggested review configuration: `gpt-6.1-sol` at `high`.
 
 Codex is often cheaper than maxing out Opus, but the gate is about role, not cost — lower price isn't a reason to hand it the implementation.
 
