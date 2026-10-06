@@ -115,25 +115,29 @@ async function updateStaleIfNeeded() {
 
 // Unrelated branches may already hold conflicted changes, so a mutation fails only on
 // problems it introduced; `check` covers the work in progress in every workspace.
+// Rows are JSON lines (via `escape_json`) so descriptions cannot corrupt parsing.
 async function problems({ prefix, scope = "mutable()" } = {}) {
   const parts = ["divergent()", "conflicts()"];
   if (prefix) parts.push(`description(substring:${JSON.stringify(prefix)})`);
   const revset = `(${scope}) & (${parts.join(" | ")})`;
   const tmpl =
-    'change_id.short(12) ++ " " ++ if(divergent, "divergent ", "") ++ if(conflict, "conflict", "") ++ "\\t" ++ description.first_line() ++ "\\n"';
+    '"{\\"id\\":" ++ change_id.short(12).escape_json() ++ ",\\"divergent\\":" ++ if(divergent, "true", "false") ++ ",\\"conflict\\":" ++ if(conflict, "true", "false") ++ ",\\"desc\\":" ++ description.first_line().escape_json() ++ "}\\n"';
   const out = (await jjOk(["log", "--ignore-working-copy", "--no-graph", "-r", revset, "-T", tmpl])).stdout;
-  return out.split("\n").filter(Boolean);
+  return out.split("\n").filter(Boolean).map((line) => JSON.parse(line));
 }
 
+const problemKey = (p) => `${p.id} ${p.divergent} ${p.conflict}`;
+const formatProblem = (p) =>
+  [p.id, p.divergent && "divergent", p.conflict && "conflict", p.desc].filter(Boolean).join("  ");
+
 async function guarded(context, mutate) {
-  const key = (line) => line.split("\t")[0];
-  const before = new Set((await problems()).map(key));
+  const before = new Set((await problems()).map(problemKey));
   await updateStaleIfNeeded();
   await mutate();
-  const introduced = (await problems()).filter((line) => !before.has(key(line)));
+  const introduced = (await problems()).filter((p) => !before.has(problemKey(p)));
   if (introduced.length > 0) {
     throw new GuardError(
-      `${context} introduced divergent or conflicted changes:\n${introduced.join("\n")}\n` +
+      `${context} introduced divergent or conflicted changes:\n${introduced.map(formatProblem).join("\n")}\n` +
         "Stop and report to the orchestrator; recovery: jj-superpowers:jujutsu, safety rule 7.",
       4,
     );
@@ -173,7 +177,7 @@ async function main([cmd, ...rest]) {
       scope: rest.includes("--all") ? "mutable()" : "mutable() & ::working_copies()",
     });
     if (found.length > 0) {
-      process.stdout.write(found.join("\n") + "\n");
+      process.stdout.write(found.map(formatProblem).join("\n") + "\n");
       process.exitCode = 4;
     }
   } else {
