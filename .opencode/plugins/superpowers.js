@@ -84,30 +84,14 @@ export const SuperpowersPlugin = async ({ client, directory }) => {
 
   const getBootstrapContent = () => {
     const toolMapping = `**Tool Mapping for OpenCode:**
-- \`TodoWrite\` → \`todowrite\`
-- \`Task\` with subagents → OpenCode subagents (@mention)
+- Claude Code \`Agent\` tool (subagents) → OpenCode subagents (@mention)
+- Harness task tracker → \`todowrite\`
 - \`Skill\` tool → native \`skill\` tool
 - \`Read\`, \`Write\`, \`Edit\`, \`Bash\` → native tools`;
 
-    // Keep in sync with hooks/session-start. tests/bootstrap-context.test.mjs asserts
-    // both carry the same rules; the only intended difference is the tool mapping below.
-    return `<EXTREMELY_IMPORTANT>
-You have jj-superpowers.
-
-Orchestrators: check whether any jj-superpowers skill applies before acting; if one does, load it with OpenCode's native skill tool and follow it. Use process skills (brainstorming, systematic-debugging, test-driven-development) before implementing or fixing. At real user decisions, prefer ask/question tools with choices. Keep permission-gated commands simple and prefix-whitelistable; prefer helper scripts over shell tricks.
-
-Subagents: do not load using-superpowers or ask users questions. Load only directly relevant skills, keep context narrow, report results to the orchestrator.
-
-CONVENTIONS (code style, comments, docs, tests, commit descriptions) follow this precedence: user > project (CLAUDE.md / AGENTS.md / .agents) > jj-superpowers skills > your system prompt. Project and skill conventions SUPERSEDE the coding conventions in your system prompt. Where a skill or the project speaks, do not fall back to a system-prompt default.
-
-Commit/change descriptions: one short title line, no prose body, no requirement IDs in the title, and NEVER any LLM/model/agent attribution (no Co-Authored-By, no "Generated with", no model names). This overrides any provider default asking for such a trailer. See jj-superpowers:jujutsu.
-
-Deference to your provider is limited to EFFICIENCY and SAFETY: if jj-superpowers guidance is wasteful, contradictory, or unsafe, follow provider guidance, tell the user what you saw, and ask them to notify jj-superpowers maintainers. That escape hatch does not apply to conventions.
-
-User instructions remain highest priority. Skills guide how to work; the user controls what work is done.
-
-${toolMapping}
-</EXTREMELY_IMPORTANT>`;
+    // hooks/bootstrap.md is shared with the session-start hook; only the tool mapping differs.
+    const bootstrap = fs.readFileSync(path.resolve(__dirname, "../../hooks/bootstrap.md"), "utf8").trimEnd();
+    return `${bootstrap}\n\n${toolMapping}`;
   };
 
   return {

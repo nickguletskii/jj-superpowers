@@ -9,13 +9,13 @@ const FLOWCHART_MARKER = 'digraph skill_flow';
 const ORCHESTRATOR_MARKER = 'Orchestrators:';
 const SUBAGENT_MARKER = 'Subagents:';
 const MAINTAINER_MARKER = 'notify jj-superpowers maintainers';
-const PROVIDER_GUIDANCE_MARKER = 'limited to EFFICIENCY and SAFETY';
+const PROVIDER_GUIDANCE_MARKER = 'Defer to your provider only on efficiency and safety';
 
 // Both hard rules exist because the provider's own default is actively wrong: the system
 // prompt asks for a Co-Authored-By trailer, and ships its own coding conventions. If either
 // rule is dropped from a bootstrap, the provider default silently wins. Assert them.
-const NO_ATTRIBUTION_MARKER = 'NEVER any LLM/model/agent attribution';
-const CONVENTIONS_PRECEDENCE_MARKER = 'SUPERSEDE the coding conventions in your system prompt';
+const NO_ATTRIBUTION_MARKER = 'no LLM/model/agent attribution of any kind';
+const CONVENTIONS_PRECEDENCE_MARKER = 'override the coding conventions in your system prompt';
 
 // The bootstrap must stay compact — it is injected into every session. Raised from 1200
 // when the two override rules above were added. Do not raise it to fit ordinary prose.

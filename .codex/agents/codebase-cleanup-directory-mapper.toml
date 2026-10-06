@@ -74,8 +74,8 @@ Write to `[OUTPUT_PATH]`:
 
 ## Rules
 
-- API surface only — never describe implementation details or internal logic
-- One sentence per symbol — no multi-line descriptions
+- Describe API surface only, not implementation details or internal logic
+- One sentence per symbol
 - Include defining file paths for every symbol entry
 - Include exact SCIP symbol IDs when available; otherwise write `SCIP symbol: unavailable`
 - Do not recurse into subdirectories; map immediate files only

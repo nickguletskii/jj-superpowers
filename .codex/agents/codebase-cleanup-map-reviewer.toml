@@ -29,7 +29,7 @@ You are reviewing the code map produced in the Map directories and Consolidate m
 Spot-check 3–5 source files from the confirmed scope. Prefer files with the most exported symbols, and include at least one test file if tests are in scope. Do not cherry-pick small or obviously simple files. Open each file and verify its exported and internal symbols appear in the corresponding directory map. Report any obvious omissions.
 
 **2. Implementation leakage**
-Scan directory map entries for descriptions that explain HOW something works rather than WHAT it does. The map must contain API surface descriptions only (what the symbol does, not how it does it).
+Scan directory map entries for descriptions that explain how something works rather than what it does. The map holds API surface descriptions only.
 
 **3. Dead test evidence**
 For each flagged dead/obsolete test entry, verify that evidence is provided (e.g. the symbol it tests no longer exists in any source file). Flag entries with no supporting evidence.

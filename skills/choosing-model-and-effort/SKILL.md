@@ -1,26 +1,17 @@
 ---
 name: choosing-model-and-effort
-description: Use when choosing which model or reasoning effort to dispatch a subagent with, when a task failed and you are tempted to retry with a stronger model or higher effort (xhigh, max), when a model is unavailable or rationed, or when considering an external harness (Codex MCP, gemini, opencode) for a second opinion or ensemble review.
+description: Use when choosing which model or reasoning effort to dispatch a subagent with, when a task failed and you are tempted to retry with a stronger model or higher effort, when a model is unavailable or rationed, or when considering an external harness (Codex MCP, gemini, opencode).
 ---
 
 # Choosing Model and Effort
 
 ## Overview
 
-**Model sets the ceiling. Effort sets how close you get to it — with sharply diminishing returns.**
+Model sets the ceiling; effort sets how close you get to it, with sharply diminishing returns. More effort can't lift a model past its ceiling, so when a task keeps failing the lever is rarely "same model, more effort."
 
-More effort cannot lift a model past its ceiling. So when a task keeps failing, the lever is almost never "same model, more effort."
+Pick the cheapest configuration that clears the task's bar. The point of this skill is cheaper, better-targeted dispatch, not reaching for bigger models.
 
-**Pick the cheapest configuration that clears the task's bar.** This skill exists to make dispatch cheaper and better targeted. It is *not* a licence to reach for bigger models.
-
-Concrete model ids, classes, and availability live in `models.md`. This file is the decision procedure and changes rarely; `models.md` carries the volatile facts.
-
-## The Two Axes
-
-- **Axis 1 — model**, chosen by the task's complexity and subtlety.
-- **Axis 2 — effort**, chosen by how much headroom you need *within* that model.
-
-These are different levers with different curves. Conflating them is the most common and most expensive mistake this skill exists to prevent.
+Concrete model ids, classes, and availability live in `models.md`; this file is the decision procedure.
 
 ## Dispatch Table (Claude Code)
 
@@ -30,74 +21,59 @@ These are different levers with different curves. Conflating them is the most co
 | Standard implementation | `claude-sonnet-5-5` or `claude-opus-5-5` | medium |
 | Subtle, cross-file, integration, ambiguous failure | `claude-opus-5-5` | high |
 | Design judgment, graph repair, code-quality review | `claude-opus-5-5` | high–xhigh |
-| Hardest reasoning | `claude-fable-5-1` | low–high — **provenance rule below** |
+| Hardest reasoning | `claude-fable-5-1` | low–high — see provenance rule |
 
-If a fast-class model needs repeated retries or many more steps than the task warrants, it is not cheaper: move the task up a class rather than raising its effort.
+Model and effort are separate levers with different cost curves; treat them separately. A fast-class model that needs repeated retries or far more steps than the task warrants isn't cheaper — move the task up a class rather than raising its effort.
 
-## The Fable Provenance Rule
+## Fable Provenance Rule
 
-**Dispatch `claude-fable-5-1` only if the orchestrator is already running `claude-fable-5-1`.**
+Dispatch `claude-fable-5-1` only if the orchestrator is itself running `claude-fable-5-1`. Fable is rationed, so this is about permission to spend it, not capability.
 
-- **Orchestrator is not Fable → never dispatch Fable.** No matter how hard the task looks. This is not negotiable and no task difficulty overrides it.
-- **Orchestrator is Fable →** it may dispatch Fable implementers and verifiers, but **most tasks still go to sonnet/opus.** Fable is rationed — spend it on judgment, not bulk work.
-
-This is a **provenance** rule, not a capability rule. Fable's capability is irrelevant if you are not permitted to spend it.
+- Orchestrator is not Fable → don't dispatch Fable, however hard the task looks.
+- Orchestrator is Fable → it may dispatch Fable implementers and verifiers, but most tasks should still go to sonnet/opus. Spend Fable on judgment, not bulk work.
 
 ## Escalation
 
-**Never retry the same `(model, effort)` unchanged.** Change the instructions, the context, the task shape, or the configuration.
+Don't retry the same `(model, effort)` unchanged — change the instructions, context, task shape, or configuration.
 
 | Situation | Action |
 |---|---|
-| **Speculative** — "this looks hard, let me start bigger" | **Ask the user.** Not permitted on your own. |
-| **Wall** — the task *actually failed* at the chosen model, with `N = 3` retries exhausted (the constant is defined in `jj-superpowers:using-superpowers`) | **Earned.** Take exactly one step up without asking. |
-| Anything beyond one step, or leaving the harness | **Ask the user.** |
+| Speculative — "this looks hard, let me start bigger" | Ask the user. |
+| Wall — the task actually failed at the chosen model after `N = 3` retries (constant defined in `jj-superpowers:using-superpowers`) | Take one step up without asking. |
+| More than one step, or leaving the harness | Ask the user. |
 
-A wall is **empirical**: the cheap option was *disproven*, not merely doubted. "It looks hard" is not a wall.
+A wall is empirical: the cheap option was tried and failed, not merely doubted.
 
-**Escalate class before effort.** The top effort levels cost the most and buy the least on every model; a stronger class at lower effort usually beats a weaker one at `max`. If medium → high did not help, higher will not.
+Escalate class before effort. The top effort levels cost the most and buy the least on every model; a stronger class at lower effort usually beats a weaker one at `max`. If medium → high didn't help, higher won't.
 
-**Check the task before spending anything.** A task that fails at `opus[high]` is far more often *underspecified* than *under-powered*. Re-read it. A sharper task file is cheaper than a bigger model and fixes the actual problem.
+Before spending more, re-read the task. A task that fails at `opus[high]` is far more often underspecified than under-powered, and a sharper task file is cheaper than a bigger model.
 
 ## Availability
 
-Models can be unavailable — `claude-fable-5-1` especially, since it is rationed.
+Models can be unavailable — `claude-fable-5-1` especially.
 
-- Wanted model unavailable → **degrade to the nearest available option and say so.**
-- **Never substitute silently.** A silent downgrade on a hard task is indistinguishable from a genuine failure later, and you will misdiagnose it.
-- **Never substitute upward** to a costlier model without permission — an unavailable model is not a wall.
+- Degrade to the nearest available option and say so. A silent downgrade on a hard task later looks like a genuine failure and gets misdiagnosed.
+- Don't substitute upward to a costlier model without permission; unavailability isn't a wall.
 
 ## External Harnesses (Codex MCP)
 
-**Codex is a reviewer, not a place to do the work.** Its value is that a *different model family makes different mistakes* — it catches errors that a same-family retry would simply repeat. That is a thing no amount of Claude-side escalation can buy.
+Use Codex as a reviewer, not to do the work. Its value is that a different model family makes different mistakes, catching errors a same-family retry would repeat.
 
 | Use | Gate |
 |---|---|
-| **Ensemble review / second opinion** — `jj-superpowers:brainstorming` step 9, `jj-superpowers:hypothesis-driven-improvement` | **Default-on when available.** No permission needed. Skip silently if unavailable. |
-| **Doing the work** — implementation, capability offload | **Off-label. Ask the user.** |
+| Ensemble review / second opinion — `jj-superpowers:brainstorming` step 9, `jj-superpowers:hypothesis-driven-improvement` | On by default when available; no permission needed. Skip silently if unavailable. |
+| Doing the work — implementation, capability offload | Off-label; ask the user. |
 
-Detection: the codex MCP tool (`mcp__codex__codex`); the `gemini` and `opencode` CLIs if installed.
+Detection: the codex MCP tool (`mcp__codex__codex`); the `gemini` and `opencode` CLIs if installed. Suggested review configuration: GPT-6.1 Sol at `high`.
 
-Suggested review configuration: GPT-6.1 Sol at `high`.
+Codex is often cheaper than maxing out Opus, but the gate is about role, not cost — lower price isn't a reason to hand it the implementation.
 
-**Codex is often *cheaper* than maxing out Opus.** Do not let that tempt you past the gate. **The gate is about role, not cost.** "It would save money" is not a reason to hand Codex the implementation.
+## Subagents Don't Delegate
 
-## Subagents Never Delegate
-
-**The orchestrator owns all delegation.**
-
-A subagent must not invoke another agent harness **through any channel** — not the shell (`claude`, `codex`, `opencode`) and **not MCP tools** (e.g. `mcp__codex__codex`).
-
-**Having the tool in your list is not permission to use it.** If a subagent needs another model, another role, or broader context, it reports `NEEDS_CONTEXT` or `BLOCKED` and the orchestrator decides.
+The orchestrator owns all delegation. A subagent must not invoke another agent harness through any channel — neither the shell (`claude`, `codex`, `opencode`) nor MCP tools (e.g. `mcp__codex__codex`). Having the tool in your list isn't permission to use it. If a subagent needs another model, role, or broader context, it reports `NEEDS_CONTEXT` or `BLOCKED` and the orchestrator decides.
 
 ## Common Mistakes
 
-| Mistake | Reality |
-|---|---|
-| "It failed — retry at higher effort." | Effort cannot lift a ceiling. Change class, or fix the task. |
-| "Sonnet is the cheap one." | Only while it is not flailing. Count steps and retries, not price per token. |
-| "This looks hard, start at max." | Speculative escalation. Ask first. |
-| "Fable is strongest, so use Fable." | Provenance rule. If you are not Fable, you do not get Fable. |
-| "Codex is cheaper, so use it for the work." | Codex is a reviewer. Off-label use asks. The gate is role, not cost. |
-| "The MCP tool is in my tool list, so I may call it." | Subagents delegate through **no** channel. |
-| "The model is unavailable, so I'll use a bigger one." | Unavailable is not a wall. Degrade down and say so. |
+- Retrying a failure at higher effort on the same model — effort can't lift a ceiling; change class or fix the task.
+- Treating sonnet as automatically cheaper — count steps and retries, not price per token.
+- Upgrading because the wanted model is unavailable — degrade down and say so.

@@ -1,186 +1,47 @@
 ---
 name: documentation
-description: Use when writing, placing, or maintaining documentation outside code — mdbook chapters, runbooks, ADRs, module/architecture docs, `DOCS.md` — when struggling to understand code that lacks docs, when deciding whether to document something, or when encountering redundant, stale, or code-duplicating docs. Code comments → `writing-comments`.
+description: Use when writing, placing, or maintaining documentation outside code — mdbook chapters, runbooks, ADRs, module/architecture docs, `DOCS.md` — when code lacking docs is hard to understand, when deciding whether to document something, or when docs are redundant, stale, or duplicate the code.
 ---
 
 # Living Documentation
 
-## Overview
+Documentation says what code and types cannot. Wrong documentation is worse than none, and documentation that restates the code becomes wrong as soon as the code changes. Code explains *what*; docs explain *why*.
 
-Documentation expresses what code and types cannot. If the code or type system already says it, don't say it again.
+Use plain language and simple sentences. Code comments → `writing-comments`. Invariants the type system can enforce → encode them (`designing-with-types-and-abstractions`).
 
-**Core principle:** No documentation is better than wrong documentation.
+## Where information goes
 
-## Golden rule
-
-> **Simple language only.** No complex sentences. Use simple vocabulary. The documentation should make everything more understandable.
-
-## When to Use
-
-- Writing or updating docs outside the code (mdbook, runbooks, ADRs, module/architecture docs)
-- Encountering redundant, stale, or code-duplicating docs
-- Struggling to understand code that a short doc could explain
-- Deciding whether and how to document something
-- Creating or maintaining `DOCS.md`, runbooks, ADRs, module docs
-
-**Not for:**
-- Code comments, including doc comments → `jj-superpowers:writing-comments`
-- What the type system enforces → encode in types (`jj-superpowers:designing-with-types-and-abstractions`)
-- Code cleanup without doc implications → `jj-superpowers:deslopify`
-
-## The Iron Law
-
-```
-No documentation is better than wrong documentation.
-Wrong documentation is worse than no documentation.
-Documentation that duplicates code is wrong documentation.
-```
-
-Redundant, contradictory, or unverifiable documentation MUST be deleted or fixed immediately.
-
-**No exceptions:**
-- Don't keep outdated docs "for reference"
-- Don't add docs that restate what code clearly expresses — code explains *what*, docs explain *why*. This is the file's single statement of that rule; the rest of this skill assumes it rather than repeating it.
-- Don't leave TODO docs — either write the doc or don't create the file
-- Don't document what the type system already enforces
-
-**Violating the letter of the rules is violating the spirit of the rules.**
-
-## What Belongs in Docs
-
-| Information type | Where it belongs |
+| Information | Home |
 |---|---|
-| What the code does | Code itself (names, types, structure) |
-| Why a decision was made, invariants not expressible in types, temporal ordering constraints | Placement rule in `jj-superpowers:writing-comments` (local → comment; cross-component contract → spec; else module doc/ADR) |
-| How to use the module/API | Module-level doc comment |
-| System architecture / data flow | Mermaid diagram in module doc |
-| How to run/debug/deploy | Runbook |
-| Acknowledged limitations/drawbacks | Doc comment |
+| What the code does | The code (names, types, structure) |
+| Why, non-type invariants, ordering constraints | `writing-comments` placement rule (local → comment; cross-component contract → spec; else module doc/ADR) |
+| How to use a module/API; known limitations | Module-level doc comment |
+| System architecture / data flow | Module doc with a Mermaid diagram |
+| How to run, debug, deploy | Runbook |
 | Cross-cutting architectural decisions | ADR |
 
-**Cross-reference:** Express invariants via types first (`jj-superpowers:designing-with-types-and-abstractions`). Only document what types can't capture. For projects with an agent-spec ecosystem (i.e., `.agents/layout.yaml` exists), normative behavior belongs in capability/plane specs (`jj-superpowers:writing-specs`), not in code comments or mdbook — see "Specs vs. mdbook vs. code-as-spec vs. AGENTS.md" below.
+Otherwise, don't document it. Use diagrams only when they beat a list or table: Mermaid for human-facing docs, Graphviz for plans and skill files.
 
-## Specs vs. mdbook vs. code-as-spec vs. AGENTS.md
+## Projects with `.agents/layout.yaml`
 
-When a project has `.agents/layout.yaml`, doc work is partitioned by audience and register. Each fact has one home.
+Each fact has one home, chosen by audience:
 
-| Audience | Lives in | Format | Skill |
-|---|---|---|---|
-| Agent (you) | `docs/agent-specs/{capabilities,planes}/<slug>/SPEC.yaml` | RFC2119 prose (KYAML) | `writing-specs` |
-| Downstream dev — typed API guarantees | Code-as-spec modules registered in `layout.yaml` `spec_code.modules` | Native doc format (rustdoc/jsdoc/...) with RFC2119 capitalization | `writing-specs` (sole authoring path; atomic three-artifact rule) |
-| End user | `docs/book/src/users/` | Prose, screenshots, examples | this skill |
-| Downstream dev — narrative | `docs/book/src/developers/` | Prose linking typed API docs | this skill |
-| Operator | `docs/book/src/operators/` + runbooks | Prose, commands | this skill |
-| Contributor (human) | `docs/book/src/contributors/` + ADRs | Prose, decisions | this skill |
-| Layout/conventions | `.agents/layout.yaml` + short `AGENTS.md` | YAML + ~15-line pointer | `project-layout` |
+| Audience | Lives in | Skill |
+|---|---|---|
+| Agent | `docs/agent-specs/{capabilities,planes}/<slug>/SPEC.yaml` (RFC 2119, KYAML) | `writing-specs` |
+| Downstream dev — typed API guarantees | Code-as-spec modules in `layout.yaml` `spec_code.modules` | `writing-specs` (sole authoring path) |
+| End user / dev narrative / operator / contributor | `docs/book/src/{users,developers,operators,contributors}/`, runbooks, ADRs | this skill |
+| Layout and conventions | `.agents/layout.yaml` + short `AGENTS.md` | `project-layout` |
 
-### mdbook ↔ spec policy: orthogonal-with-citation
+mdbook and specs don't overlap. Narrative and tutorials go in mdbook with no spec coupling. For behavior, link to the spec ("See also"). When a specific value has to stay in sync (rare), restate it with a citation such as `(REQ-VID-001)`, which `spec-drift-detector` verifies. Use `{{#include}}` for tight tables like error codes when `spec_include: enabled`. MUST-level detail stays in the spec.
 
-mdbook and specs are orthogonal: different audiences, different registers. Narrow overlap is governed by:
+## `DOCS.md`
 
-| Situation | Policy |
-|---|---|
-| Conceptual overview, narrative, tutorial, examples | Hand-written in mdbook; no spec coupling. |
-| Behavior at the level the user/dev needs | "See also: [spec link]" — link only. |
-| Specific numeric/enum value that MUST stay in sync (rare) | Restate with citation `(REQ-VID-001)`. `spec-drift-detector` verifies. |
-| Tight invariant tables (error codes, formats) | mdbook's built-in `{{#include}}` from spec when `spec_include: enabled`. No preprocessor needed. |
-| Spec-internal detail (scaling, MUST-level normative) | Stays in spec only. |
-
-## Choosing Doc Form
-
-```dot
-digraph doc_form {
-    rankdir=LR;
-    info [label="Information needs\ndocumenting?" shape=diamond];
-    types [label="Can it be expressed\nin types?" shape=diamond];
-    encode [label="Encode in types.\nNo doc needed." shape=box style=filled fillcolor="#ccffcc"];
-    local [label="Local to one\nfunction/module?" shape=diamond];
-    inline [label="Comment\n(writing-comments)" shape=box];
-    xcut [label="Cross-cutting\narchitectural decision?" shape=diamond];
-    adr [label="ADR" shape=box];
-    ops [label="About running,\ndebugging, deploying?" shape=diamond];
-    runbook [label="Runbook" shape=box];
-    sys [label="System-level\noverview?" shape=diamond];
-    mermaid [label="Module doc with\nMermaid diagram" shape=box];
-    nodoc [label="Don't document it" shape=box style=filled fillcolor="#ffcccc"];
-
-    info -> types;
-    types -> encode [label="yes"];
-    types -> local [label="no"];
-    local -> inline [label="yes"];
-    local -> xcut [label="no"];
-    xcut -> adr [label="yes"];
-    xcut -> ops [label="no"];
-    ops -> runbook [label="yes"];
-    ops -> sys [label="no"];
-    sys -> mermaid [label="yes"];
-    sys -> nodoc [label="no"];
-}
-```
-
-## Doc Constitution: `DOCS.md`
-
-Project-specific documentation conventions live in `DOCS.md` at the project root. In monorepos, each package can have its own `DOCS.md` that extends/overrides the root.
-
-`DOCS.md` specifies:
-- Where docs live (directory structure)
-- What doc forms are used (ADR format, module READMEs, etc.)
-- Naming conventions
-- Diagram format preference (Mermaid for human-facing, Graphviz for plans and skill files)
-- RFC2119 usage (MUST/SHOULD/MAY)
-- Monorepo hierarchy (root defaults, package overrides)
-
-**When starting work, check `DOCS.md` first.** If absent, follow this skill's defaults.
-
-## Bidirectional Referencing
-
-Code and docs MUST reference each other:
-- **Code comments** → only the anchors `jj-superpowers:writing-comments` permits (see below)
-- **Architecture docs** → link to code: `Implemented in src/auth/session.ts`
-- **ADRs** → link to both implementing code and discussing docs
-- **Module doc comments** → reference the module file path they describe
-
-Unreferenced docs are stale docs. If you can't find the code a doc references, the doc is suspect.
+Check the root `DOCS.md` first (monorepo packages may override it). It sets doc locations, forms, naming, and diagram format. If there isn't one, use these defaults.
 
 ## Maintenance
 
-When maintaining docs alongside code changes:
-1. **Small safe desloppifications** (removing comment-duplication, adding type-encoded invariants, fixing stale cross-references) → do inline
-2. **Changes that could affect functionality** → offer separately. "I noticed X while documenting Y. Want me to fix that in a separate change?"
-3. **Stale docs** → delete or update. Never leave stale docs.
-4. **Overlapping docs** → merge into single source of truth. Remove the duplicate.
-
-## When You Struggle
-
-When you spent significant effort reading multiple files or tracing execution to understand something a short doc could have explained, write that doc immediately following this skill's rules. Unsure about scope or content? Ask the user.
-
-## Diagrams
-
-- **Human-facing docs** (README, architecture docs, runbooks) → Mermaid
-- **Plans, skill files** → Graphviz/DOT (existing project convention)
-
-Use diagrams only when they add clarity beyond what a list or table provides.
-
-## Rationalization Table
-
-| Excuse | Reality |
-|---|---|
-| "Someone might need this later" | Write it when they do. Speculative docs rot before they are read. |
-| "It's not hurting anyone" | Stale docs mislead. Wrong assumptions waste time. |
-| "More documentation is better" | Wrong docs are worse than no docs. |
-| "I'll update it later" | Later never comes. Update now or delete. |
-| "It's just a template" | Templates without content are noise. Fill it or don't create it. |
-| "The old docs aren't wrong, just incomplete" | Incomplete docs are stale docs. Complete or delete. |
-| "I don't want to delete someone else's work" | Outdated docs waste everyone's time including the author. |
-
-## Red Flags — STOP
-
-- Creating a doc file that duplicates an existing one
-- Leaving a TODO in documentation
-- Adding architecture docs without linking to code
-- Documenting what the type system already enforces
-- Creating overlapping docs for the same topic
-- Updating code without updating affected docs
-- Keeping a doc "for reference" when it's outdated
-
-**All of these mean: Delete, merge, or fix. Don't leave them.**
+- Link code and docs both ways. Architecture docs and ADRs name the implementing code (`Implemented in src/auth/session.ts`), and code points back only through the anchors `writing-comments` allows. If you can't find the code a doc refers to, treat the doc as suspect.
+- When code changes, update or delete the docs it affects. Merge overlapping docs into one. Don't keep outdated docs "for reference" and don't create TODO or template-only doc files.
+- Make small, safe doc fixes inline. Offer changes that could affect behavior as a separate change.
+- If you spent real effort tracing code that a short doc would have explained, write that doc. Ask the user if the scope is unclear.

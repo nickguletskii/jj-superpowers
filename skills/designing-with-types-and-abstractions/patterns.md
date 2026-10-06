@@ -41,19 +41,19 @@ fn run_with_retry<P: RetryPolicy>(
 
 The generic `P` says the orchestration is stable while the policy varies.
 
-Open-closed warning signs: a central `match`/`switch` grows for every new implementation, callers must know provider-specific quirks, or a "default" branch silently handles unknown cases. Factories construct; they must not become a second orchestration layer. Prefer exhaustive matching over visitor when there are only a few operations.
+Open-closed warning signs: a central `match`/`switch` grows for every new implementation, callers must know provider-specific quirks, or a "default" branch silently handles unknown cases. Factories construct; they shouldn't become a second orchestration layer. Prefer exhaustive matching over visitor when there are only a few operations.
 
 ## State and data modeling
 
 - **Sums and products.** Product types say what exists together; sum types say which variant is active. Do not store `authorized: boolean` next to `authorizationId?: string`, and do not rely on comments like "only set when...".
 - **Newtypes** when primitives hide meaning or units: `UserId`, `Cents`, `ValidatedEmail`. Validation happens once.
 - **Nested over flat.** `RequestContext { auth: AuthContext, tracing: TraceContext }`, not one wide object with duplicated prefixes.
-- **Explicit state machines.** A closed state ADT, explicit commands/events, and a transition returning next state + effects/errors. Ordering rules become visible and testable.
+- **Explicit state machines.** A closed state ADT, explicit commands/events, and a transition returning next state + effects/errors.
 - **Immutable by default** for shared values; copy-on-write only when reads dominate and the clone happens on the mutation path.
 - **Generics strengthen the model** (`StateMachine<S, Cmd, Err>`), never obscure it (`Context<T1, T2, T3>`).
 
 ## Effects and errors
 
 - Compose small stages (parse, validate, enrich, decide, execute effect) and keep I/O near the boundaries.
-- Make effects visible in signatures and names. Helpers must not secretly log, cache, retry, or fall back.
+- Make effects visible in signatures and names. Helpers shouldn't secretly log, cache, retry, or fall back.
 - Compose errors with `?`/`map`/`and_then` (Rust) or tagged unions (TypeScript): success flows forward, failures short-circuit explicitly. Avoid `null` plus side-channel logging.

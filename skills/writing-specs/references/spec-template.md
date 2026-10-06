@@ -11,7 +11,7 @@ owns:                            # path globs; canonical source for layout.yaml 
   - <path glob>
 code_spec: []                    # optional; modules carrying normative typed API
 
-references:                      # ALL cross-references use slugs/IDs — never file paths
+references:                      # slugs/IDs only — never file paths
   planes: []                     # e.g., [auth, observability]
   capabilities: []               # e.g., [main-backend-api]
   invariants: []                 # e.g., [INV-CONSISTENCY-001]
@@ -23,10 +23,10 @@ purpose: |
 
 # Optional prose (omit if not applicable)
 actors_and_surfaces: |
-  Who triggers behavior, through what interface (UI/API/CLI/event). Concise.
+  Who triggers behavior, through what interface (UI/API/CLI/event).
 
 state_and_lifecycle: |
-  State machine, allowed transitions. Only if non-trivial.
+  State machine, allowed transitions. Omit if just created → exists → deleted.
 
 scaling_assumptions: |
   - Expected entity counts: up to N <unit>.
@@ -45,59 +45,33 @@ requirements:
     text: |
       The system MUST <observable behavior>. Conditions: <when this applies>.
 
-  - id: REQ-<SHORT>-002
-    summary: <one-line imperative>
-    level: SHOULD
-    text: |
-      The system SHOULD <observable behavior>. Failure handling: <what happens otherwise>.
-
 # Optional structured failure modes
 failure_modes:
-  - code: UPLOAD_TOO_LARGE        # stable ID; never reused; strip backticks
+  - code: UPLOAD_TOO_LARGE        # stable ID; never reused
     condition: File exceeds size limit
     behavior: |
       413 response with JSON {error, code}. MUST NOT persist partial upload.
-
-  - code: UPLOAD_FORMAT_UNSUPPORTED
-    condition: MIME type not in allowed set
-    behavior: |
-      415 response with JSON {error, code}.
 ```
 
 ## Notes on filling
 
-- **Slug**: short kebab-case; matches the directory name.
-- **`owns:` globs**: precise enough to be unambiguous, broad enough to not require updates on every file rename. Prefer directory-level when possible.
-- **`references:`**: use slugs/IDs only — tooling resolves them to files. Never put a file path here.
-- **REQ summaries**: imperative present-tense one-liner. "File size limit", not "Implements file size limit".
-- **IDs are stable**: never reuse a number. Retire by setting `level: DEPRECATED` and optionally `replaced_by: REQ-<SHORT>-NNN`.
-- **State & Lifecycle**: omit if there's nothing more than "created → exists → deleted".
-- **Failure mode codes**: adding new codes is non-breaking; renaming is a deprecation.
+- **`owns:` globs**: unambiguous, but broad enough (directory-level where possible) that file renames don't require updates.
+- **REQ summaries**: imperative one-liner — "File size limit", not "Implements file size limit".
+- **Retiring**: never reuse a number; set `level: DEPRECATED` and optionally `replaced_by: REQ-<SHORT>-NNN`.
+- **Failure mode codes**: adding a code is non-breaking; renaming one is a deprecation.
 
 ## Sub-spec template
 
-Use when creating a new sub-spec inside an existing capability or plane directory.
+Same shape as above; these fields differ:
 
 ```yaml
-# Required fields
 id: <parent-slug>/<leaf-name>    # e.g., chat-workspace/streaming
-kind: capability                  # capability | plane — matches parent
-parent: <parent-slug>             # e.g., chat-workspace
-status: draft
-owns:                             # paths specific to this sub-spec (subset of parent's)
+kind: capability                  # matches parent
+parent: <parent-slug>
+owns:                             # subset of the parent's paths
   - <path glob>
-code_spec: []
-
-references:                       # slugs/IDs only — never file paths
-  planes: []
-  capabilities: []                # may include sibling sub-spec slugs: <parent>/<sibling>
-  invariants: []
-  glossary: []
-
-purpose: |
-  One paragraph. What does this sub-area do?
-
-# Optional prose — add actors_and_surfaces:, state_and_lifecycle:, scaling_assumptions:, out_of_scope: if applicable (same rules as top-level specs).
+references:
+  capabilities: []                # may include siblings: <parent>/<sibling>
 
 requirements:
   - id: REQ-<PARENT_SHORT>-<SUB_SHORT>-001    # new requirements use nested form
@@ -105,17 +79,11 @@ requirements:
     level: MUST
     text: |
       The system MUST <observable behavior>.
-
-  - id: REQ-<PARENT_SHORT>-001    # migrated requirements keep their stable ID
+  - id: REQ-<PARENT_SHORT>-001    # migrated requirements keep their ID
     summary: <migrated requirement>
     level: MUST
     text: |
       ...
-
-failure_modes: []
 ```
 
-**After creating the sub-spec,** update the parent's `SPEC.yaml`:
-- Add leaf name to `sub_specs:`.
-- Remove any requirements moved to this sub-spec from the parent's `requirements:`.
-- Narrow `owns:` in parent to paths not claimed by any sub-spec (if appropriate).
+Then update the parent: add the leaf to `sub_specs:`, remove the moved requirements, and narrow its `owns:` to paths no sub-spec claims, if appropriate.

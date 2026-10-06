@@ -1,221 +1,56 @@
 ---
 name: systematic-debugging
-description: Use when encountering any bug, test failure, or unexpected behavior, before proposing fixes
+description: Use when encountering a bug, test failure, build failure, performance problem, or other unexpected behavior, before proposing a fix.
 ---
 
 # Systematic Debugging
 
-## Overview
+Find the root cause before fixing. A patch at the symptom usually leaves the real defect in place and often creates a new one, and guess-and-check fixes cost more time than investigating. This holds for bugs that look simple too.
 
-Random fixes waste time and create new bugs. Quick patches mask underlying issues.
+The four phases below are guidance for how an investigation usually goes, not gates to clear in order. Skip what the evidence makes unnecessary, but don't propose a fix you can't explain.
 
-**Core principle:** ALWAYS find root cause before attempting fixes. Symptom fixes are failure.
+## Phase 1: Root cause investigation
 
-## The Iron Law
+- **Read the error completely.** Full stack trace, line numbers, file paths, error codes. Warnings near the failure often name the cause.
+- **Check recent changes early; it is cheap.** `jj diff`, `jj log --ignore-working-copy -r 'ancestors(@, 10)'`, and the diff of any suspect change. Look for new dependencies, config changes, and environment differences.
+- **Reproduce it.** Find exact steps that trigger it reliably. If it is intermittent, gather more data rather than guessing.
+- **Instrument component boundaries** in multi-component systems (client → API → service → database). Log what enters and leaves each boundary and whether config and environment propagate, run once, and investigate the layer where the data first goes wrong. For an upload pipeline: log payload size as the client sends it, as the API receives it, as the service hands it to storage, then run the storage write verbosely.
+- **Trace bad values to their origin** when the error surfaces deep in a call chain. Ask who passed the bad value, then who passed it to them, until you reach where it was created. Fix there. See "Root-Cause Tracing" in `techniques.md`.
 
-```
-NO FIXES WITHOUT ROOT CAUSE INVESTIGATION FIRST
-```
+## Phase 2: Pattern analysis
 
-If you haven't completed Phase 1, you cannot propose fixes.
+- Find similar code in the same codebase that works, and list every difference between it and the broken code, including ones that seem irrelevant.
+- If you are implementing a known pattern, read the reference implementation fully before adapting it.
+- Note what the broken code depends on: other components, settings, environment, assumptions.
 
-## When to Use
+## Phase 3: Hypothesis and testing
 
-Use for ANY technical issue: test failures, production bugs, unexpected behavior, performance problems, build failures, integration issues.
+- State one hypothesis: "X is the root cause because Y."
+- Test it with the smallest change that can confirm or refute it, one variable at a time.
+- If it is refuted, form a new hypothesis rather than stacking another change on top. Several simultaneous changes make it impossible to tell which one mattered.
+- If you don't understand something, say so and research or ask instead of guessing.
 
-**Do not skip the process because** the issue seems simple (simple bugs have root causes too), you're under time pressure (systematic is faster than guess-and-check thrashing), "just one quick fix" seems obvious, a previous fix didn't work, or you don't fully understand the issue. Those are exactly the conditions this skill exists for.
+## Phase 4: Implementation
 
-## The Four Phases
+1. **Write a failing test** that reproduces the bug, or a one-off script where there is no test framework. See `jj-superpowers:test-driven-development`.
+2. **Make one fix** that addresses the root cause. Leave unrelated improvements and refactors for separately.
+3. **Verify:** the new test passes, nothing else broke, and the original symptom is gone (`jj-superpowers:verification-before-completion`).
+4. **If the fix doesn't work,** return to Phase 1 with what you learned.
+5. **After three failed fixes, question the architecture.** Signs: each fix exposes new shared state or coupling somewhere else, fixes need large refactors, or each one creates new symptoms. That points to an unsound design, not another bad hypothesis. Discuss with your human partner before attempting more fixes.
 
-You MUST complete each phase before proceeding to the next.
+After the root-cause fix, consider guards at the other layers the bad value passed through ("Defense in Depth" in `techniques.md`).
 
-### Phase 1: Root Cause Investigation
+## When there is no root cause in the code
 
-**BEFORE attempting ANY fix:**
+If investigation shows the issue is truly environmental, timing-dependent, or external, document what you investigated, add appropriate handling (retry, timeout, clearer error), and add logging for next time. Most "no root cause" conclusions turn out to be incomplete investigations, so check that first.
 
-1. **Read Error Messages Carefully**
-   - Don't skip past errors or warnings
-   - They often contain the exact solution
-   - Read stack traces completely
-   - Note line numbers, file paths, error codes
+## Common mistakes
 
-2. **Reproduce Consistently**
-   - Can you trigger it reliably?
-   - What are the exact steps?
-   - Does it happen every time?
-   - If not reproducible → gather more data, don't guess
+- Proposing a fix before tracing the data flow, because the cause "is probably X".
+- Applying several changes in one run, then being unable to say which one helped.
+- Adapting a reference pattern from a partial reading of it.
+- Your human partner asking "is that actually happening?" or "will that show us…?" means you assumed instead of gathering evidence. Go back and instrument.
 
-3. **Check Recent Changes ONLY if the user mentions that it broke recently**
-   - What changed that could cause this?
-   - jj diff, recent changes
-   - New dependencies, config changes
-   - Environmental differences
+## Supporting material
 
-4. **Gather Evidence in Multi-Component Systems**
-
-   **WHEN system has multiple components (client → API → service → database, or ingest → transform → store):**
-
-   **BEFORE proposing fixes, add diagnostic instrumentation:**
-   ```
-   For EACH component boundary:
-     - Log what data enters component
-     - Log what data exits component
-     - Verify environment/config propagation
-     - Check state at each layer
-
-   Run once to gather evidence showing WHERE it breaks
-   THEN analyze evidence to identify failing component
-   THEN investigate that specific component
-   ```
-
-   **Example (upload pipeline):** log the payload size as it leaves the client, again as the API receives it, again as the service hands it to storage, then run the storage write verbosely. Each probe sits on one boundary.
-
-   **This reveals:** which layer fails (client → API ✓, API → service ✗), so you investigate that layer instead of guessing.
-
-5. **Trace Data Flow**
-
-   **WHEN error is deep in call stack:**
-
-   See "Root-Cause Tracing" in `techniques.md` in this directory for the full backward-tracing technique.
-
-   **Quick version:**
-   - Where does bad value originate?
-   - What called this with bad value?
-   - Keep tracing up until you find the source
-   - Fix at source, not at symptom
-
-### Phase 2: Pattern Analysis
-
-**Find the pattern before fixing:**
-
-1. **Find Working Examples**
-   - Locate similar working code in same codebase
-   - What works that's similar to what's broken?
-
-2. **Compare Against References**
-   - If implementing pattern, read reference implementation COMPLETELY
-   - Don't skim - read every line
-   - Understand the pattern fully before applying
-
-3. **Identify Differences**
-   - What's different between working and broken?
-   - List every difference, however small
-   - Don't assume "that can't matter"
-
-4. **Understand Dependencies**
-   - What other components does this need?
-   - What settings, config, environment?
-   - What assumptions does it make?
-
-### Phase 3: Hypothesis and Testing
-
-**Scientific method:**
-
-1. **Form Single Hypothesis**
-   - State clearly: "I think X is the root cause because Y"
-   - Write it down
-   - Be specific, not vague
-
-2. **Test Minimally**
-   - Make the SMALLEST possible change to test hypothesis
-   - One variable at a time
-   - Don't fix multiple things at once
-
-3. **Verify Before Continuing**
-   - Did it work? Yes → Phase 4
-   - Didn't work? Form NEW hypothesis
-   - DON'T add more fixes on top
-
-4. **When You Don't Know**
-   - Say "I don't understand X"
-   - Don't pretend to know
-   - Ask for help
-   - Research more
-
-### Phase 4: Implementation
-
-**Fix the root cause, not the symptom:**
-
-1. **Create Failing Test Case**
-   - Simplest possible reproduction
-   - Automated test if possible
-   - One-off test script if no framework
-   - MUST have before fixing
-   - Use the `jj-superpowers:test-driven-development` skill for writing proper failing tests
-
-2. **Implement Single Fix**
-   - Address the root cause identified
-   - ONE change at a time
-   - No "while I'm here" improvements
-   - No bundled refactoring
-
-3. **Verify Fix**
-   - Test passes now?
-   - No other tests broken?
-   - Issue actually resolved?
-
-4. **If Fix Doesn't Work**
-   - STOP
-   - Count: How many fixes have you tried?
-   - If < 3: Return to Phase 1, re-analyze with new information
-   - **If ≥ 3: STOP and question the architecture (step 5 below)**
-   - DON'T attempt Fix #4 without architectural discussion
-
-5. **If 3+ Fixes Failed: Question Architecture**
-
-   **Pattern indicating architectural problem:**
-   - Each fix reveals new shared state/coupling/problem in different place
-   - Fixes require "massive refactoring" to implement
-   - Each fix creates new symptoms elsewhere
-
-   **STOP and question fundamentals:**
-   - Is this pattern fundamentally sound?
-   - Are we "sticking with it through sheer inertia"?
-   - Should we refactor architecture vs. continue fixing symptoms?
-
-   **Discuss with your human partner before attempting more fixes**
-
-   This is NOT a failed hypothesis - this is a wrong architecture.
-
-## Red Flags - STOP and Return to Phase 1
-
-Thoughts that mean you have left the process:
-- "Quick fix for now, investigate later" / "It's probably X, let me fix that"
-- "Just try changing X and see if it works" / "I don't fully understand but this might work"
-- "Add multiple changes, run tests" — you won't be able to isolate what worked
-- "Skip the test, I'll manually verify"
-- "Pattern says X but I'll adapt it differently" — partial understanding guarantees bugs
-- Listing fixes, or proposing solutions, before tracing data flow
-- **"One more fix attempt" when you already tried 2+, or each fix reveals a new problem somewhere else** — that is an architectural problem, not a failed hypothesis (Phase 4.5)
-
-Signals from your human partner that you're doing it wrong — treat each as "STOP, return to Phase 1":
-- "Is that not happening?" — you assumed without verifying
-- "Will it show us...?" — you should have added evidence gathering
-- "Stop guessing" — you're proposing fixes without understanding
-- "Ultrathink this" — question fundamentals, not just symptoms
-- "We're stuck?" (frustrated) — your approach isn't working
-
-## When Process Reveals "No Root Cause"
-
-If systematic investigation reveals issue is truly environmental, timing-dependent, or external:
-
-1. You've completed the process
-2. Document what you investigated
-3. Implement appropriate handling (retry, timeout, error message)
-4. Add monitoring/logging for future investigation
-
-**But:** 95% of "no root cause" cases are incomplete investigation.
-
-## Supporting Techniques
-
-`techniques.md` in this directory covers:
-
-- **Root-cause tracing** — trace a bad value backward through the call chain to its origin
-- **Defense in depth** — which layers to guard after the root-cause fix
-- **Condition-based waiting** — replace arbitrary sleeps in tests with condition polling
-
-`find-polluter.sh` bisects which test creates an unwanted file or directory.
-
-**Related skills:**
-- **jj-superpowers:test-driven-development** - For creating failing test case (Phase 4, Step 1)
-- **jj-superpowers:verification-before-completion** - Verify fix worked before claiming success
+`techniques.md` covers root-cause tracing, defense in depth, and condition-based waiting for flaky tests. `find-polluter.sh` bisects which test creates an unwanted file or directory.

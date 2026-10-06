@@ -1,121 +1,52 @@
 ---
 name: dispatching-parallel-agents
-description: Use when several unrelated things need investigating at once and subagents are authorized — multiple failing tests across different subsystems, independent code-archaeology questions, or map/reduce exploration before a design or cleanup decision. Triggers on "investigate these in parallel", "fan out", "look into X, Y and Z", or 2+ root-cause hypotheses checkable without touching shared files. If the plan has a `project-network.dot`, use `subagent-driven-development` instead.
+description: Use when 2+ unrelated things need investigating at once and subagents are authorized — failing tests across different subsystems, independent code-archaeology questions, map/reduce exploration, or root-cause hypotheses checkable without touching shared files. With a `project-network.dot` plan, use subagent-driven-development instead.
 ---
 
 # Dispatching Parallel Agents
 
-## Overview
+For ad hoc parallel investigation, not planned implementation. If the user hasn't authorized subagents or platform policy requires explicit permission, ask or work locally.
 
-Use this for ad hoc parallel investigations, not planned implementation. When several failures, files, or subsystems can be understood independently, dispatching one focused agent per domain can find root causes faster while preserving the orchestrator's context.
+**Fits:** unrelated failures in different subsystems; archaeology questions over separate areas; map/reduce exploration before a design or cleanup decision; independent hypotheses checkable without shared writes.
 
-If there is a written implementation plan with `project-network.dot`, use `subagent-driven-development` instead. If the user has not authorized subagents in this conversation or platform policy requires explicit permission, ask or proceed locally.
-
-**Core principle:** parallelize independent investigation, then integrate findings deliberately.
-
-## When to Use
-
-```dot
-digraph when_to_use {
-    "User authorized subagents?" [shape=diamond];
-    "Have project-network.dot?" [shape=diamond];
-    "2+ independent investigations?" [shape=diamond];
-    "Disjoint context and state?" [shape=diamond];
-    "Ask user or work locally" [shape=box];
-    "Use subagent-driven-development" [shape=box];
-    "Single local investigation" [shape=box];
-    "Dispatch parallel investigators" [shape=box];
-
-    "User authorized subagents?" -> "Have project-network.dot?" [label="yes"];
-    "User authorized subagents?" -> "Ask user or work locally" [label="no"];
-    "Have project-network.dot?" -> "Use subagent-driven-development" [label="yes"];
-    "Have project-network.dot?" -> "2+ independent investigations?" [label="no"];
-    "2+ independent investigations?" -> "Disjoint context and state?" [label="yes"];
-    "2+ independent investigations?" -> "Single local investigation" [label="no"];
-    "Disjoint context and state?" -> "Dispatch parallel investigators" [label="yes"];
-    "Disjoint context and state?" -> "Single local investigation" [label="no"];
-}
-```
-
-Use for:
-
-- Multiple unrelated test failures in different files or subsystems.
-- Independent code archaeology questions where each agent can inspect a separate area.
-- Map/reduce style exploration before a design or cleanup decision.
-- Independent root-cause hypotheses that can be checked without editing shared files.
-
-Do not use for:
-
-- Planned implementation work; use `subagent-driven-development` with `project-network.dot`.
-- Related failures where one root cause may explain the others.
-- Tasks that require shared mutable state, the same file scope, or the same contended command.
-- Exploratory work where you cannot yet define separate domains.
+**Doesn't fit:** related failures that may share one root cause; work needing shared mutable state, the same files, or the same contended command; exploration where you can't yet name separate domains.
 
 ## Pattern
 
-1. Identify domains by file, subsystem, failing test group, or hypothesis.
-2. Confirm domains are independent and do not need shared writes or shared runtime state.
-3. Dispatch one investigator per domain with a focused, self-contained prompt.
-4. Continue useful local work while agents run.
-5. Review each result, compare for contradictions, then run the relevant integrated verification before claiming anything.
+1. Split by file, subsystem, failing test group, or hypothesis, and confirm the domains need no shared writes or runtime state.
+2. Dispatch one investigator per domain, all in one response, each with a self-contained prompt.
+3. Keep doing useful local work while they run.
+4. Read every report, check for contradictions or a shared root cause, inspect any diffs yourself, then run one integrated verification before claiming anything.
+5. If the work grows into planned implementation, move to `brainstorming` or `writing-plans`.
 
-Investigation agents should usually report findings, evidence, and recommended fixes. Only let them edit files when the user has asked for edits and each agent has a disjoint write scope.
+Investigators normally report findings rather than edit. Allow edits only when the user asked for them and each agent has a disjoint write scope.
 
-## Prompt Structure
+## Prompt contents
 
-Each prompt needs:
+- **Scope** — exact files, test group, subsystem, or hypothesis.
+- **Goal** — the question or symptom to explain.
+- **Constraints** — what they may read, edit, and run; what to leave alone.
+- **Evidence** — error output, test names, traces, search terms.
+- **Output** — root cause with file:line evidence, recommended fix, files changed, commands run.
 
-- **Scope:** exact file, directory, test group, subsystem, or hypothesis.
-- **Goal:** what question to answer or symptom to explain.
-- **Constraints:** files they may read or edit, commands they may run, and what not to change.
-- **Evidence:** error output, test names, stack traces, or search terms.
-- **Output:** root cause, evidence, recommended fix, files changed if any, and verification run.
-
-Always include this constraint: do not invoke another agent harness through any
-channel — not the shell (`claude`, `codex`, `opencode`)
-and not MCP tools (e.g. `mcp__codex__codex`). Having the tool available is not
-permission to use it. Subagents must report `NEEDS_CONTEXT` or `BLOCKED` if more
-delegation seems necessary.
-
-Example:
+Also tell each agent not to invoke another agent harness by any channel — shell (`claude`, `codex`, `opencode`) or MCP (e.g. `mcp__codex__codex`) — and to report `NEEDS_CONTEXT` or `BLOCKED` if it needs more delegation. Ad hoc agents don't carry the shared preamble, so nested sessions otherwise happen just because the tool is available.
 
 ```markdown
 Investigate failures in `src/agents/agent-tool-abort.test.ts` only.
 
-Goal: identify whether the three abort-related failures come from test timing or production abort behavior.
+Goal: do the three abort-related failures come from test timing or production abort behavior?
 
-Constraints:
-- Do not edit files.
-- Do not investigate batch completion or tool approval tests.
-- Do not run the full suite; run only this test file if needed.
+Constraints: don't edit files; don't investigate batch-completion or tool-approval tests; run only this test file.
 
 Evidence:
 - "should abort tool with partial output capture" expects "interrupted at".
-- "should handle mixed completed and aborted tools" aborts the fast tool.
-- "should properly track pendingToolCount" expects 3 results but gets 0.
+- "should properly track pendingToolCount" expects 3 results, gets 0.
 
-Return:
-- Root cause with file:line evidence.
-- Whether a production fix or test fix is needed.
-- Commands run and results.
+Return: root cause with file:line evidence, production vs test fix, commands run.
 ```
 
-## Integration
+## Common mistakes
 
-When agents return:
-
-- Read every report before acting.
-- Check whether findings conflict or reveal a shared root cause.
-- Inspect diffs yourself if agents edited files.
-- Run one integrated verification command after combining results.
-- If work expands into planned implementation, stop and use `brainstorming` or `writing-plans` as appropriate.
-
-## Common Mistakes
-
-- Dispatching without explicit subagent authorization in a platform that requires it.
-- Using this when `subagent-driven-development` already applies.
 - Giving every agent the whole problem instead of one domain.
-- Letting agents edit overlapping files.
 - Trusting summaries without checking evidence or diffs.
-- Running contended commands in multiple agents when one batched verification would do.
-- Letting subagents create nested agent sessions by invoking an agent harness through any channel — an agent CLI from the shell, or an MCP tool (e.g. `mcp__codex__codex`).
+- Several agents running the same contended build or test command when one batched run would do.

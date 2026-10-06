@@ -22,7 +22,7 @@ Start with `jj show -r <rev> --stat --no-pager` (or `jj diff --stat --from <base
 ## Mandate scope
 
 - **General-purpose review** (ad hoc, via `jj-superpowers:requesting-code-review`): the full checklist applies.
-- **`quality_review` fallback** (the request carries a `VERIFICATION_REPORT`, cites a `quality_review` node, or names a verified task group): **skip Duplication**. The graph's `simplification` node owns it; reporting it here double-reports every finding.
+- **`quality_review` fallback** (the request carries a `VERIFICATION_REPORT`, cites a `quality_review` node, or names a verified task group): **skip Duplication**. The graph's `simplification` node owns it; reporting it here would double-report every finding.
 
 ## Checklist
 

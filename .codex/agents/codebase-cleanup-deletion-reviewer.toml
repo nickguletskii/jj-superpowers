@@ -36,9 +36,9 @@ Spot-check 2–3 source files adjacent to the deleted items. Verify that no symb
 
 **4. Map file consistency**
 Read the affected `by-directory/` and `by-group/` files in `[MAP_PATH]`. Verify:
-- Deleted entries are annotated with `(deleted)` — entries must NOT be removed; the annotation is required for the refactoring-request agent to reconstruct deletion history
+- Deleted entries are annotated with `(deleted)` rather than removed; the annotation is needed for the refactoring-request agent to reconstruct deletion history
 - For deleted test files: the corresponding entry in the `## Dead / obsolete tests` section of the affected group file is annotated with `(deleted)`
-- Each removed dead-code entry in `## Analysis → ### Dead code` shows `✓ removed` — the entry itself must NOT be removed, only annotated
+- Each removed dead-code entry in `## Analysis → ### Dead code` shows `✓ removed` (annotated, not removed)
 
 **5. Nothing missed**
 Read `[MAP_PATH]/deletion-report.md` (written by the deletion agent). Confirm that every item in `[CONFIRMED_DELETIONS]` was either:

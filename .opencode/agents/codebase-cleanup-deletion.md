@@ -43,13 +43,13 @@ For each item in the confirmed deletions list:
    - **(a) File deletion:** Delete the entire file. Then grep to confirm no other file imports from it.
    - **(b) Symbol removal:** Remove only the symbol from its source file. Preserve all surrounding code. Then clean up import statements referencing the removed symbol in other files.
 2. Search for any remaining import statements that reference the deleted symbol or file and remove them
-3. Verify with a grep that nothing still references the deleted code. If grep returns any remaining references outside test files or the now-deleted file itself, do NOT consider the deletion complete — add the symbol to 'Could not remove' with the grep results as the reason.
+3. Verify with a grep that nothing still references the deleted code. If grep returns any remaining references outside test files or the now-deleted file itself, the deletion isn't complete — add the symbol to 'Could not remove' with the grep results as the reason.
 
 After completing all deletions, update the code map files:
 
 Read each map file before modifying it. Do not overwrite content outside the specific entries you are annotating.
 
-- In `[MAP_PATH]/by-directory/<dir>.md`: annotate deleted entries with `(deleted)` — do NOT remove entries from the map file. The refactoring-request agent needs these annotations to reconstruct history.
+- In `[MAP_PATH]/by-directory/<dir>.md`: annotate deleted entries with `(deleted)` rather than removing them; the refactoring-request agent needs these annotations to reconstruct history.
 - In `[MAP_PATH]/by-group/<group>.md`: do the same in the "Full API surface" section. For deleted test files, also annotate their entry in the `## Dead / obsolete tests` section with `(deleted)`.
 - In each affected `## Analysis → ### Dead code` section: annotate each removed item with `✓ removed`
 
@@ -74,7 +74,7 @@ Write your report to `[MAP_PATH]/deletion-report.md` and include it inline in yo
 
 ## Rules
 
-- Delete ONLY items in the confirmed list — nothing else
-- If a deletion would break something unexpected (e.g. the symbol turns out to be used somewhere not caught by the analysis), do NOT delete it; report it under "Could not remove"
+- Delete only items in the confirmed list
+- If a deletion would break something unexpected (e.g. the symbol turns out to be used somewhere not caught by the analysis), leave it in place and report it under "Could not remove"
 - Report every deletion attempt, successful or not
 - Do not skip the map file updates

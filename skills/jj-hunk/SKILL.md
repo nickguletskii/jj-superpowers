@@ -5,14 +5,7 @@ description: Use when splitting commits in jj, making partial or hunk-level comm
 
 # jj-hunk: Programmatic Hunk Selection
 
-Use `jj-hunk` for non-interactive hunk selection in jj — for creating clean, logical commits from mixed changes without an interactive UI.
-
-## When to Use This Skill
-
-- Splitting a commit into multiple logical commits
-- Committing only specific hunks (partial commit)
-- Squashing only certain changes into parent
-- Any hunk selection that would normally require `jj split -i` or `jj squash -i`
+`jj-hunk` replaces `jj split -i` / `jj squash -i` with a JSON or YAML spec, so an agent can split, partially commit, or partially squash by hunk.
 
 ## Setup
 
@@ -20,59 +13,29 @@ Use `jj-hunk` for non-interactive hunk selection in jj — for creating clean, l
 cargo install jj-hunk
 ```
 
-Add to your user config (`~/.config/jj/config.toml`; `jj config path --user` prints the location):
+Add to the user config (`jj config path --user` prints its location):
+
 ```toml
 [merge-tools.jj-hunk]
 program = "jj-hunk"
 edit-args = ["select", "$left", "$right"]
 ```
 
-## Core Workflow
-
-### 1. List Hunks
+## 1. List hunks
 
 ```bash
-jj-hunk list
-
-# List hunks for a specific revision (diff vs parent)
-# Note: revset must resolve to a single revision
-jj-hunk list --rev @
-
-# Emit YAML instead of JSON
-jj-hunk list --format yaml
+jj-hunk list                    # working copy
+jj-hunk list --rev <rev>        # <rev> vs its parent; must resolve to one revision
+jj-hunk list --files            # files with hunk counts only
 ```
 
-Options:
-- `--rev <revset>` — diff the revision against its parent (revset must resolve to a single revision)
-- `--format json|yaml|text` — output format (default: json)
-- `--include <glob>` / `--exclude <glob>` — filter paths (repeatable)
-- `--group none|directory|extension|status` — group output
-- `--binary skip|mark|include` — binary handling (default: mark)
-- `--max-bytes <n>` / `--max-lines <n>` — truncate before diffing
-- `--spec <json|yaml>` / `--spec-file <path>` — preview using a spec filter
-- `--files` — list files with hunk counts only
-- `--spec-template` — emit a spec template (JSON/YAML only)
+Other options: `--format json|yaml|text` (default json), `--include/--exclude <glob>`, `--group none|directory|extension|status`, `--binary skip|mark|include`, `--max-bytes/--max-lines <n>`, `--spec <spec>` / `--spec-file <path>` to preview a selection, `--spec-template`.
 
-Output (JSON; abbreviated — the examples below use these hunks):
+Output (abbreviated):
+
 ```json
 {
   "files": [
-    {
-      "path": "src/db/schema.ts",
-      "status": "modified",
-      "hunks": [
-        {"id": "hunk-98af...", "index": 0, "type": "insert", "removed": "", "added": "import { pgTable }...\n", "before": {"start": 1, "lines": 0}, "after": {"start": 1, "lines": 1}},
-        {"id": "hunk-21b3...", "index": 1, "type": "insert", "removed": "", "added": "export const users = pgTable...\n", "before": {"start": 2, "lines": 0}, "after": {"start": 2, "lines": 1}}
-      ]
-    },
-    {
-      "path": "src/api/routes.ts",
-      "status": "modified",
-      "hunks": [
-        {"id": "hunk-cc19...", "index": 0, "type": "replace", "removed": "// TODO\n", "added": "app.get('/users', ...);\n", "before": {"start": 10, "lines": 1}, "after": {"start": 10, "lines": 1}},
-        {"id": "hunk-4b20...", "index": 1, "type": "insert", "removed": "", "added": "app.get('/posts', ...);\n", "before": {"start": 11, "lines": 0}, "after": {"start": 11, "lines": 1}}
-      ]
-    },
     {
       "path": "src/lib/utils.ts",
       "status": "modified",
@@ -86,11 +49,9 @@ Output (JSON; abbreviated — the examples below use these hunks):
 }
 ```
 
-Each hunk includes a stable `id` (sha256) alongside the 0-based `index`.
+Each hunk has a 0-based `index` and a stable `id` (`hunk-<sha256>`). Types are `insert`, `delete`, `replace`.
 
-### 2. Build a Spec
-
-Select hunks by index or `id` (emitted as `hunk-<sha256>`), or use file-level actions. Specs can be JSON or YAML:
+## 2. Build a spec
 
 ```json
 {
@@ -106,183 +67,43 @@ Select hunks by index or `id` (emitted as `hunk-<sha256>`), or use file-level ac
 
 | Spec | Effect |
 |------|--------|
-| `{"hunks": [0, 2]}` | Include only hunks 0 and 2 |
-| `{"hunks": ["hunk-..."]}` | Include hunks by id string |
-| `{"ids": ["hunk-..."]}` | Include hunks by stable id |
-| `{"action": "keep"}` | Include all changes |
-| `{"action": "reset"}` | Discard all changes |
-| `"default": "reset"` | Unlisted files are discarded |
-| `"default": "keep"` | Unlisted files are kept |
+| `{"hunks": [0, 2]}` | Include hunks by index (or id string) |
+| `{"ids": ["hunk-..."]}` | Include hunks by stable id (merged with `hunks` if both given) |
+| `{"action": "keep"}` / `{"action": "reset"}` | Include / discard the whole file |
+| `"default": "reset"` / `"keep"` | Unlisted files are discarded / kept |
 
-`ids` and `hunks` are merged if both are provided.
+Paths must match exactly (`"src/lib.rs"`, not `"src/"`). Prefer `ids` when hunks may shift between listing and applying. `"default": "reset"` (explicit inclusion) is the safer default; `"keep"` is convenient for excluding one file.
 
-### 3. Execute
+## 3. Execute
 
-Specs can be provided inline, read from stdin with `-`, or loaded via `--spec-file` (omit `<spec>` when using `--spec-file`).
+The spec is inline, `-` for stdin, or `--spec-file <path>` (then omit the inline spec).
 
 ```bash
-# Split: selected hunks → first commit, rest → second commit
-jj-hunk split '<spec>' "commit message"
-
-# Read spec from a file (JSON or YAML)
-jj-hunk split --spec-file spec.yaml "commit message"
-
-# Commit: selected hunks committed, rest stays in working copy
-jj-hunk commit '<spec>' "commit message"
-
-# Read spec from stdin
-cat spec.json | jj-hunk commit - "commit message"
-
-# Squash: selected hunks squashed into parent
-jj-hunk squash '<spec>'
+jj-hunk split  [-r <rev>] '<spec>' "message"   # selected → first change, rest → child
+jj-hunk commit '<spec>' "message"              # selected committed, rest stays in @
+jj-hunk squash '<spec>'                        # selected squashed into parent
+jj-hunk split --spec-file spec.yaml "message"
 ```
 
-## Examples
+Direct form: `JJ_HUNK_SELECTION="$TMPDIR/spec.json" jj split -i --tool=jj-hunk -m "message"`.
 
-### Split Mixed Changes into Logical Commits
+## Example: split a messy revision in narrative order
 
-You have refactoring and a new feature mixed together:
-
-```bash
-# 1. See what hunks exist
-jj-hunk list
-
-# 2. Split out the refactoring first
-jj-hunk split '{"files": {"src/lib.rs": {"hunks": [0, 1]}}, "default": "reset"}' \
-  "refactor: extract helper function"
-
-# 3. Remaining changes become second commit
-jj describe -m "feat: add new feature"
-```
-
-### Commit Only Part of Your Changes
-
-Keep experimental code in working copy while committing the fix:
+Target the revision with `-r`/`--rev`; never `jj edit` onto it (moves `@`, jujutsu safety rule 2).
 
 ```bash
-jj-hunk commit '{"files": {"src/bug.rs": {"action": "keep"}}, "default": "reset"}' \
-  "fix: handle null case"
-```
+jj-hunk list --rev <rev>
 
-### Squash Specific Files into Parent
+# Infrastructure first: whole file
+jj-hunk split -r <rev> '{"files": {"src/db/schema.ts": {"action": "keep"}}, "default": "reset"}' "feat: add database schema"
 
-```bash
-jj-hunk squash '{"files": {"src/tests.rs": {"action": "keep"}}, "default": "reset"}'
-```
-
-### Keep Everything Except One File
-
-```bash
-jj-hunk split '{"files": {"src/wip.rs": {"action": "reset"}}, "default": "keep"}' \
-  "feat: complete implementation"
-```
-
-## Direct jj --tool Usage
-
-The commands above are wrappers. For direct control:
-
-```bash
-# Write spec to file
-echo '{"files": {"src/foo.rs": {"hunks": [0]}}, "default": "reset"}' > "$TMPDIR/spec.json"
-
-# Run jj with the tool
-JJ_HUNK_SELECTION="$TMPDIR/spec.json" jj split -i --tool=jj-hunk -m "message"
-```
-
-## Hunk Types
-
-| Type | Meaning |
-|------|---------|
-| `insert` | New lines added |
-| `delete` | Lines removed |
-| `replace` | Lines changed (removed + added) |
-
-
-## Agent Workflow Examples
-
-### File-Level Selection
-
-When all hunks in a file belong to the same logical change:
-
-```bash
-# Keep entire file, reset everything else
-jj-hunk split '{"files": {"src/db/schema.ts": {"action": "keep"}}, "default": "reset"}' "feat: add database schema"
-```
-
-### Hunk-Level Selection
-
-When a single file has mixed concerns (most powerful feature):
-
-```bash
-# src/lib/utils.ts has:
-#   - hunks 0, 2: refactoring (rename + delete dead code)
-#   - hunk 1: new feature (helper function)
-
-# Extract just the refactoring
-jj-hunk split '{"files": {"src/lib/utils.ts": {"hunks": [0, 2]}}, "default": "reset"}' "refactor: clean up utils"
-
-# Hunk 1 remains in working copy for the next commit
-jj describe -m "feat: add helper function"
-```
-
-### Mixed Selection
-
-Combine file-level and hunk-level in one spec:
-
-```bash
-# Keep all of schema.ts + only hunk 0 from routes.ts
-jj-hunk split '{"files": {"src/db/schema.ts": {"action": "keep"}, "src/api/routes.ts": {"hunks": [0]}}, "default": "reset"}' "feat: add users table and endpoint"
-
-# Next: remaining routes.ts hunk
-jj-hunk split '{"files": {"src/api/routes.ts": {"action": "keep"}}, "default": "reset"}' "feat: add posts endpoint"
-
-# Final: utils changes
-jj describe -m "refactor: utils cleanup"
-```
-
-### Complete Workflow Example
-
-Starting with a messy commit containing schema, API, and refactoring changes. Target it with `--rev`/`-r` — never `jj edit` onto it (moves `@`, jujutsu safety rule 2):
-
-```bash
-# 1. Inspect all hunks of the target revision
-jj-hunk list --rev <revision>
-
-# 2. Split in narrative order
-
-# Infrastructure first
-jj-hunk split -r <revision> '{"files": {"src/db/schema.ts": {"action": "keep"}}, "default": "reset"}' "feat: add database schema"
-
-# Each split leaves the remainder in a new child; read its id, re-list, split again
-jj log --no-pager -r '<revision>::' --no-graph -T 'change_id.short(8) ++ " " ++ description.first_line() ++ "\n"'
+# Each split leaves the remainder in a new child; find it, re-list (indices change), split again
+jj log --no-pager -r '<rev>::' --no-graph -T 'change_id.short(8) ++ " " ++ description.first_line() ++ "\n"'
 jj-hunk list --rev <remainder>
 jj-hunk split -r <remainder> '{"files": {"src/lib/utils.ts": {"hunks": [0, 2]}}, "default": "reset"}' "refactor: clean up utils"
-# ...repeat for the users endpoint...
 
-# Describe the last remainder
+# Describe the last remainder (never bare `jj describe` — it opens an editor)
 jj describe -r <last-remainder> -m "feat: add posts endpoint"
-
-# 3. Verify (jujutsu safety rule 5)
-jj log -r 'trunk()..@' --no-pager
 ```
 
-### Verifying Splits
-
-After splitting, verify each commit has the right content:
-
-```bash
-# Check stats for each commit
-jj diff -r <rev1> --stat --no-pager
-jj diff -r <rev2> --stat --no-pager
-
-# Or view the log
-jj log --no-pager
-```
-
-## Tips
-
-- **Always list first**: Run `jj-hunk list` to see hunk indices/ids before building specs
-- **Prefer ids for stability**: Use `ids` when hunks might shift between list and apply
-- **Use default wisely**: `"default": "reset"` is safer (explicit inclusion), `"default": "keep"` is convenient for excluding specific files
-- **Combine with jj**: After splitting, use `jj describe -m` to refine commit messages (never bare `jj describe` — it opens an editor)
-- **Exact paths required**: File paths must match exactly (e.g., `"src/lib.rs"` not `"src/"`)
+Then verify per jujutsu safety rule 5, and check each resulting change with `jj diff -r <id> --stat --no-pager`.

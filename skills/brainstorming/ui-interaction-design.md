@@ -15,9 +15,9 @@ Assume the user is **forgetful and lazy** — not as an insult, but as a design 
 
 Then **capture the project's actual persona(s)** too — the generic forgetful/lazy bias is the floor, not a substitute for knowing who really uses this (expertise, frequency of use, device, accessibility needs, environment).
 
-## Three non-negotiable cross-cutting requirements
+## Three cross-cutting requirements
 
-Every UI design MUST address all three. They are not optional polish; they become checklist items.
+Every UI design addresses all three, and each becomes a verification checklist item.
 
 1. **Errors and warnings are always surfaced to the UI.** Every failure mode and every warning has a *visible, actionable* place in the UI — never swallowed, never console-only. Say what happened, why, and what the user can do next. Validation, network failure, partial success, permission denied, low-confidence results — all surfaced.
 2. **Progress is always reported.** Any operation that can take perceptible time (network, IO, compute, multi-item batch) shows progress: determinate (% / count) when the total is known, indeterminate (spinner/activity) when it isn't. State *what* is happening and *where*. Make long operations cancelable where it makes sense.

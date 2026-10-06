@@ -1,136 +1,43 @@
 ---
 name: spec-code-sync
-description: Use before editing source files in a project with `.agents/layout.yaml` — when planning or executing a code change, or when about to edit a file that may be a code-as-spec module. Finds the specs a change touches and decides what spec/doc work it owes.
+description: Use before editing source files in a project with `.agents/layout.yaml` — when planning or executing a code change, or when about to edit a file that may be a code-as-spec module.
 ---
 
 # Spec ↔ Code Sync
 
-The workflow gate around code changes in projects with an agent-spec ecosystem. Decides what doc/spec work each code change owes, when it must happen, and how to detect code edits that would silently drift the spec.
-
-## When to use
-
-- A plan or in-session edit will touch source files in a project that has `.agents/layout.yaml`.
-- You are about to edit a file you suspect may be a code-as-spec module.
-
-**Not for:**
-- Authoring specs → `writing-specs`.
-- Auditing existing drift → `spec-drift-detector`.
-- Bootstrapping the manifest → `project-layout`.
+Decides what spec or doc work a code change owes and when, and stops typed-API edits that would silently drift the spec. Authoring specs is `writing-specs`; auditing existing drift is `spec-drift-detector`; bootstrapping the manifest is `project-layout`.
 
 ## Preflight
 
-1. Read `.agents/layout.yaml`. Verify `schema_version`. Bail with a clear message if unknown.
-2. Build the **touched-paths set**: every file the upcoming change will create, modify, or delete.
-3. For each touched path, look up `code_map`:
-   - matched → load only the listed candidate specs;
-   - unmatched → no spec loaded; enters the candidate-spec lookup below (which will note "no candidates" and proceed without blocking).
-   (`excluded_paths` is not consulted here; it's used by `spec-drift-detector`, not this skill.)
+1. Read `.agents/layout.yaml` and check `schema_version`; stop with a clear message if it is unknown.
+2. List every file the change will create, modify, or delete.
+3. Look each one up in `code_map` and load only the listed specs. A `<parent>/<leaf>` slug also loads the parent (parent rule in `writing-specs`). `excluded_paths` is for `spec-drift-detector`, not this lookup.
+4. Grep the touched files for `impl: REQ-` (matches flat and nested IDs). Load any annotated spec, even if `code_map` has no entry for that file.
+5. Spec frontmatter is canonical for `owns:` and `code_spec:`. If it disagrees with `code_map` or `spec_code.modules` in a way that changes who owns a touched path, say so ("`layout.yaml` says X belongs to A; A's frontmatter no longer claims it — using frontmatter"), re-resolve ownership from frontmatter, and either fix `layout.yaml` in the same change or leave it for `spec-drift-detector`. This check can't see a `code_map` that simply omits a path; see "Conflict rules" in `project-layout/references/manifest-schema.md`.
+6. Grep the tech-debt queue directories for entries mentioning touched paths, and surface them ("code/2026-05-28/142233-replace-adhoc-retry.md (handler.ts:142–178) — consider folding in"). The agent decides whether to fold them in; fold deliberately, since a change doing five things is hard to review and revert.
 
-   **Sub-spec hit:** a `<parent>/<leaf>` slug also loads the parent (parent rule in `writing-specs` → "Sub-spec authoring").
+`code_map` is a hint, not a gate: report "no candidates" for an unmapped path and move on rather than globbing every spec's frontmatter. If a substantial change has no candidate specs at all, ask whether that's expected or a spec is missing. Unmapped paths, co-ownership, and exclusions follow "Conflict rules" in `manifest-schema.md`.
 
-4. **Frontmatter precedence check** (**best-effort**, see caveat below): for each loaded spec, compare its frontmatter `owns:` and `code_spec:` against the corresponding `code_map`/`spec_code.modules` entries in `layout.yaml`. Spec frontmatter is canonical. On disagreement:
-   - If the layout entry would have routed the touched path differently than the spec frontmatter would, surface this immediately: "`layout.yaml` says path X is owned by capability A; the loaded spec's frontmatter says A no longer owns X (or now owns Y instead). Treating frontmatter as authoritative." Then re-resolve ownership for any affected touched paths using frontmatter.
-   - Record the divergence as a `layout.yaml` staleness issue. If the agent can also write `layout.yaml`, update it in the same change; otherwise flag for `spec-drift-detector`.
+## Classifying a spec-affecting change
 
-   This check cannot see a stale `code_map` that omits a path — see "Conflict rules" in `project-layout/references/manifest-schema.md`.
-5. Load filtered tech-debt entries for touched paths (grep across the per-entry files in the queue directories by path; don't load every entry).
+The test is mechanical: did the brainstorming design doc name this spec amendment before any code task was written?
 
-## Candidate-spec lookup (runs first)
+- **Yes — design-time intent.** The plan needs a `spec-update` task (`writing-specs`) scheduled before the implementing task.
+- **No — post-implementation refinement**, including realizations made mid-implementation. Implement, then immediately write a doc-debt entry at `.agents/tech-debt/docs/<YYYY-MM-DD>/<HHMMSS>-<slug>.md` describing the owed spec change (format in `manifest-schema.md`). This is real debt that persists until resolved through `writing-specs`.
 
-For each touched path, look up `code_map` and surface candidate specs:
+Before routing anything to `writing-specs`, check that the amendment would add something the code can't show — a timing model, edge case, contract, or reason. A change that only alters a signature, enum, or constant owes no spec work; don't invent a requirement that restates it.
 
-> "Paths in this change suggest the following specs are likely relevant:
-> - `js/projx_frontend/src/upload/handler.ts` → capability `video-upload`, plane `observability`
-> - `js/projx_frontend/src/subsystems/chat/streaming/sseClient.ts` → capability `chat-workspace/streaming` (sub-spec of `chat-workspace`), planes `auth`, `observability`
-> - `js/projx_frontend/src/utils/retry.ts` → (no entries; possibly technical/shared)
-> Load and consult the listed specs. For sub-specs, also load the parent spec's cross-cutting requirements."
+## Code-as-spec modules
 
-`code_map` is a hint, not a gate; unmapped paths, co-ownership, and `excluded_paths` follow "Conflict rules" in `project-layout/references/manifest-schema.md`. Use the spec for the *behavior*; its file list is just a starting hint.
+If a touched path matches `spec_code.modules`, the atomic three-artifact rule applies (`writing-specs` → "Code-as-spec module changes"). If you are about to edit the module without the matching `SPEC.yaml` edits in the same change, stop, route to `writing-specs`, and make the edit as part of that change set. Deferring the spec update "for later" is exactly the drift this check exists to prevent.
 
-If a substantial change has *no* candidate specs at all, the skill MAY ask: "no specs flagged for this change — is that expected (technical/refactor work), or might a spec be missing?" The user/agent answers and proceeds.
+## Unrelated issues noticed mid-task
 
-## Change classification (the operational test)
+- Fix inline only when it is on-path, trivial (one file, no new abstractions, no behavior change), and covered by this change's verification.
+- Otherwise add an entry to the matching queue (`code/`, `tests/`, `perf/`, `docs/`) at `<queue>/<YYYY-MM-DD>/<HHMMSS>-<slug>.md`.
+- Don't file issues in external trackers unless the user has allowlisted that kind of item.
+- Don't add paths to `excluded_paths` to quiet drift reports; deferred work belongs in the queue.
 
-After the candidate-spec lookup runs, classify the change. Use the **operational test** — no judgement-by-feel:
+## Before declaring the change done
 
-- **Design-time intent** ⇔ the brainstorming-step design doc named the spec amendment BEFORE any code task was authored.
-  - **Action**: require a `spec-update` task in the plan, scheduled BEFORE the implementing task. `writing-specs` runs first; code runs second.
-- **Post-implementation refinement** (= queued normative debt that MUST be resolved later, not optional polish) ⇔ everything else, including mid-implementation realizations that a spec should change.
-  - **Action**: implement first; immediately enqueue an entry by writing a new file `.agents/tech-debt/docs/<YYYY-MM-DD>/<HHMMSS>-<slug>.md` describing what spec change is owed (per-entry format in `project-layout/references/manifest-schema.md`). Drift-detector surfaces it later as a queue item. The debt is real and persistent until resolved through `writing-specs`.
-
-```dot
-digraph classify {
-  q [shape=diamond label="Did the brainstorming design doc\nname this spec amendment BEFORE\nany code task was authored?"];
-  designtime [shape=box label="DESIGN-TIME INTENT\nspec-update task BEFORE code task\n(writing-specs)"];
-  refinement [shape=box label="POST-IMPLEMENTATION REFINEMENT\nimplement → enqueue doc-debt entry\n(drift-detector surfaces later)"];
-  q -> designtime [label="yes"];
-  q -> refinement [label="no"];
-}
-```
-
-Mid-implementation realizations are NOT design-time intent. They are refinement. Don't relitigate the test.
-
-**Before routing any spec amendment to `writing-specs`, apply golden rule D (don't duplicate the code).** If the spec change you're about to request would only transcribe the signature, enum, or constant you just edited — restating *what the code is* with no added timing model, edge case, contract, or *why* — there is no spec work owed. Don't manufacture a requirement to "cover" a code change; the code is canonical for that fact. Route to `writing-specs` only when the change alters an intricacy the code can't show.
-
-## Code-as-spec detection (atomic three-artifact rule)
-
-For each touched path, check whether it matches any `spec_code.modules` entry.
-
-If yes, the change is governed by the atomic three-artifact rule (`writing-specs` → "Code-as-spec module changes").
-
-**Detection of a code-first edit**: if the agent is about to edit the module without the matching `SPEC.yaml` edits in the same change, this skill MUST:
-1. Stop the edit.
-2. Route to `writing-specs` with the three-artifact procedure.
-3. Resume the edit only as part of the atomic change set.
-
-This is the single check that prevents silent spec drift via typed-API edits.
-
-## impl: annotation surfacing
-
-When surfacing candidate specs for a code change, also grep the touched files for existing `impl:` annotations:
-
-```
-grep -rn 'impl: REQ-' <touched-files>
-```
-
-Surface any annotations found:
-> "Found `impl: REQ-CAM-001` in handler.ts — this file is annotated as implementing REQ-CAM-001. Load the camera-status-view spec."
-
-This supplements `code_map` lookup: a file that has `impl:` annotations but no `code_map` entry should still have its annotated specs loaded and consulted.
-
-`impl:` annotations work unchanged for both flat (`impl: REQ-CHAT-001`) and nested (`impl: REQ-CHAT-STR-001`) IDs — the grep pattern `impl: REQ-` captures both.
-
-## Unrelated debt noticed mid-task
-
-When the agent notices code-quality or spec issues unrelated to the current task:
-
-Apply the autonomous-session routing rule:
-
-- **Inline-fix** SHALL be taken only when: on-path, trivial (single-file, no new abstractions, no behavior change), AND covered by the current change's verification.
-- Otherwise **enqueue** a new per-entry file in the matching queue directory (`code/`, `tests/`, `perf/`, `docs/`), at `<queue>/<YYYY-MM-DD>/<HHMMSS>-<slug>.md`.
-- **External filing** SHALL NOT happen autonomously unless the user has provided an allowlist of item kinds.
-
-## Surfacing matching open queue items
-
-When loading filtered tech-debt entries for touched paths, surface to the agent:
-
-> "Open queue items for paths in this change:
-> - code/2026-05-28/142233-replace-adhoc-retry.md (handler.ts:142–178) — Replace ad-hoc retry. Effort: small.
-> Consider folding into this change."
-
-The agent decides; don't auto-fold.
-
-## On change completion
-
-Final prompt before declaring the change done:
-
-> "Reflection check: did this change alter any normative requirement that hasn't been reflected in the spec? If yes, return to `writing-specs`. If no, resolve the relevant queue items you folded in by deleting their entry files (VCS history is the audit trail)."
-
-## Anti-patterns
-
-- **Silently glob-matching paths-with-no-code_map-hit against all spec frontmatter.** Defeats the fast index. The lookup is a hint; report "no candidates for this path" and move on (or, for a substantial change with no candidates anywhere, surface the question per §"Candidate-spec lookup").
-- **Calling mid-implementation realizations "design-time intent" to avoid the queue.** The test is mechanical: was it in the design doc? If not, it's refinement.
-- **Editing a code-as-spec module and "noting it for later".** Breaks the atomic rule. Route through writing-specs now.
-- **Bulk-adding paths to `excluded_paths` to silence drift-detector noise that you don't want to deal with.** That's the agent equivalent of `// TODO: fix this`. Push back; deferral goes in the queue, not in the manifest.
-- **Manufacturing a spec requirement that just restates the code you changed.** A REQ that transcribes the new signature/enum/constant adds no normative intent (golden rule D). No spec work is owed for a change that only alters what the code already shows. Don't route it to writing-specs to "be safe".
-- **Folding too many unrelated debt items into one change.** Surface, ask, fold deliberately. A change that does five things at once is hard to review and roll back.
+Ask: did this change alter a normative requirement the spec doesn't yet reflect? If so, return to `writing-specs`. Otherwise, delete the entry files of queue items you resolved (VCS history is the audit trail).

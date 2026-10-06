@@ -5,44 +5,17 @@ description: Use when the user asks for broad codebase cleanup, dead-code remova
 
 # Codebase Cleanup
 
-## Overview
+Large cleanup is a gated workflow: map the code, review it, analyze it, present findings, and make destructive edits only after the user approves exact records. Findings are evidence, deletions are user-approved records, and refactors are follow-up work rather than side effects of cleanup.
 
-Large cleanup is a gated, evidence-producing workflow. The orchestrator builds a code map, reviews it, analyzes it, presents findings, and only performs destructive edits after explicit user approval.
+For local quality cleanup of a few files use `jj-superpowers:deslopify`; for failures use `jj-superpowers:systematic-debugging`. Refactors this workflow discovers go into a refactoring request and then the normal design/planning workflow.
 
-**Core principle:** Findings are evidence. Deletions are user-approved records. Refactors are follow-up work, not automatic cleanup side effects.
+## Roles
 
-## When to Use
+You are the orchestrator: you own user discussion and approval gates, run configuration, artifact paths, subagent dispatch, review/repair loops, validation, and the final summary. Subagents do one bounded task (mapping, consolidation, review, analysis, confirmed deletion, or request synthesis); they do not ask the user questions or spawn other agents.
 
-Use for broad cleanup across directories:
-- dead-code or obsolete-test removal
-- deduplication sweeps
-- large refactoring discovery
-- API surface mapping before cleanup
-- cleanup work that benefits from parallel subagents
+## Run configuration
 
-Do not use for:
-- local quality cleanup of a few files → use `jj-superpowers:deslopify`
-- debugging failures → use `jj-superpowers:systematic-debugging`
-- implementing refactors discovered by this workflow → synthesize a refactoring request, then use the normal design/planning workflow
-
-## Orchestrator Contract
-
-You are the orchestrator. You own:
-- user discussion and approval gates
-- run configuration
-- artifact paths
-- subagent dispatch
-- review/repair loops
-- validation after destructive edits
-- final summary and follow-up recommendation
-
-Subagents own only bounded tasks: mapping, consolidation, review, analysis, confirmed deletion, or request synthesis. Subagents do not ask the user questions and must not spawn other agents.
-
-## Run Configuration Gate
-
-Before mapping, establish a run configuration in the conversation. If the workflow will write artifacts, also write it to `[MAP_ROOT]/run-config.md` after `[MAP_ROOT]` exists.
-
-Required fields:
+Before mapping, agree on a run configuration in conversation and, once `[MAP_ROOT]` exists, write it to `[MAP_ROOT]/run-config.md`:
 
 ```yaml
 confirmed_scope:
@@ -62,23 +35,16 @@ deletion_policy:
   framework_entrypoints_need_extra_confirmation: true
 ```
 
-Rules:
-- If the user names exact paths, treat those paths as the proposed scope, but still confirm whether each directory is recursive.
-- `recursive: true` means enumerate descendant directories and map each directory with source files separately. The directory mapper maps immediate files only.
-- Dependency reads outside scope are allowed only to understand usage/import evidence. Do not map or edit outside confirmed scope unless the user expands scope.
-- Choose `[MAP_ROOT]` as `docs/superpowers/code-map/YYYY-MM-DD-HHMM/`. If that path exists, append a short suffix such as `-2`.
-- If the project uses Rust, TypeScript, or Python and a SCIP producer is available, generate `[MAP_ROOT]/index.scip` before mapping and record `symbol_index.status: available`.
-- For Rust, try `rust-analyzer scip .` or the project’s documented rust-analyzer SCIP command. For TypeScript and Python, use the project’s documented SCIP/indexer command if present; otherwise mark the index unavailable and continue with source reading + grep.
-- Use `~/.jj-superpowers/tools/scip-query` as the installed jj-superpowers SCIP query helper. The jj-superpowers installer creates this stable symlink for supported harnesses.
-- If the target project has its own `./tools/scip-query`, the orchestrator may prefer it and record that path instead.
-- Pass the recorded query command and index path as `[SCIP_QUERY_TOOL]` and `[SCIP_INDEX_PATH]` to the directory mapper, analysis, and analysis reviewer subagents. Do not dump raw `.scip` files into agent context.
-- Identify validation commands before deletion when possible. If none are obvious, record that and ask the user before destructive edits whether to proceed without validation.
+- Paths the user names are the proposed scope; still confirm whether each directory is recursive. `recursive: true` means enumerate descendant directories and map each one that has source files separately (the mapper covers immediate files only).
+- Reading outside scope is fine for usage/import evidence. Don't map or edit outside scope unless the user expands it.
+- `[MAP_ROOT]` is `docs/superpowers/code-map/YYYY-MM-DD-HHMM/`, with a suffix such as `-2` if it already exists.
+- For Rust, TypeScript, or Python projects with a SCIP producer, generate `[MAP_ROOT]/index.scip` before mapping (Rust: `rust-analyzer scip .` or the project's documented command; TS/Python: the project's documented indexer). Otherwise mark the index unavailable and use source reading plus grep.
+- The query helper is `~/.jj-superpowers/tools/scip-query` (installed as a stable symlink); prefer the project's own `./tools/scip-query` if it has one. Pass the command and index path as `[SCIP_QUERY_TOOL]` and `[SCIP_INDEX_PATH]` to the mapper, analysis, and analysis-reviewer subagents rather than dumping `.scip` files into context.
+- Identify validation commands up front. If none are obvious, record that and ask the user before any destructive edit whether to proceed without validation.
 
-## Dispatch Modes
+## Dispatch
 
-Prefer native named subagents when available:
-
-| Phase | Native agent | Repo-root shared source fallback |
+| Phase | Native agent | Shared-source fallback |
 |---|---|---|
 | Directory mapping | `codebase-cleanup-directory-mapper` | `agents/codebase-cleanup-directory-mapper.md` |
 | Map consolidation | `codebase-cleanup-map-consolidator` | `agents/codebase-cleanup-map-consolidator.md` |
@@ -87,98 +53,60 @@ Prefer native named subagents when available:
 | Analysis review | `codebase-cleanup-analysis-reviewer` | `agents/codebase-cleanup-analysis-reviewer.md` |
 | Confirmed deletion | `codebase-cleanup-deletion` | `agents/codebase-cleanup-deletion.md` |
 | Deletion review | `codebase-cleanup-deletion-reviewer` | `agents/codebase-cleanup-deletion-reviewer.md` |
-| Refactoring request synthesis | `codebase-cleanup-refactoring-request` | `agents/codebase-cleanup-refactoring-request.md` |
+| Refactoring request | `codebase-cleanup-refactoring-request` | `agents/codebase-cleanup-refactoring-request.md` |
 
-Dispatch selection:
-1. If native named subagents are available, use them.
-2. Else if generic subagents are available, read the repo-root shared source file and use it as the bounded prompt with placeholders substituted.
-3. Else if the scope is small enough to preserve all artifacts and gates inline, set `dispatch_mode: inline-phase-execution` and execute each phase yourself.
-4. Else set `dispatch_mode: stop` and report that the cleanup workflow needs subagent support or a smaller scope.
+Use native named subagents when available. Otherwise use generic subagents with the repo-root source file as the prompt, placeholders substituted. Without subagents, run the phases inline (`inline-phase-execution`) if the scope is small enough to keep every artifact and gate; if not, set `dispatch_mode: stop` and report that the workflow needs subagent support or a smaller scope. Give each subagent only its relevant inputs, its output paths, and the instruction not to invoke other agent harnesses.
 
-Every subagent dispatch must include only the relevant inputs, the required output paths, and the instruction not to invoke other agent harnesses.
-
-## Artifact Layout
-
-Use this layout under `[MAP_ROOT]`:
+## Artifacts
 
 ```text
 [MAP_ROOT]/
-  run-config.md
-  index.scip
-  symbol-index-report.md
-  index.md
-  map-review.md
-  analysis-review.md
-  approved-deletions.md
-  deletion-report.md
-  deletion-review.md
-  validation-report.md
+  run-config.md  index.scip  symbol-index-report.md  index.md
+  map-review.md  analysis-review.md  approved-deletions.md
+  deletion-report.md  deletion-review.md  validation-report.md
   refactoring-request.md
-  by-directory/
-    <directory-slug>.md
-  by-group/
-    <group-slug>.md
+  by-directory/<directory-slug>.md
+  by-group/<group-slug>.md
 ```
 
-Do not rely only on chat history for phase state. Important decisions and approvals that affect later phases must be written into the relevant artifact.
+Record decisions and approvals that later phases depend on in the relevant artifact, not only in chat.
 
-## Phase Contract
+## Phases
 
-| # | Phase | Parallel? | Inputs | Outputs | Gate |
-|---|---|---:|---|---|---|
-| 0 | Configure run | no | user request, repo context | `[MAP_ROOT]/run-config.md` | user confirms scope + recursion |
-| 0.5 | Build/query symbol index | no | repo language/tooling | `[MAP_ROOT]/index.scip`, `[MAP_ROOT]/symbol-index-report.md` or unavailable note | mapping can cite index status |
-| 1 | Map directories | yes | confirmed directory list + optional SCIP index | `[MAP_ROOT]/by-directory/*.md` | all scoped directories represented |
-| 2 | Consolidate map | no | `by-directory/*.md` | `[MAP_ROOT]/index.md`, `by-group/*.md` | map review can start |
-| 3 | Review map | no | `index.md`, `by-directory/`, `by-group/` | `[MAP_ROOT]/map-review.md` | reviewer says `APPROVED` |
-| 4 | Analyze groups | yes | approved `by-group/*.md` | populated `## Analysis` in each group file | all groups analyzed |
-| 5 | Review analysis | no | `by-group/*.md` | `[MAP_ROOT]/analysis-review.md` | reviewer says `APPROVED` |
-| 6 | Present findings | no | approved analysis | `[MAP_ROOT]/approved-deletions.md` or explicit no-deletion note | user approves exact deletions or declines |
-| 7 | Delete confirmed items | no | `approved-deletions.md` | `[MAP_ROOT]/deletion-report.md`, map annotations | deletion review can start |
-| 8 | Review deletions | no | deletion report + map files | `[MAP_ROOT]/deletion-review.md` | reviewer says `APPROVED` |
-| 9 | Validate | no | changed workspace | `[MAP_ROOT]/validation-report.md` | validation passes or user decides next step |
-| 10 | Synthesize follow-up | no | final map + deletion status | `[MAP_ROOT]/refactoring-request.md` | user chooses whether to continue |
+| # | Phase | Parallel | Outputs | Gate to proceed |
+|---|---|---:|---|---|
+| 0 | Configure run | no | `run-config.md` | user confirms scope and recursion |
+| 0.5 | Build symbol index | no | `index.scip`, `symbol-index-report.md`, or an unavailable note | index status recorded |
+| 1 | Map directories | yes | `by-directory/*.md` | every scoped directory represented |
+| 2 | Consolidate map | no | `index.md`, `by-group/*.md` | — |
+| 3 | Review map | no | `map-review.md` | `APPROVED` |
+| 4 | Analyze groups | yes | `## Analysis` in each group file | all groups analyzed |
+| 5 | Review analysis | no | `analysis-review.md` | `APPROVED` |
+| 6 | Present findings | no | `approved-deletions.md` or a no-deletion note | user approves exact deletions or declines |
+| 7 | Delete confirmed items | no | `deletion-report.md`, map annotations | — |
+| 8 | Review deletions | no | `deletion-review.md` | `APPROVED` |
+| 9 | Validate | no | `validation-report.md` | passes, or user decides |
+| 10 | Synthesize follow-up | no | `refactoring-request.md` | user chooses whether to continue |
 
-If the user declines all deletions, skip phases 7–9 and synthesize follow-up from the reviewed analysis.
+If the user declines all deletions, skip 7–9 and synthesize follow-up from the reviewed analysis.
 
-## Stop Gates
+Stop and ask the user when: scope or recursion is unconfirmed; reviewed findings exist but exact deletion records aren't approved; destructive edits are requested with no known validation command; validation fails and the cause isn't an obvious cleanup-caused issue you can safely fix; or refactoring remains that would need design/planning. Between gates, interrupt the user only if required context is missing.
 
-Stop and ask the user at these points:
+## Review and repair
 
-1. **Scope gate** — exact paths and recursive/non-recursive behavior are not confirmed.
-2. **Deletion approval gate** — reviewed findings exist, but exact deletion records are not approved.
-3. **No-validation gate** — destructive edits are requested but no validation command is known.
-4. **Validation failure gate** — post-deletion validation fails and the cause is not an obvious cleanup-caused issue you can fix safely.
-5. **Follow-up gate** — refactoring opportunities remain and implementation would require design/planning.
+`APPROVED` → next phase. `ISSUES FOUND` → repair, then rerun the same reviewer. `BLOCKED` or missing context → supply it if you can, otherwise ask the user. Reviewers report; you dispatch repairs (unless a reviewer's prompt explicitly says it edits).
 
-Do not ask the user during mapper/analyzer/reviewer phases unless a gate is reached or required context is unavailable.
-
-## Review and Repair Loops
-
-Reviewer output controls routing:
-
-- `APPROVED` → proceed to the next phase.
-- `ISSUES FOUND` → repair the named issues, then rerun the same reviewer.
-- `BLOCKED` / missing context → supply missing context if available; otherwise ask the user.
-
-Repair routing:
-
-| Issue type | Route to |
+| Issue | Rerun |
 |---|---|
-| Missing exported/internal symbols in a directory map | rerun `codebase-cleanup-directory-mapper` for that directory |
-| Incorrect dead/obsolete test evidence in directory map | rerun `codebase-cleanup-directory-mapper` for that directory |
-| Bad semantic grouping, missing directory in index, bad cross-directory dependency | rerun `codebase-cleanup-map-consolidator` |
-| Analysis missing required subsections | rerun `codebase-cleanup-analysis` for that group |
-| Dead-code claim lacks grep/search evidence | rerun `codebase-cleanup-analysis` for that group |
-| Duplication claim lacks implementation comparison | rerun `codebase-cleanup-analysis` for that group |
-| Deletion missed an approved item or left broken imports | rerun `codebase-cleanup-deletion` with the same approved records plus reviewer issues |
-| Map annotations missing after deletion | rerun `codebase-cleanup-deletion` for annotation repair only |
+| Missing symbols or wrong dead/obsolete-test evidence in a directory map | `directory-mapper` for that directory |
+| Bad grouping, directory missing from index, wrong cross-directory dependency | `map-consolidator` |
+| Analysis missing subsections, dead-code claim without search evidence, duplication claim without implementation comparison | `analysis` for that group |
+| Approved item missed or imports left broken | `deletion` with the same approved records plus reviewer issues |
+| Map annotations missing after deletion | `deletion`, annotation repair only |
 
-Never let a reviewer perform the repair itself unless its native prompt explicitly says to edit. Reviewers report issues; the orchestrator dispatches repairs.
+## SCIP queries
 
-## SCIP Query Rules
-
-When `symbol_index.status: available`, prefer SCIP semantic evidence for supported Rust, TypeScript, and Python files. Use the resolved `[SCIP_QUERY_TOOL]` command from the target project root:
+With `symbol_index.status: available`, prefer SCIP evidence for indexed Rust, TypeScript, and Python, run from the project root:
 
 ```sh
 [SCIP_QUERY_TOOL] summary [MAP_ROOT]/index.scip --json
@@ -187,16 +115,11 @@ When `symbol_index.status: available`, prefer SCIP semantic evidence for support
 [SCIP_QUERY_TOOL] unused [MAP_ROOT]/index.scip src/auth/ --exclude-tests --json
 ```
 
-Rules:
-- Use exact SCIP symbols from `definitions` output for `refs` queries when possible.
-- If querying by display name is ambiguous, use the exact `symbol` field.
-- SCIP evidence can prove semantic references in indexed code. It cannot prove absence of dynamic imports, config strings, framework discovery, generated-code contracts, or external public API usage.
-- Keep grep/string searches for dynamic/framework/public API risk checks even when SCIP is available.
-- If the SCIP index is unavailable, failed, or does not cover a language/path, continue with source reading + grep and label the finding `grep-only evidence`.
+Use the exact `symbol` field from `definitions` for `refs` when a display name is ambiguous. SCIP proves references in indexed code but not the absence of dynamic imports, config strings, framework discovery, generated-code contracts, or external API use, so keep grep checks for those. Where the index is unavailable or doesn't cover a path, label findings `grep-only evidence`.
 
-## Deletion Approval Format
+## Deletion approval
 
-Before deleting, write `[MAP_ROOT]/approved-deletions.md` with exact records approved by the user:
+Before deleting, write the user-approved records to `[MAP_ROOT]/approved-deletions.md`:
 
 ```yaml
 approved_deletions:
@@ -209,32 +132,12 @@ approved_deletions:
     reason: obsolete test for removed behavior; user approved deletion
 ```
 
-Rules:
-- Delete only records in `approved_deletions`.
-- A whole-file deletion is allowed only when the whole file is approved.
-- If a file contains approved and unapproved symbols, remove only approved symbols.
-- Cleanup of imports/re-exports is allowed only when it directly references approved deletions.
-- Do not bundle refactors with deletion work.
-- Exported symbols, framework-discovered entrypoints, config-referenced files, route handlers, plugin hooks, migrations, generated clients, and public package APIs need explicit user confirmation even when no internal usage is found. (Per-finding evidence requirements live in the analysis and analysis-reviewer agents.)
+Delete only these records. Remove a whole file only if the whole file is approved; otherwise remove just the approved symbols. Import/re-export cleanup is limited to references to approved deletions, and refactors stay out of deletion work. Exported symbols, framework-discovered entrypoints, config-referenced files, route handlers, plugin hooks, migrations, generated clients, and public package APIs need explicit user confirmation even with no internal usage. (Per-finding evidence requirements live in the analysis and analysis-reviewer agents.)
 
-## Validation Gate
+## Validation
 
-After deletion review passes, run the validation commands from `run-config.md` and write `[MAP_ROOT]/validation-report.md`.
+After deletion review passes, run the configured validation commands and write `validation-report.md` with the commands, pass/fail, relevant failure excerpts, a classification (`cleanup-caused`, `pre-existing`, `unknown`), and the next action or decision needed. Fix failures that are limited to approved-deletion fallout and rerun review/validation; if the fix needs broader refactoring or you're unsure, ask the user.
 
-The report must include:
-- command(s) run
-- pass/fail result
-- relevant failure excerpts
-- classification: `cleanup-caused`, `pre-existing`, or `unknown`
-- next action taken or user decision needed
+## Final output
 
-If validation fails because of the cleanup and the fix is limited to approved deletion fallout, fix it and rerun deletion review/validation as needed. If the fix requires broader refactoring or uncertainty, stop and ask the user.
-
-## Final Output
-
-End with:
-- map root path
-- deletions performed, or “none”
-- validation result, or why validation did not run
-- path to `refactoring-request.md` if created
-- recommended next step
+Map root; deletions performed (or "none"); validation result or why it didn't run; path to `refactoring-request.md` if created; recommended next step.

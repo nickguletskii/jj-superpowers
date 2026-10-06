@@ -1,86 +1,40 @@
 ---
 name: iterative-planning
-description: Use when a project is too uncertain to plan in one go — a later phase's tasks depend on an artifact an earlier phase will produce — so it is planned and built one phase at a time. Triggers on "plan this in phases", "break this into milestones", "plan the next phase", "do it iteratively/incrementally", "we'll know more after the first part ships", "roadmap this", or an approved design where later work can't be specified until earlier work produces something. Size or task count alone is not a trigger — a large but fully-specifiable design is a single Waterfall plan, not phases.
+description: Use when a later phase's tasks can't be written until an earlier phase produces an artifact (API shape, data format, measurement), so work is planned and built one phase at a time. Triggers on "plan in phases", "milestones", "plan the next phase", "roadmap this". Size alone is not a trigger.
 ---
 
 # Iterative Planning (Agile phase loop)
 
-## Overview
+Plan and build one phase at a time, folding each phase's results into the roadmap before planning the next. Qualifies only when a later phase's tasks depend on something an earlier phase will produce. Ordinary sequencing where every task is already specifiable is a DAG — plan it once with `writing-plans`. A large but fully specifiable graph stays Waterfall.
 
-Some designs are too uncertain to plan as one `project-network.dot` up front — later work can't be specified until earlier work produces something to specify it from. This skill runs the **plan-one-phase loop**: build an ordered roadmap once, then for each phase plan it, execute it, fold what you learned back into the roadmap, and only then move on. You never plan all phases in advance — later phases are shaped by what earlier phases actually produce.
-
-**Reach for this when a later phase's task list genuinely can't be written yet** — it depends on an artifact (API shape, data format, measurement) an earlier phase will produce, so completing that earlier phase is what makes the later phase plannable. Ordinary sequential dependency (order matters, but every task is already specifiable today) does not qualify — that's just a DAG, plan it as one `project-network.dot` via `writing-plans` instead. Size and task-node count are not criteria: a large but fully-specifiable graph stays Waterfall.
-
-This is a technique skill. It **delegates**: it does not reimplement planning or execution.
-
-**REQUIRED SUB-SKILL:** Use `jj-superpowers:writing-plans` to plan each phase.
-**REQUIRED SUB-SKILL:** Use `jj-superpowers:subagent-driven-development` or `jj-superpowers:executing-plans` to execute each phase's graph.
-Once all phases are done, run the Finish checks in `subagent-driven-development`'s Change Consolidation section, then ask the user what to integrate.
+This skill delegates: `writing-plans` plans each phase; `subagent-driven-development` or `executing-plans` executes it.
 
 ## The loop
 
 ```
 docs/superpowers/plans/YYYY-MM-DD-<feature>/
-  roadmap.md            # durable phase manifest (resumable index)
+  roadmap.md            # phase manifest and resume index
   phase-01-<name>/      # normal plan dir: plan.md, project-network.dot, context/, tasks
   phase-02-<name>/
-  ...
 ```
 
-1. **Build `roadmap.md` once** from the approved design: an *ordered* list of phases, each a one-line goal + rough scope. Lightweight — **not** detailed plans. Record Strategy, Autonomy, and Execution in the header.
-2. **For each phase, in order:**
-   a. **Plan.** Invoke `writing-plans` **scoped to this phase only** → a normal, valid phase graph that reaches its own `final`. The per-phase `writing-plans` call **skips its own Execution Handoff** — execution-skill selection is owned here (see below).
-   b. **Execute** that phase's graph via the selected execution skill.
-   c. **Fold learnings.** After the phase's `final`, append a completion note (new APIs/types, deviations, surprises, follow-ups) to that phase's roadmap entry, then re-examine remaining phases and adjust if warranted (split / merge / reorder / insert / drop) — within the drift guardrail below.
-   d. **Boundary checkpoint.** Manual → pause and present the phase summary + proposed next phase for approval. Rush → auto-advance. Rush resolution: `using-superpowers` `references/autonomy.md`.
+1. **Build `roadmap.md` once** from the approved design: ordered phases, each a one-line goal and rough scope — not detailed plans. Record Strategy, Autonomy, and Execution in the header.
+2. **For each phase:**
+   1. **Plan** it with `writing-plans`, scoped to this phase only; the result is a normal graph reaching its own `final`. Skip that skill's execution handoff.
+   2. **Execute** it with the recorded execution skill.
+   3. **Fold learnings.** After `final`, add a completion note (new APIs/types, deviations, surprises, follow-ups) to the phase entry, then adjust remaining phases (split, merge, reorder, insert, drop) within the drift guardrail.
+   4. **Boundary checkpoint.** Manual: present the phase summary and proposed next phase for approval. Rush: auto-advance per `using-superpowers` `references/autonomy.md`.
 3. **All phases `[done]`** → Finish checks (SDD Change Consolidation), then ask the user what to integrate.
 
-```dot
-digraph iterative_planning {
-  rankdir=TB;
-  roadmap   [shape=box, label="build roadmap.md once\n(ordered phases)"];
-  plan      [shape=box, label="plan THIS phase only\n(writing-plans, no handoff)"];
-  exec      [shape=box, label="execute phase graph\n(selected execution skill)"];
-  fold      [shape=box, label="fold learnings;\nadjust remaining phases"];
-  boundary  [shape=diamond, label="more phases?"];
-  ckpt      [shape=diamond, label="autonomy?"];
-  finish    [shape=box, label="Finish checks,\nthen ask what to integrate"];
+**Execution choice.** Decide subagent-driven vs inline once, at roadmap time, and record it in `roadmap.md`'s `Execution:` field. It is required: per-phase handoffs are skipped, so a resumed session has no other source for the choice.
 
-  roadmap -> plan -> exec -> fold -> boundary;
-  boundary -> ckpt   [label="yes"];
-  boundary -> finish [label="no"];
-  ckpt -> plan       [label="Rush: auto-advance\nManual: after approval"];
-}
-```
+**Phase sizing.** A phase is a vertically sliced, independently verifiable increment delivering a coherent capability. Aim for at least ~3 task nodes so it reaches a real verify node; merge smaller phases unless a hard sequencing boundary forces the split. There is no ceiling: split only where this phase's output is what makes the next phase specifiable, never because the task count feels large. Each phase builds on the integrated result of the previous ones.
 
-## Execution-skill selection (owned here)
+**Phase failure.** A phase that can't reach `final` is never skipped, because later phases build on it. Structural failure (`BLOCKED_STRUCTURAL`): mark `[blocked]` and return to brainstorming for that phase's design (floor #2); downstream phases don't start. Mechanical failure that exhausts the retry budget: mark `[blocked]` (floor #4).
 
-In Agile, **this skill** owns the subagent-vs-inline decision. It is made **once** at roadmap time, recorded in `roadmap.md`'s `Execution:` field, and applied to every phase. On resume the loop reads that field to rehydrate the choice — the skipped per-phase handoff has no other source, so the field is **mandatory**. Under Rush, see `using-superpowers` `references/autonomy.md`.
+**Resume.** `roadmap.md` tracks phase state only (`[planned]`, `[in progress]`, `[blocked]`, `[done]`). Within a phase, readiness is re-derived from the phase graph plus what is filed in jj, as for any plan. A halt mid-phase leaves it `[in progress]`.
 
-## Phase sizing heuristic (advisory, not a gate)
-
-A phase is a vertically-sliced, independently-verifiable increment delivering a coherent working capability — its size is bounded by that capability, never by a task count.
-- **Floor (~3 `task` nodes):** reach a real `verify` node and deliver a usable increment, not a single trivial edit. Merge smaller phases unless a hard sequencing boundary forces the split.
-- **No ceiling.** There is no task count, however large, that by itself justifies splitting a phase. A phase boundary exists only where genuine design uncertainty does — this phase's output is what makes the next phase's tasks specifiable (see the Overview criterion). If a capability's tasks are all already specifiable together, they belong in one phase regardless of count; do not split just because the number feels big.
-- The floor's tilde is advisory, not an assertion: a smaller phase that's already a coherent, verify-worthy increment is fine. Each phase builds on the **integrated** result of prior phases.
-
-## Terminal phase failure
-
-A phase reaches `final` when every `verify` node in its graph has passed. If it cannot, **never** silently skip the phase or proceed to the next one (later phases build on integrated prior results):
-- **Structural** (`BLOCKED_STRUCTURAL`) → mark the phase `[blocked]`, return to brainstorming for that phase's design (floor #2). Downstream phases do **not** start.
-- **Stuck mechanical failure** (verify/quality exhausts the mechanical retry budget) → mark `[blocked]` (floor #4).
-
-## Mid-phase resume contract
-
-A phase is a normal plan with its own `project-network.dot`. The **phase graph** is the intra-phase resume state (readiness re-derived from the graph + what is filed in jj, exactly as any non-Agile resume). `roadmap.md` tracks **phase granularity only**: `[planned]` / `[in progress]` / `[blocked]` / `[done]`. A floor halt mid-phase leaves the phase `[in progress]`; a resumed session re-reads that phase's graph to continue. No new intra-phase persistence is introduced.
-
-## Roadmap-drift guardrail (Rush × Agile)
-
-The baseline is the **approved roadmap**, measured in **phases**. Under Rush, floor #3 applies when **either**:
-- an inserted phase pursues a goal **not traceable to the approved design**, or
-- the phase count grows **materially** beyond the approved roadmap (rule of thumb > ~+50% phases).
-
-Reorder / merge / split / drop within the original scope, and inserts that are clearly decomposition of an approved goal, do **not** trip the guardrail.
+**Drift guardrail (Rush).** Against the approved roadmap, floor #3 trips when an inserted phase pursues a goal not traceable to the approved design, or the phase count grows materially (roughly +50%). Reordering, merging, splitting, or dropping within scope, and inserts that decompose an approved goal, are fine.
 
 ## `roadmap.md` template
 
@@ -93,11 +47,11 @@ Reorder / merge / split / drop within the original scope, and inserts that are c
 ## Phases
 1. [done] phase-01-<name> — <goal>
    - **Learnings:** <new APIs/types, deviations, surprises, follow-ups>
-   - **Auto-advanced** (Rush trail marker; omitted under Manual)
+   - **Auto-advanced** (Rush only)
 2. [in progress] phase-02-<name> — <goal>
 3. [blocked] phase-03-<name> — <goal>
-   - **Blocked:** <structural → returned to brainstorming | stuck → mechanical budget exhausted at verify-NN>
+   - **Blocked:** <structural → returned to brainstorming | stuck → retry budget exhausted at verify-NN>
 4. [planned] phase-04-<name> — <goal>
 ```
 
-The `**Learnings:**` line and the optional `**Auto-advanced**` marker together are the Rush trail entry — there is no separate trail artifact; the roadmap entry *is* the trail.
+The Learnings line plus the Auto-advanced marker is the Rush trail entry; there is no separate trail artifact.

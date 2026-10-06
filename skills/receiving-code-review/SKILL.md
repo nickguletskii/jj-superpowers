@@ -1,192 +1,48 @@
 ---
 name: receiving-code-review
-description: Use when receiving code review feedback, before implementing suggestions, especially if feedback seems unclear or technically questionable - requires technical rigor and verification, not performative agreement or blind implementation
+description: Use when receiving code review feedback, before implementing suggestions — especially when feedback is unclear, broad, or technically questionable.
 ---
 
-# Code Review Reception
+# Receiving Code Review
 
-## Overview
+Review feedback is a set of claims to check, not instructions to execute. Verify each against the codebase, then fix it or push back with a technical reason.
 
-Code review requires technical evaluation, not emotional performance.
+## Process
 
-**Core principle:** Verify before implementing. Ask before assuming. Technical correctness over social comfort.
+1. Read all of it before acting.
+2. If any item is unclear, ask about it before implementing anything — items are often related, and a partial understanding produces the wrong fix. ("I understand 1, 2, 3, 6; need clarification on 4 and 5.")
+3. Verify each claim against the code: is it correct for this codebase, would it break existing behavior, is there a reason for the current implementation (platform, version, compatibility), does the reviewer have full context?
+4. Implement in order: blocking issues (breakage, security), then simple fixes, then complex ones. Test each fix and check for regressions.
 
-## The Response Pattern
+No performative agreement ("You're absolutely right!", "Great point!", thanks): state the fix or the technical objection.
 
-```
-WHEN receiving code review feedback:
+## Sources
 
-1. READ: Complete feedback without reacting
-2. UNDERSTAND: Restate requirement in own words (or ask)
-3. VERIFY: Check against codebase reality
-4. EVALUATE: Technically sound for THIS codebase?
-5. RESPOND: Technical acknowledgment or reasoned pushback
-6. IMPLEMENT: One item at a time, test each
-```
+- **User feedback** is trusted: implement once you understand it, asking only if scope is unclear.
+- **External reviewers** (including subagent reviewers) get the verification above. If you can't verify a claim, say what you'd need. If a suggestion conflicts with a decision the user already made, raise it with the user before changing anything.
 
-## Forbidden Responses
+## Check reality before building
 
-**NEVER:**
-- "You're absolutely right!" (performative; often explicitly forbidden by project instructions such as `CLAUDE.md`/`AGENTS.md`)
-- "Great point!" / "Excellent feedback!" (performative)
-- "Let me implement that now" (before verification)
+"Implement it properly" can be a request for overengineering. Before building out a feature a reviewer flagged, grep for actual usage; if nothing calls it, propose removing it instead. Apply the overengineering taxonomy in `jj-superpowers:deslopify` rather than re-deriving one.
 
-**INSTEAD:**
-- Restate the technical requirement
-- Ask clarifying questions
-- Push back with technical reasoning if wrong
-- Just start working (actions > words)
+## Oversized files
 
-## Handling Unclear Feedback
+Treat file-size feedback as architectural, not cosmetic. The thresholds live in `jj-superpowers:deslopify`. Check whether the file mixes concerns and, if so, split it by responsibility now rather than deferring.
+
+## Pushing back
+
+Push back when the suggestion breaks existing behavior, is wrong for this stack, ignores legacy/compatibility constraints, builds on something unused, or conflicts with the user's architectural decisions. Cite code or tests and involve the user for architectural disagreements. As a subagent, report `BLOCKED` with the concern and evidence; in a user session, ask the user.
+
+Example:
 
 ```
-IF any item is unclear:
-  STOP - do not implement anything yet
-  ASK for clarification on unclear items
-
-WHY: Items may be related. Partial understanding = wrong implementation.
+Reviewer: "Remove the legacy code path."
+Response: "Build target is 10.15+, and this API needs 13+, so the legacy path is still required.
+           The current impl has the wrong bundle ID — fix that, or drop pre-13 support?"
 ```
 
-**Example:**
-```
-your human partner: "Fix 1-6"
-You understand 1,2,3,6. Unclear on 4,5.
+If your pushback turns out wrong, say so factually ("Checked X; you're right because Y. Fixing.") and move on — no long apology or defense.
 
-❌ WRONG: Implement 1,2,3,6 now, ask about 4,5 later
-✅ RIGHT: "Understand 1,2,3,6. Need clarification on 4 and 5 before implementing."
-```
+## GitHub threads
 
-## Source-Specific Handling
-
-### From your human partner
-- **Trusted** - implement after understanding
-- **Still ask** if scope unclear
-- **No performative agreement**
-- **Skip to action** or technical acknowledgment
-
-### From External Reviewers
-```
-BEFORE implementing:
-  1. Check: Technically correct for THIS codebase?
-  2. Check: Breaks existing functionality?
-  3. Check: Reason for current implementation?
-  4. Check: Works on all platforms/versions?
-  5. Check: Does reviewer understand full context?
-
-IF suggestion seems wrong:
-  Push back with technical reasoning
-
-IF can't easily verify:
-  Say so: "I can't verify this without [X]. Should I [investigate/ask/proceed]?"
-
-IF conflicts with your human partner's prior decisions:
-  Stop and discuss with your human partner first
-```
-
-**your human partner's rule:** "External feedback - be skeptical, but check carefully"
-
-## Check Reality Before Building What a Reviewer Asks For
-
-A reviewer asking you to "implement it properly" is sometimes asking for overengineering. The overengineering taxonomy — abstractions with one implementation, configurability for hypothetical needs, compatibility wrappers nobody requested — is owned by `jj-superpowers:deslopify` (its overengineering section). Apply that rubric rather than re-deriving one.
-
-The reception-specific move is to check reality before building:
-
-```
-IF reviewer suggests "implementing properly":
-  grep codebase for actual usage
-
-  IF unused: "Nothing calls this endpoint. Should we remove it instead?"
-  IF used: Then implement properly
-```
-
-**your human partner's rule:** "You and reviewer both report to me. If we don't need this feature, don't add it."
-
-## Implementation Order
-
-```
-FOR multi-item feedback:
-  1. Clarify anything unclear FIRST
-  2. Then implement in this order:
-     - Blocking issues (breaks, security)
-     - Simple fixes (typos, imports)
-     - Complex fixes (refactoring, logic)
-  3. Test each fix individually
-  4. Verify no regressions
-```
-
-## Long Files Are Usually A Design Problem
-
-Treat review feedback about oversized files as architectural feedback, not formatting feedback.
-
-- The file-size discipline is owned by `jj-superpowers:deslopify` — load its canonical file-size rule for the thresholds. A touched file that crosses them should trigger a decomposition check.
-- Splitting is not cosmetic: it improves readability, reviewability, and makes agent edits safer because each unit fits in context more easily.
-- Break files apart by responsibility, not by arbitrary line count. Extract logical units with explicit interfaces and self-contained behavior.
-
-If a reviewer flags file size, do not dismiss it with "the code is still clear" or "we can clean it up later." Verify whether the file is mixing multiple concerns and fix that now.
-
-## When To Push Back
-
-Push back when:
-- Suggestion breaks existing functionality
-- Reviewer lacks full context
-- Asks you to build on a feature nothing actually uses
-- Technically incorrect for this stack
-- Legacy/compatibility reasons exist
-- Conflicts with your human partner's architectural decisions
-
-**How to push back:**
-- Use technical reasoning, not defensiveness
-- Ask specific questions
-- Reference working tests/code
-- Involve your human partner if architectural
-
-**If you cannot push back directly:** as a subagent, report `BLOCKED` with the concern and your evidence; in a user session, ask the user plainly.
-
-## Acknowledging Correct Feedback
-
-When feedback IS correct:
-```
-✅ "Fixed. [Brief description of what changed]"
-✅ "Good catch - [specific issue]. Fixed in [location]."
-✅ [Just fix it and show in the code]
-
-❌ "You're absolutely right!"
-❌ "Great point!"
-❌ "Thanks for catching that!"
-❌ "Thanks for [anything]"
-❌ ANY gratitude expression
-```
-
-**Why no thanks:** Actions speak. Just fix it. The code itself shows you heard the feedback.
-
-**If you catch yourself about to write "Thanks":** DELETE IT. State the fix instead.
-
-## Gracefully Correcting Your Pushback
-
-If you pushed back and were wrong:
-```
-✅ "You were right - I checked [X] and it does [Y]. Implementing now."
-✅ "Verified this and you're correct. My initial understanding was wrong because [reason]. Fixing."
-
-❌ Long apology
-❌ Defending why you pushed back
-❌ Over-explaining
-```
-
-State the correction factually and move on.
-
-## Worked Example: Verification Beats Agreement
-
-```
-Reviewer: "Remove legacy code"
-
-❌ "You're absolutely right! Let me remove that..."
-✅ "Checking... build target is 10.15+, this API needs 13+. Need legacy for backward
-    compat. Current impl has wrong bundle ID - fix it or drop pre-13 support?"
-```
-
-The good response verified the claim against the codebase, found the reviewer lacked context, and returned a technical question instead of a change.
-
-## GitHub Thread Replies
-
-When replying to inline review comments on GitHub, reply in the comment thread (`gh api repos/{owner}/{repo}/pulls/{pr}/comments/{id}/replies`), not as a top-level PR comment.
+Reply to inline review comments in their thread (`gh api repos/{owner}/{repo}/pulls/{pr}/comments/{id}/replies`), not as a top-level PR comment.

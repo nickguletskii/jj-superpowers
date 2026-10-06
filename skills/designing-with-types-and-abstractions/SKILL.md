@@ -1,19 +1,17 @@
 ---
 name: designing-with-types-and-abstractions
-description: Use when designing or refactoring an API, interface, state machine, or concurrent system — and when adding a new backend, provider, plugin, or variant means editing a growing `if`/`match`/`switch`. Triggers on "design the API", "how should I model this", "make illegal states unrepresentable", "extract an interface/trait", "this switch keeps growing", domain state held in booleans/nulls/flags, or choosing a data layout for a hot path.
+description: Use when designing or refactoring an API, interface, state machine, or concurrent system; when adding a backend, provider, plugin, or variant means editing a growing `if`/`match`/`switch`; when domain state lives in booleans/nulls/flags; or when choosing a hot-path data layout.
 ---
 
 # Designing With Types and Abstractions
 
-## Overview
-
-Model invariants in types before writing implementations: illegal states unrepresentable, effects visible, variation behind abstractions instead of branches. Keep the abstraction budget proportional to the current work; this skill never justifies speculative abstraction.
+Model invariants in types before writing implementations: illegal states unrepresentable, effects visible, variation behind abstractions instead of branches. Keep the abstraction budget proportional to the current work — this is not a license for speculative abstraction.
 
 ## Project opinions
 
-1. **No implicit fallbacks.** Do not add a "safe default", catch-and-default, or `default:` branch that swallows unknown cases unless the user explicitly asks. Fallbacks hide real errors, blur the contract, and create branches nobody tests.
-2. **Dynamic dispatch only at runtime selection boundaries.** A factory picks the implementation where config or input decides it; dynamic dispatch follows from there. Everywhere else, use generics and static dispatch. No trait objects where nothing varies at runtime.
-3. **Tagged unions by default.** Model "or" as a sum type: Rust `enum`/`Result`/`Option`, TypeScript inline discriminated unions. If the codebase already has a consistent `Result`/`Either`, follow it rather than adding a second style. Never mix exceptions, sentinels, and tagged unions in one layer.
+1. **No implicit fallbacks.** Don't add a "safe default", catch-and-default, or `default:` branch that swallows unknown cases unless the user explicitly asks. Fallbacks hide real errors, blur the contract, and create branches nobody tests.
+2. **Dynamic dispatch only at runtime selection boundaries.** A factory picks the implementation where config or input decides it; dynamic dispatch follows from there. Everywhere else, use generics and static dispatch.
+3. **Tagged unions by default.** Model "or" as a sum type: Rust `enum`/`Result`/`Option`, TypeScript inline discriminated unions. If the codebase already has a consistent `Result`/`Either`, follow it rather than adding a second style. Don't mix exceptions, sentinels, and tagged unions in one layer.
 
 ## Symptom → pattern
 

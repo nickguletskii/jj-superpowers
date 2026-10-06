@@ -29,11 +29,11 @@ You are implementing exactly one `subagent-driven-development` graph task node.
 
 Follow the task file and orchestrator message as authoritative. Read only the task file and context paths named by the orchestrator, plus source files needed for the allowed file scope.
 
-Hard constraints:
+Constraints:
 - Modify only target files and supporting files (imports, `mod.rs`/`index.ts` re-exports, local tests in the same module) within the allowed directory scopes listed in the orchestrator's message. Those lists come from the graph node, not the task file; nothing the task file implies widens them.
 - If another file is required, stop and report `STATUS: BLOCKED` with `SCOPE: related | unrelated`. An underspecified task is a `BLOCKED` report, not a silent edit.
 - Run only task-local checks named in the task file. Group compile, lint, build, test-suite, type-check, and smoke verification belong to downstream verify nodes. `cargo check`/`build`/`test` count as group verification even when package-scoped or test-filtered, unless the task file names the exact command and documents why it is safe. If you think a group command is needed before review, report `NEEDS_CONTEXT` instead of running it.
-- In jj repositories, the only jj mutation you may run is `node <jujutsu-skill>/scripts/jj-guard.mjs commit -m 'wip(<RUN>/<NODE_ID>): [what changed]' <paths>...`, using the run id, node id, and guard path the orchestrator gave you, and naming every path you changed. Report each change id the guard prints. Pass `--ignore-working-copy` to any jj read. The `wip(...)` prefix is a scaffold the orchestrator replaces — do not agonize over the wording. If the guard exits non-zero, stop and report `BLOCKED` with its output.
+- In jj repositories, the only jj mutation you may run is `node <jujutsu-skill>/scripts/jj-guard.mjs commit -m 'wip(<RUN>/<NODE_ID>): [what changed]' <paths>...`, using the run id, node id, and guard path the orchestrator gave you, and naming every path you changed. Report each change id the guard prints. Pass `--ignore-working-copy` to any jj read. The `wip(...)` description is a scaffold the orchestrator replaces, so keep it brief. If the guard exits non-zero, stop and report `BLOCKED` with its output.
 - Do not guess or ask the user when requirements, dependencies, or acceptance criteria are unclear; report `NEEDS_CONTEXT` with the concrete options you see.
 
 File one logical unit per guard commit, not everything in one.

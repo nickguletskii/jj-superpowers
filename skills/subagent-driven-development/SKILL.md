@@ -1,199 +1,95 @@
 ---
 name: subagent-driven-development
-description: Use when executing implementation plans that include project-network.dot in the current session
+description: Use when executing a written plan that includes project-network.dot in the current session with subagents authorized — fanning out implementer agents, gating each task with spec review, and batching verification.
 ---
 
 # Subagent-Driven Development
 
-Execute `project-network.dot` from a written plan. Dispatch fresh implementer subagents for ready task nodes, run per-task spec review, batch contended verification commands at verify nodes, then run group-level code-quality review.
-
-**Core principle:** task fan-out + per-task spec gates + verification fan-in + group quality review.
-
-This skill is graph-first: a one-task plan is still executed through the same graph model. Track node states against the graph, not the harness task list.
+Execute `project-network.dot` by dispatching fresh implementer subagents for ready task nodes, spec-reviewing each task, batching contended verification at verify nodes, and reviewing each verified group for quality. A one-task plan runs through the same model. Track node state against the graph, not the harness task list.
 
 ## Graph Contract
 
-Read `plan.md` and `project-network.dot`. Treat the graph as authoritative unless it is invalid or contradicts the task files.
+Read `plan.md` and `project-network.dot`; the graph is authoritative unless invalid or contradicted by the task files. Plans author two node kinds:
 
-The plan author writes exactly **two** node kinds. Every other gate still runs — you **derive** its trigger and scope from the graph instead of reading them off a node.
-
-| Authored kind | Attributes | Executor | Gate |
+| Authored kind | Attributes | Executor | Passes when |
 |------|------------|----------|------|
-| `task` | `file`, `files` (required); `scopes`, `stub` (optional) | implementer subagent | files changed and filed |
-| `verify` | `file` (required); `simplify` (optional) | verification subagent or orchestrator command runner | commands exit successfully |
+| `task` | `file`, `files`; optional `scopes`, `stub` | implementer subagent | files changed and filed |
+| `verify` | `file`; optional `simplify` | verifier subagent or orchestrator | commands exit successfully |
 
-Implied gates — never present in the graph, always run:
+Implied gates never appear in the graph but always run:
 
-| Implied gate | Trigger | Derived scope | Gate |
-|--------------|---------|---------------|------|
-| `spec_review` | every `task` completes | that task | task matches its task file |
-| `design_review` | a `stub=true` task's spec review passes | that task's stubbed surface | stubbed API is coherent |
-| `simplification` | a `verify` with `simplify=true` passes | that verify's task group | no accepted duplication remains, or accepted findings routed back, fixed, and re-verified |
-| `quality_review` | a `verify` passes — or its `simplification`, when present | that verify's task group | verified group is maintainable |
-| `final` | every `verify` node has passed | the whole graph | all gates passed and the Finish checks (Change Consolidation) return nothing |
+| Implied gate | Trigger | Scope | Passes when |
+|--------------|---------|-------|------|
+| `spec_review` | a task completes | that task | task matches its task file |
+| `design_review` | a `stub=true` task's spec review passes | the stubbed surface | API is coherent |
+| `simplification` | a `simplify=true` verify passes | the verify's task group | no accepted duplication remains, or findings were fixed and re-verified |
+| `quality_review` | a verify passes (after `simplification` when present) | the verify's task group | group is maintainable |
+| `final` | every verify passed | whole graph | all gates passed and the Finish checks return nothing |
 
-**Deriving scope.** These are the only three derivations you need:
+A verify node's **task group** is every task that reaches it. Edges mean "source must pass before target runs"; a dependent of a `stub=true` task may not start until that task's spec review and design review both pass. The `design_review` rubric is always `designing-with-types-and-abstractions`.
 
-- A `verify` node's **task group** = every `task` node that reaches it. This is the scope for its `simplification` and `quality_review`.
-- A `spec_review`'s scope = the single `task` that just completed.
-- A `design_review`'s scope = the stubbed surface of the `stub=true` task that triggered it.
-
-Edges mean "source node must pass before target node may run." A `stub=true` task's outgoing edges additionally carry its implied `design_review`: a dependent task may not **start** until that stub's spec review *and* design review have passed. Every other implied gate runs on the node it hangs off, so it cannot be missed or misplaced.
-
-The `design_review` rubric is always `designing-with-types-and-abstractions`; there is no node to override it.
-
-## The Process
-
-```dot
-digraph process {
-    rankdir=TB;
-
-    read        [shape=box, label="Read plan.md and project-network.dot"];
-    validate    [shape=box, label="Validate graph"];
-    ready_task  [shape=diamond, label="Ready task nodes?"];
-    fanout      [shape=box, label="Fan-out: emit all ready Agent calls\nin one response"];
-    fanin       [shape=box, label="Fan-in: wait for all results"];
-    asks        [shape=diamond, label="Any implementer asks questions\nor blocks?"];
-    answer      [shape=box, label="Answer, amend plan, or re-dispatch"];
-    filed       [shape=box, label="Task filed as wip(run/node) change"];
-    spec        [shape=box, label="Run implied spec review\n(scope: that task)"];
-    spec_ok     [shape=diamond, label="Spec review passes?"];
-    task_fix    [shape=box, label="Return to implementer for task fix"];
-    consolidate [shape=box, label="Consolidate task into ONE change\n(squash reported change ids, write real description)"];
-    is_stub     [shape=diamond, label="Task marked stub=true?"];
-    design      [shape=box, label="Run implied design review\n(coherence only; scope: the stubbed surface)"];
-    design_out  [shape=diamond, label="Design review outcome?"];
-    design_loc  [shape=box, label="Local flaw: re-dispatch stub implementer\nwith findings"];
-    structural  [shape=box, label="BLOCKED_STRUCTURAL: pause graph,\nsurface options, return to brainstorming"];
-    ready_ver   [shape=diamond, label="Ready verify node?"];
-    run_ver     [shape=box, label="Run batched verification commands"];
-    ver_ok      [shape=diamond, label="Verification passes?"];
-    ver_fail    [shape=box, label="Return failures to responsible task nodes"];
-    is_simp     [shape=diamond, label="verify marked simplify=true?"];
-    simp        [shape=box, label="Run implied simplification\n(scope: this verify's task group)"];
-    simp_ok     [shape=diamond, label="Simplification passes?"];
-    simp_fail   [shape=box, label="Route findings back to implementer,\nthen re-verify"];
-    quality     [shape=box, label="Run implied quality review\n(scope: this verify's task group)"];
-    qual_ok     [shape=diamond, label="Quality review passes?"];
-    qual_fail   [shape=box, label="Return to responsible implementer"];
-    all_ver     [shape=diamond, label="Every verify node passed?"];
-    finish      [shape=box, label="Finish checks (Change Consolidation),\nthen ask the user what to integrate"];
-
-    read -> validate -> ready_task;
-    ready_task -> fanout [label="yes"];
-    fanout -> fanin -> asks;
-    asks -> answer [label="yes"];
-    answer -> ready_task;
-    asks -> filed [label="no"];
-    filed -> spec -> spec_ok;
-    spec_ok -> task_fix [label="no"];
-    task_fix -> spec;
-    spec_ok -> consolidate [label="yes"];
-    consolidate -> is_stub;
-    is_stub -> design [label="yes"];
-    is_stub -> ready_ver [label="no"];
-    design -> design_out;
-    design_out -> design_loc [label="local"];
-    design_loc -> spec;
-    design_out -> structural [label="structural"];
-    design_out -> ready_ver [label="pass: dependents may start"];
-    ready_ver -> run_ver [label="yes"];
-    ready_ver -> ready_task [label="no"];
-    run_ver -> ver_ok;
-    ver_ok -> ver_fail [label="no"];
-    ver_fail -> spec;
-    ver_ok -> is_simp [label="yes"];
-    is_simp -> simp [label="yes"];
-    is_simp -> quality [label="no"];
-    simp -> simp_ok;
-    simp_ok -> simp_fail [label="no"];
-    simp_fail -> spec;
-    simp_ok -> quality [label="yes"];
-    quality -> qual_ok;
-    qual_ok -> qual_fail [label="no"];
-    qual_fail -> spec;
-    qual_ok -> all_ver [label="yes"];
-    all_ver -> ready_task [label="no"];
-    all_ver -> finish [label="yes"];
-}
-```
+Order per task: implement → file as `wip` → spec review (fail → back to implementer) → consolidate → design review if `stub=true`. Per verify: run commands (fail → back to responsible tasks, which re-run spec review) → simplification if `simplify=true` → quality review. Any routed-back fix re-enters at spec review.
 
 ## Graph Validation
 
-This list is the single source of truth for graph validation; `executing-plans` runs the same checks. Before dispatching work, check:
+The single list of checks; `executing-plans` runs the same ones. Before dispatching:
 
 - `plan.md` references `project-network.dot`.
-- Every node is `kind="task"` or `kind="verify"`. Nothing else is authorable.
-- Every `task` node has `file` and `files`. Every `verify` node has `file`.
-- Every `task` node reaches at least one `verify` node (no orphan tasks).
+- Every node is `kind="task"` or `kind="verify"`.
+- Every task has `file` and `files`; every verify has `file`.
+- Every task reaches at least one verify.
 - No cycles.
-- No ready-to-run parallel task nodes have overlapping `files` attributes (the collision check).
+- No parallel-ready tasks have overlapping `files`.
 
-That is the whole list. Gate placement is no longer checkable because it is no longer authorable: `spec_review`, `design_review`, `simplification`, `quality_review`, and `final` are derived from `task`/`verify` nodes and their `stub`/`simplify` attributes, so they cannot be missing, misordered, or duplicated.
-
-If the graph is invalid, fix the plan if the correction is mechanical and obvious. Otherwise ask the user before execution. A graph containing authored gate nodes was written against the superseded contract: collapsing it is mechanical — delete the gate nodes, reconnect `task`/`verify` edges through them, mark consumed API-stub tasks `stub=true`, and mark a `verify` whose old chain carried a `simplification` node `simplify=true`.
+Gate placement needs no check: gates are derived, so they can't be missing or misordered. Fix the plan yourself only when the correction is mechanical and obvious; otherwise ask. A graph with authored gate nodes uses the superseded contract; collapsing it is mechanical — delete the gate nodes, reconnect edges through them, mark consumed API-stub tasks `stub=true`, and mark a verify whose chain had a simplification node `simplify=true`.
 
 ## Dispatch Rules
 
-Prefer named role agents when the platform supports them. Pass only dynamic invocation context in the task message — **paths, never pasted task text**: graph node id, task or verification file path, relevant context paths, target file list, allowed directory scopes, derived gate scope, upstream reports, verification report, and orchestrator notes. Keep durable role behavior in the named agent's system/developer prompt.
+Pass dynamic context as paths, never pasted task text: node id, task or verify file, context paths, `files`, `scopes`, derived gate scope, upstream reports, verification report, notes. Durable role behavior lives in the named agent. Assemble prompts most-stable-first in the same order every time (see "Plan artifacts are a prompt prefix" in `writing-plans`).
 
-**Concurrent edits are the norm, not the exception.** Parallel implementers, the user, and other sessions all write to the same tree while the graph executes. The `files` collision gate is what keeps dispatched agents off each other's files — it is a correctness mechanism, not an optimization, so never dispatch parallel tasks with overlapping `files` "just this once". Every subagent already carries the concurrency contract (stay in scope, targeted edits, re-read before writing, never revert someone else's change) via the shared preamble in `agents/_preamble.md`. You owe them the other half:
+**Concurrent edits are normal.** Parallel implementers, the user, and other sessions write to the same tree. The `files` collision gate is a correctness mechanism, so never dispatch parallel tasks with overlapping `files`. Subagents carry their half of the concurrency contract in `agents/_preamble.md`; yours is:
 
-- Give every dispatched agent a `files` list and `scopes` that are accurate and non-overlapping with any concurrently-running agent.
-- When re-dispatching after a review failure, re-read the current state of the files first — the tree has moved since the original implementer ran.
-- If an agent reports a conflict with someone else's edit, resolve it yourself. Do not tell the agent to force its version through.
-- Never let an implementer's out-of-scope edit stand silently: spec review checks containment against the `files`/`scopes` you issued.
+- give each agent accurate `files`/`scopes` that don't overlap any concurrently running agent;
+- re-read current file state before re-dispatching after a review failure;
+- resolve reported conflicts yourself rather than telling an agent to force its version;
+- let spec review catch out-of-scope edits against the `files`/`scopes` you issued.
 
-**Prompt Assembly Order:** assemble every subagent prompt most-stable-first (role → `context/*.md` → shared API surface → task file → targets/scopes/upstream reports) and keep that order identical across dispatches; `writing-plans` ("Plan Artifacts Are a Prompt Prefix") owns the table and rationale.
+**Parallelism.** Emit all ready, non-conflicting Agent calls in a single response; announcing dispatch and then calling one per turn runs them sequentially. Default to 3–5 concurrent subagents unless the user says otherwise, and refill a slot as soon as one frees rather than waiting for a tidy batch. If the Workflow tool is available and the user opted into multi-agent orchestration, you may use it to fan out further.
 
-**Parallel Dispatch Mechanics:** When multiple task nodes (or spec reviews) are ready and non-conflicting, dispatch them all by making multiple Agent tool calls in a **single response** — not one call per turn. Do not announce dispatch in a text turn and then make Agent calls in subsequent turns; that pattern produces sequential execution regardless of stated intent.
+**Freshness.** Use a fresh subagent per node, and a fresh one with the review report when routing failures back. Exception: when a task file flags a node as complex or the implementer returned `DONE_WITH_CONCERNS`, route fixes back to the original session (`SendMessage` in Claude Code) — it holds reasoning a fresh agent would rebuild — unless that session has grown long, the fix needs a different approach, or it's unreachable.
 
-Default to **3–5 concurrent subagents** unless the user specifies otherwise. Maximize parallelism: keep all available slots filled at all times. When a subagent completes and a slot opens, immediately dispatch the next ready task — do not wait for other in-flight agents to finish first. Graph dependencies still govern sequencing: a `verify` node cannot start until all its upstream tasks have passed spec review, but there is no need to hold back dispatch just to form a tidy batch.
+**Models.** Use the least capable model that handles each role, implementers included. `choosing-model-and-effort` owns per-node selection and escalation.
 
-If the Workflow tool is available and the user has opted into multi-agent orchestration, you may use it to fan out further.
+| Role | Named agent | What you pass |
+|------|-------------|---------------|
+| `task` | `sdd-implementer` | task file, context docs, `files`, `scopes`, upstream annotations. You are the only source of `files`/`scopes`. |
+| `spec_review` | `sdd-spec-reviewer` | after `DONE`/`DONE_WITH_CONCERNS`; the same `files`/`scopes` you gave the implementer, for containment. Runs before verification fan-in. |
+| `design_review` | `sdd-design-reviewer` | stub task file and stubbed surface. Judges coherence only and never edits. |
+| `verify` | `sdd-verifier` | the `verify-*.md` file, once every upstream task passed spec review. The batched reduction point for build tools. |
+| `simplification` | `sdd-simplifier` | the task group. Sole owner of duplication detection; findings route back to an implementer, then the group re-verifies. |
+| `quality_review` | `sdd-quality-reviewer` | the task group. Maintainability and production risk only. |
+| `final` | — | Finish checks, then ask what to integrate. |
+| jj filing | `sdd-jj-coordinator` | see Change Consolidation. |
 
-**Subagent freshness:** By default, fresh subagents should handle every node — clean context reduces noise. When routing spec review or code-quality failures back to an implementer, dispatch a new subagent with the review report and relevant context rather than reusing the original session.
-
-**Exception — complex tasks:** If a task file flags a node as complex, or if the implementer returns `DONE_WITH_CONCERNS`, retain the session identifier. Route spec review and code-quality failures back to the original session (`SendMessage` in Claude Code) rather than a fresh agent — the original implementer holds design decisions and implementation reasoning that a fresh agent would waste time reconstructing. Switch to a fresh agent anyway when: the original session has grown long or context-heavy; the fix requires a fundamentally different approach; or the session is no longer reachable.
-
-Triggers and scopes come from the Graph Contract above. This table adds who executes each one, and what you must pass it. If named agents are unavailable, dispatch a general-purpose agent whose prompt is `agents/_preamble.md` + the body of `agents/<named agent>.md` + the dynamic context.
-
-| Graph role | Named agent | What you pass, and the role's own rule |
-|------------|-------------|----------------------------------------|
-| `task` | `sdd-implementer` | Task file path, relevant context docs, `files`, `scopes` (if any), and any annotations from upstream completed nodes. The task file does not restate `files`/`scopes` — **you are their only source**. |
-| `spec_review` | `sdd-spec-reviewer` | Dispatch after the task reports `DONE`/`DONE_WITH_CONCERNS`. Pass the **same `files`/`scopes` you gave the implementer**, so the reviewer can check containment. Task-local, and always before verification fan-in. |
-| `design_review` | `sdd-design-reviewer` | The stub task file path and the stubbed surface. Rubric is always `designing-with-types-and-abstractions`. Judges API *coherence* only; **never edits files**. Reports local flaw / `BLOCKED_STRUCTURAL` / pass (see Design-Review Status). No `stub=true` task ⇒ no design review. |
-| `verify` | `sdd-verifier` | Run the referenced `verify-*.md` commands once every upstream task has passed spec review. Use the subagent when logs may be long or summarization helps. Build tools serialize on one suite at a time — this is the batched reduction point. |
-| `simplification` | `sdd-simplifier` | The derived task group. **Single owner of duplication detection.** Its method reuses `deslopify` (under-engineering/duplication) and the `code-simplifier` agent — it does not restate their checks. Findings route back to an implementer, then the group **re-verifies**. No `simplify=true` ⇒ no simplification. |
-| `quality_review` | `sdd-quality-reviewer` | The derived task group (not necessarily one task). Mandate is **maintainability/production-risk only** — duplication belongs to `simplification`. |
-| `final` | — | Run the Finish checks in Change Consolidation, then ask the user what to integrate. |
-| jj filing helper | `sdd-jj-coordinator` | See Change Consolidation. |
-
-Verification commands and reports follow `jj-superpowers:tool-output-discipline`: prefer quiet, structured, scoped, or filtered output; expand only when concise output cannot diagnose the failure.
-
-Named agents ship as plugin `agents/*.md` (Claude Code: Agent tool `subagent_type`), `.codex/agents/*.toml` (Codex: see `using-superpowers/references/codex-tools.md`), and `.opencode/agents/*.md` (OpenCode: `@<name>` or the Task tool).
+Without named agents, dispatch a general-purpose agent with `agents/_preamble.md` + the body of `agents/<name>.md` + dynamic context. Named agents ship as `agents/*.md` (Claude Code `subagent_type`), `.codex/agents/*.toml` (Codex: `using-superpowers/references/codex-tools.md`), and `.opencode/agents/*.md` (OpenCode `@<name>` or Task). Verification commands and reports follow `tool-output-discipline`.
 
 ## Change Consolidation
 
-**Consolidate as you go. Do not defer history cleanup to the end of the run.** Otherwise a single unit of work lands one change per implementer commit *plus* one per review round-trip, and a real plan defers hundreds of changes to an end-of-run reorganization — the worst possible moment to reconstruct intent.
-
-The graph already tells you when a unit of work is done and correct: **its spec review passed.** That is the consolidation point.
+Consolidate as you go. Deferring cleanup to the end leaves one change per implementer commit and per review round — hundreds in a real plan — to untangle when intent is hardest to reconstruct. A passed spec review marks a unit of work as done and correct; that is the consolidation point.
 
 ### Run id and scaffold
 
-At graph start the orchestrator picks a **run id**: the plan slug plus four random characters (`parser-k3f9`). It namespaces every scaffold so concurrent runs, sessions, and work streams never match each other's changes.
-
-Implementers file through the guard (`jj-superpowers:jujutsu`, safety rule 7), naming their paths explicitly:
+At graph start, pick a run id: plan slug plus four random characters (`parser-k3f9`). It namespaces scaffolds so concurrent runs never match each other's changes. Implementers file through the guard (`jujutsu` safety rule 7), naming paths explicitly:
 
 ```sh
 node <jujutsu-skill>/scripts/jj-guard.mjs commit -m 'wip(<run>/<node_id>): [what changed]' <paths>...
 ```
 
-The guard prints the new change id; the implementer reports every id it created. The `wip(<run>/<node_id>)` prefix is a **scaffold**: a human-readable label and a leftover check, destroyed at consolidation. Implementers are not asked for good descriptions — the orchestrator writes the real one once the work is known-correct.
+They report every change id the guard prints. The `wip(<run>/<node_id>)` description is a scaffold, destroyed at consolidation; the orchestrator writes the real description once the work is known-correct.
 
 ### Consolidate on spec-review pass
 
-When a task's spec review passes, the coordinator collapses the task's reported change ids into the newest one and describes it (Change Description Rules in `jj-superpowers:jujutsu`):
+The coordinator squashes the task's reported ids into the newest and describes it (Change Description Rules in `jujutsu`):
 
 ```sh
 G="node <jujutsu-skill>/scripts/jj-guard.mjs"
@@ -201,131 +97,57 @@ $G run squash --from '<id1> | <id2>' --into <id3> --use-destination-message
 $G run describe -r <id3> -m 'feat(parser): parse input with empty-input handling'
 ```
 
-Parallel implementers interleave, so a task's changes are usually not contiguous; jj rebases around them, and disjoint file scopes keep this conflict-free. In workspace mode, the coordinator then moves the change into the main line (`$G run rebase -r <id3> -B @`) and forgets the workspace.
+A task's changes usually interleave with other tasks'; jj rebases around them and disjoint scopes keep that conflict-free. In workspace mode, the coordinator then moves the change into the main line (`$G run rebase -r <id3> -B @`) and forgets the workspace. Fixes sent back by `verify`, `simplification`, or `quality_review` produce new ids; squash them into the task's consolidated change once re-review passes.
 
-When `verify`, `simplification`, or `quality_review` sends a fix back, the re-dispatched implementer reports new ids; once re-review passes, squash them **into the task's consolidated change**. A review round is not a unit of work.
+**Invariant: one change per task node**, however many commits or review rounds. Off-graph Small-tier work has no node: the implementer commits through the guard with the orchestrator-supplied final description and no scaffold.
 
-**The invariant: one change per `task` node, regardless of commit count or review rounds.** Off-graph work (Small tier) has no node: the implementer commits through the guard with the orchestrator-supplied final description and no scaffold.
+The orchestrator decides; `sdd-jj-coordinator` executes through the guard. Implementers only `commit` their own paths — never squash, describe, or reorganize.
 
-### Who runs it
+### Finish checks
 
-The orchestrator decides; `sdd-jj-coordinator` executes through the guard. Implementers only `commit` their own paths and never squash, describe, or reorganize.
-
-### Finish: no scaffold, divergence, or conflict survives
-
-Scaffolds are `wip(<run>/<node>)` (implementers) and `todo:` (the DAG builder in `jj-organizing-history`). `final` is not reached until all agents have stopped and these return nothing:
+Scaffolds are `wip(<run>/<node>)` (implementers) and `todo:` (the DAG builder in `jj-organizing-history`). `final` isn't reached until all agents have stopped and both of these print nothing:
 
 ```sh
 node <jujutsu-skill>/scripts/jj-guard.mjs check --prefix 'wip(<run>/'
 jj diff --ignore-working-copy --stat     # @ holds no unfiled edits
 ```
 
-Any output is a bug: squash each leftover into the change it belongs to and describe it; recover divergence per `jj-superpowers:jujutsu` safety rule 7. Collapsing a whole verify group into one change, or reshaping history, is optional — `jj-superpowers:jj-organizing-history`.
+Any output is a bug: squash each leftover into its change and describe it; recover divergence per `jujutsu` safety rule 7. Collapsing a verify group into one change or reshaping history is optional (`jj-organizing-history`).
 
-Then ask the user what to integrate (decision-checkpoint pattern): a bookmark + push or PR per `jj-superpowers:jujutsu`, or keep as-is. Never push, merge, or discard without that answer.
+Then ask the user what to integrate (decision-checkpoint pattern): bookmark + push or PR per `jujutsu`, or keep as-is. Never push, merge, or discard without that answer.
 
 ## Verification Ownership
 
-This section is the canonical statement of the contended-command rule; `writing-plans` and `executing-plans` reference it.
+The canonical contended-command rule; `writing-plans` and `executing-plans` reference it.
 
-Implementers may run narrow task-local checks only when the task file names them. Implementers do not own group compile, test, lint, type-check, build, or smoke-test verification.
+- Implementers run narrow task-local checks only when the task file names them, and never own group compile, test, lint, type-check, build, or smoke tests.
+- `cargo check/build/test` are verify-node commands even when package-scoped or filtered, because they contend on the shared target directory. A task file may name one only with a documented reason it is safe and necessary.
+- **Sole exception:** a `stub=true` task may run a narrow, documented scoped type-check (e.g. `cargo check -p <crate> -q`) so consumers fan out against a compiling stub — design review checks coherence, not compilation.
+- Spec reviewers inspect against the task file and run no group verification. Verify nodes own the authoritative results for their group. Quality reviewers read the verification report and rerun commands only with a concrete reason to think it stale or contradicted by the diff.
 
-`cargo check`, `cargo build`, and `cargo test` are normally verification-node commands even when package-scoped or test-filtered, because they contend on shared target-directory state. A task file may name one only when it documents why that command is safe and necessary for the task.
+## Implementer status
 
-**Sanctioned exception — API-stub type-check.** A `stub=true` task, whose surface is gated by the implied design review, MAY run a narrow, task-file-documented scoped type-check (e.g. `cargo check -p <crate> -q`) so consumers fan out against a compiling stub. Because `design_review` reviews coherence, not compilation, this scoped check is the one place a compile command belongs in a task. This is the single sanctioned exception; it does not otherwise weaken the contended-command rule.
+- **DONE** → spec review.
+- **DONE_WITH_CONCERNS** → address correctness or scope concerns before spec review; pass observations to reviewers. Treat the task as complex for freshness.
+- **NEEDS_CONTEXT** → supply it and re-dispatch.
+- **BLOCKED** → if context, supply it; if under-powered, escalate per `choosing-model-and-effort` (re-read the task file first; only on an empirical wall; one step; speculative escalation asks the user); if too large, split it and update the graph; if the plan is wrong, amend it when mechanical or ask. Don't retry the same model without changing instructions, context, or task shape.
 
-When implementers run an allowed task-local command, they should use `jj-superpowers:tool-output-discipline` and report concise results.
+Subagents never ask the user; they report `NEEDS_CONTEXT` or `BLOCKED` with 2–3 options, and you ask using the decision-checkpoint pattern from `using-superpowers`.
 
-Spec reviewers inspect implementation against the task file. They do not run group verification commands.
+### `BLOCKED` scope
 
-Verification nodes own the authoritative command results for their upstream group.
+- **`SCOPE: related`** (dependency inside this plan): if another node produces the missing thing, add or fix the edge and run the producer first; if a new task is needed, add its file and update `plan.md` and the graph; ask before non-trivial scope expansion.
+- **`SCOPE: unrelated`** (pre-existing gap): pause and offer — add a fix to this plan, note it as a separate later task, or take user guidance — then update the plan if the graph changes.
 
-Code-quality reviewers inspect the verified group and the verification report. They do not rerun the same commands unless code inspection gives a concrete reason to believe the report is stale, incomplete, or contradicted by the diff.
+### Design-Review Status
 
-## Model Selection
+Design reviewers check coherence only (right variation axis, illegal states unrepresentable, explicit effects, no leaky boundaries), don't recompile, and never edit. Outcomes:
 
-Use the least powerful model that can handle each role — implementers included. "It is an implementation" is not a reason to reach for the strongest model. Pick model and effort per node from the dispatch table in `jj-superpowers:choosing-model-and-effort`, which also owns the Fable provenance rule, availability handling, and escalation. Do not restate it here.
+- **Local flaw** — fixable within the stub task's own files without changing any type, signature, or symbol a consumer task file references (internal types, docs, an uncited trait method, a private rename). Re-dispatch the stub implementer with the findings, then re-run its spec review. No user round-trip.
+- **`BLOCKED_STRUCTURAL`** — the fix changes a consumer-referenced symbol or signature, the choice of abstraction, a missing requirement, or contradicts the spec. Pause the graph, dispatch no consumers, offer the user 2–3 options, and return to `brainstorming`; `writing-plans` then regenerates the affected task files and graph portion. This is an executor escalation, not a graph edge.
 
-## Handling Implementer Status
+When it's unclear which applies, treat it as structural.
 
-Implementer subagents report one of four statuses.
+Under Rush, resolve every checkpoint per `using-superpowers` `references/autonomy.md`; every implied gate still runs.
 
-**DONE:** Run the task's implied `spec_review`.
-
-**DONE_WITH_CONCERNS:** Read concerns. If they affect correctness or scope, address them before spec review. If they are observations, include them for reviewers and proceed. Retain this session's identifier — the task is now considered complex and review failures should be routed back to it (see Subagent Freshness in Dispatch Rules).
-
-**NEEDS_CONTEXT:** Provide missing context and re-dispatch.
-
-**BLOCKED:** Assess the blocker:
-
-1. If it is a context problem, provide more context and re-dispatch.
-2. If the task looks under-powered, escalate strictly per `jj-superpowers:choosing-model-and-effort` — it owns the rule (re-read the task file first; escalate only on an empirical **wall**, one step, class before effort; **speculative** escalation asks the user).
-3. If the task is too large, split it and update `project-network.dot`.
-4. If the plan is wrong, amend the plan if mechanical or ask the user.
-
-Never force the same model to retry without changing instructions, context, or task shape.
-
-When asking the user to choose between valid paths, the orchestrator uses the decision-checkpoint pattern from `jj-superpowers:using-superpowers`: present 2-3 concrete alternatives with a recommendation, and use the harness-native ask/question tool when available.
-
-Subagents cannot use ask/question tools. If a subagent needs a user decision, it must report `NEEDS_CONTEXT` or `BLOCKED` with 2-3 concrete options; the orchestrator asks the user and then re-dispatches or amends the plan.
-
-## BLOCKED Handling
-
-When an implementer reports `STATUS: BLOCKED`, read `SCOPE`.
-
-### `SCOPE: related`
-
-The blocker is a dependency inside this plan.
-
-1. If another graph node produces the missing thing, add or correct the dependency edge and run the producer first.
-2. If a new task is needed, add a task file, update `plan.md`, and update `project-network.dot`.
-3. If the new work is non-trivial, ask the user before expanding scope.
-
-### `SCOPE: unrelated`
-
-The blocker is a pre-existing gap outside this work scope. Pause and surface options:
-
-> "Implementer for [task] is blocked by a pre-existing issue: [DETAIL].
-> Options:
-> 1. Add a fix to this plan
-> 2. Note it as a separate task for later
-> 3. Provide guidance and unblock manually"
-
-Act on the user's choice and update the plan if execution graph changes.
-
-### Design-Review Status (`STATUS: BLOCKED_STRUCTURAL`)
-
-`BLOCKED_STRUCTURAL` is a distinct, design-review-only status, separate from implementer `BLOCKED`. The reviewer charter is **coherence only** (rubric `designing-with-types-and-abstractions`: right variation axis, illegal states unrepresentable, explicit effects, no leaky boundaries) — it does NOT recompile. Reviewers never edit files. The gate reports one of:
-
-- **Local flaw** — the fix is contained to the stub task's own files and changes no type, signature, or symbol a consumer task file references (e.g. fixing the stub's internal type or docs, adding a trait method no consumer cites yet, renaming a private helper). The orchestrator **re-dispatches the stub implementer** with the findings to fix and re-stub, then re-runs the stub's spec review. No consumer task files change; **no user round-trip**.
-- **Structural flaw → `STATUS: BLOCKED_STRUCTURAL`** — the fix changes a consumer-referenced symbol/signature, or the choice of abstraction, a missing requirement, or a contradiction with the spec. The orchestrator **pauses the graph**, does **not** dispatch consumers, surfaces 2–3 concrete options to the user (decision-checkpoint pattern), and returns to **brainstorming**; `writing-plans` then regenerates the affected consumer task files and the affected portion of `project-network.dot`. "Return to brainstorming" is an executor-level escalation event, not a graph edge — the DAG stays acyclic.
-
-**Decidability rule:** classify as **structural** (escalate) iff the fix changes a consumer-referenced symbol/signature or touches the abstraction/requirements; otherwise **local**. A signature tweak is local **only** when no consumer task references that signature. On genuine ambiguity, **default to structural**.
-
-## Autonomy Level
-
-Under Rush, resolve every checkpoint above per `jj-superpowers:using-superpowers` `references/autonomy.md`; every implied gate still runs.
-
-## Reporting Gaps
-
-If you read multiple files or traced execution across modules to understand something that a short documentation file could have explained immediately, invoke **jj-superpowers:documentation** to create that document. Continue with execution; do not block on reporting gaps.
-
-## Integration
-
-Required workflow skills:
-
-- `jj-superpowers:writing-plans` - creates the plan and `project-network.dot`.
-- `jj-superpowers:requesting-code-review` - code review template for quality reviewers.
-
-Subagents should use:
-
-- `jj-superpowers:test-driven-development` when their task requires TDD.
-- `jj-superpowers:tool-output-discipline` when running CLI tools with potentially noisy output.
-
-Alternative workflow:
-
-- `jj-superpowers:executing-plans` - use when execution should happen inline or in a separate session.
-
-## Skill Validation
-
-When editing this skill or `writing-plans`, validate behavior with `../writing-plans/project-network-validation-scenarios.md` before deployment.
+When editing this skill or `writing-plans`, validate with `../writing-plans/project-network-validation-scenarios.md`.

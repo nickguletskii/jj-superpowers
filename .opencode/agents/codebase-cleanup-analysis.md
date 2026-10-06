@@ -52,7 +52,7 @@ Search the codebase for usages of this symbol outside the file that defines it.
 - Check both import statements and direct usages.
 - If SCIP returns 0 semantic references outside the defining file and grep/string search finds 0 non-test source usages, flag as potentially dead.
 - Search source files only — exclude test files (`*.test.*`, `*.spec.*`) and generated files. A usage that appears only in test files does not count as a live usage.
-- Do NOT flag as dead without evidence. SCIP-only absence is not enough for dynamic/framework/public API cases; include grep/string evidence and risk notes.
+- Don't flag a symbol as dead without evidence. SCIP-only absence is not enough for dynamic/framework/public API cases; include grep/string evidence and risk notes.
 - Search for the bare symbol name, not just import statements — call-site usages and re-exports must also be checked.
 
 ### 2. Duplication check
@@ -92,7 +92,7 @@ Append the following to `[GROUP_FILE_PATH]` (do not overwrite existing content):
 
 ## Rules
 
-- Every dead code claim MUST include SCIP reference evidence when available, the grep/string pattern used, and the result count
-- Read actual implementations before claiming duplication — do not assume from names alone
+- Every dead code claim includes SCIP reference evidence when available, the grep/string pattern used, and the result count
+- Read both implementations before claiming duplication; names alone aren't evidence
 - Abstraction suggestions must name specific files, functions, and the proposed extraction
 - Do not include findings outside the directories listed in this group's "Directories" section
