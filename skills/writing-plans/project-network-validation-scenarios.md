@@ -163,7 +163,7 @@ Prompt: "Given prompts of varying size, show how the orchestrator routes each to
 Expected behavior:
 - For each prompt the orchestrator **proposes a tier with reasoning** and lets the user veto via the harness ask tool; the proposal is the default (no mandatory round-trip).
 - **Trivial** (single obvious file, no new abstraction, one-command verification, no design risk) → handled **inline** in this session, then the orchestrator runs the named verify command. No plan files.
-- **Small** (local scope, ≤2 dispatches, obvious file boundaries, no new architecture, no cross-file design risk) → **direct subagent dispatch**, **no plan files**, reusing the `sdd-implementer` contract (fallback `implementer-prompt.md`) with the approved design + file scope + verify command in place of a task file. The orchestrator runs verification conversationally.
+- **Small** (local scope, ≤2 dispatches, obvious file boundaries, no new architecture, no cross-file design risk) → **direct subagent dispatch**, **no plan files**, reusing the `sdd-implementer` contract with the approved design + file scope + verify command in place of a task file. The orchestrator runs verification conversationally.
 - **Full** (new architecture, new public API surface, multiple interacting components, or cross-file design risk) → write spec → `writing-plans` → graph.
 - Choosing the lightest adequate tier is the correct default, not a risk. Design risk forces Full (the design-review gate lives only there, riding on `stub=true`).
 - **Off-graph tiers still invoke `spec-code-sync` before any source edit** when `.agents/layout.yaml` exists (candidate-spec lookup on touched paths, route amendments per its rules) — skipping plan files must not silently skip the spec-sync gate.

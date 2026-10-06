@@ -1,6 +1,6 @@
 ---
 name: documentation
-description: Use when writing, updating, or maintaining code documentation, when struggling to understand code that lacks docs, when deciding whether to document something, or when encountering redundant, stale, or code-duplicating documentation
+description: Use when writing, placing, or maintaining documentation outside code — mdbook chapters, runbooks, ADRs, module/architecture docs, `DOCS.md` — when struggling to understand code that lacks docs, when deciding whether to document something, or when encountering redundant, stale, or code-duplicating docs. Code comments → `writing-comments`.
 ---
 
 # Living Documentation
@@ -11,23 +11,20 @@ Documentation expresses what code and types cannot. If the code or type system a
 
 **Core principle:** No documentation is better than wrong documentation.
 
-## Golden rules (apply throughout)
+## Golden rule
 
-> **A. Shorter is better.** Shorter docs are easier to read, modify, keep current, and cheaper in agent context. Cut anything that doesn't earn its tokens. Nobody reads long documentation.
->
-> **B. Shorter is not an excuse to skip.** If a fact belongs in docs per these rules, write it. Brevity is about *how*, not *whether*.
->
-> **C. Simple language only.** No complex sentences. Use simple vocabulary. The documentation should make everything more understandable.
+> **Simple language only.** No complex sentences. Use simple vocabulary. The documentation should make everything more understandable.
 
 ## When to Use
 
-- Writing or updating any code documentation
+- Writing or updating docs outside the code (mdbook, runbooks, ADRs, module/architecture docs)
 - Encountering redundant, stale, or code-duplicating docs
 - Struggling to understand code that a short doc could explain
 - Deciding whether and how to document something
 - Creating or maintaining `DOCS.md`, runbooks, ADRs, module docs
 
 **Not for:**
+- Code comments, including doc comments → `jj-superpowers:writing-comments`
 - What the type system enforces → encode in types (`jj-superpowers:designing-with-types-and-abstractions`)
 - Code cleanup without doc implications → `jj-superpowers:deslopify`
 
@@ -98,7 +95,7 @@ digraph doc_form {
     types [label="Can it be expressed\nin types?" shape=diamond];
     encode [label="Encode in types.\nNo doc needed." shape=box style=filled fillcolor="#ccffcc"];
     local [label="Local to one\nfunction/module?" shape=diamond];
-    inline [label="Inline doc comment" shape=box];
+    inline [label="Comment\n(writing-comments)" shape=box];
     xcut [label="Cross-cutting\narchitectural decision?" shape=diamond];
     adr [label="ADR" shape=box];
     ops [label="About running,\ndebugging, deploying?" shape=diamond];
@@ -145,10 +142,6 @@ Code and docs MUST reference each other:
 
 Unreferenced docs are stale docs. If you can't find the code a doc references, the doc is suspect.
 
-### Comment reference discipline
-
-What may and may not appear *inside a code comment* — transient artifacts, permitted anchors (`impl: REQ-…`, stable ADR/doc anchors), self-containment — is owned by `jj-superpowers:writing-comments` (its rule 1). Apply that rule; it is not restated here.
-
 ## Maintenance
 
 When maintaining docs alongside code changes:
@@ -191,13 +184,3 @@ Use diagrams only when they add clarity beyond what a list or table provides.
 - Keeping a doc "for reference" when it's outdated
 
 **All of these mean: Delete, merge, or fix. Don't leave them.**
-
-## Common Mistakes
-
-- **Don't create multiple docs for the same topic** — One source of truth
-- **Don't leave stale docs** — Delete or update
-- **Don't skip checking for existing docs** — Search before creating
-- **Don't add docs without linking to code** — Unreferenced docs drift and die
-- **Don't document what types enforce** — Use types instead (`jj-superpowers:designing-with-types-and-abstractions`)
-- **Don't use diagrams when a list suffices** — Diagrams only when structure is genuinely complex
-- **Don't use RFC2119 casually** — MUST means mandatory, SHOULD means recommended, MAY means optional

@@ -200,31 +200,11 @@ Next failing test for next feature.
 | **Minimal** | One thing. "and" in name? Split it. | `test('validates email and domain and whitespace')` |
 | **Clear** | Name describes behavior | `test('test1')` |
 | **Shows intent** | Demonstrates desired API | Obscures what code should do |
-| **Tests what the type system can't** | Runtime behavior, side effects, error conditions | Things the compiler already enforces |
+| **Worth having** | Invariants a careful reader couldn't verify from the source | Restating the code or what the compiler enforces (see `what-to-test.md`) |
 
-## Don't Test What the Type System Already Enforces
+## What Not to Test
 
-If a static type system (TypeScript, Rust, etc.) makes a behavior impossible to violate at compile time, don't write a test confirming it. The compiler is a better test than a test.
-
-**Don't test:**
-- That a function receives the argument types it declares
-- That a function returns the type it declares
-- That required properties exist on a typed object
-- That a typed enum only takes valid values
-
-**Do test:**
-- Runtime behavior: logic, computation, ordering, side effects
-- Error paths and edge cases
-- Interactions between components
-- Things that can go wrong at runtime despite correct types
-
-**Exception — runtime/compile-time type mismatch in TypeScript and Python:**
-
-TypeScript's type system is erased at runtime. Python's type hints are never enforced at runtime. In both languages, data crossing a boundary (API response, user input, `JSON.parse`, `any`-typed value, dynamic import) may not match its declared type at runtime. If there is concrete evidence that a value might violate its declared type at runtime — e.g., an external API that sometimes omits a field, a `JSON.parse` result cast to a typed interface, or a `unknown`/`any` that could carry unexpected shapes — tests confirming the actual runtime shape are appropriate.
-
-The key word is *evidence*: don't write defensive type-checking tests speculatively. Write them when you have a real reason to doubt the runtime type.
-
-More generally, not everything needs a test: if the behavior is obvious from reading the source, the test adds nothing. For distinguishing high-value from low-value tests, read `what-to-test.md` in this directory.
+Not every behavior needs a test: skip what the type system enforces or what is obvious from reading the source. Before writing a test you're unsure about, read `what-to-test.md` in this directory (including when runtime type checks *are* warranted).
 
 ## Common Rationalizations
 
@@ -241,7 +221,6 @@ More generally, not everything needs a test: if the behavior is obvious from rea
 | "TDD will slow me down" | TDD faster than debugging. Pragmatic = test-first. |
 | "Manual test faster" | Manual doesn't prove edge cases. You'll re-test every change. |
 | "Existing code has no tests" | You're improving it. Add tests for existing code. |
-| "I should test that this field exists / has the right type" | If the type system enforces it, don't. If data crosses a runtime boundary (API, JSON.parse, `any`), test only with concrete evidence of mismatch. |
 
 ## Red Flags - STOP and Start Over
 
@@ -283,9 +262,24 @@ Bug found? Write failing test reproducing it. Follow TDD cycle. Test proves fix 
 
 Never fix bugs without a test.
 
-## Testing Anti-Patterns
+## Mocks and Test Doubles
 
-When adding mocks or test utilities, read `testing-anti-patterns.md` in this directory to avoid common pitfalls:
-- Testing mock behavior instead of real behavior
-- Adding test-only methods to production classes
-- Mocking without understanding dependencies
+Mocks isolate the code under test; they are never the thing being tested. Before adding one:
+
+- **Assert on real behavior, not the mock.** A test that checks a mock was rendered or called proves the mock works. If you can't assert anything without inspecting the mock, don't mock that dependency.
+- **Know what the real method does first.** Mocking a high-level method can remove a side effect the test depends on (a config write, a cache fill), so the test passes or fails for the wrong reason. Run against the real implementation first, then mock only the slow or external piece underneath.
+- **Mirror the full shape.** A partial mock response with only the fields you thought of hides structural assumptions; downstream code reads a field you omitted and integration breaks while the test passes. Copy the real schema.
+- **No test-only methods in production code.** Cleanup and inspection helpers belong in test utilities. If mock setup is longer than the test, an integration test with real components is usually simpler.
+
+```typescript
+// ❌ Mocks away the config write the duplicate check depends on
+vi.mock('./toolCatalog', () => ({ discoverAndCacheTools: vi.fn() }));
+await addServer(config);
+await expect(addServer(config)).rejects.toThrow(); // never throws: nothing was written
+
+// ✅ Mock only the slow process launch; keep the real config write
+vi.mock('./serverProcess', () => ({ spawnServer: vi.fn().mockResolvedValue(fakeHandle) }));
+await addServer(config);
+await expect(addServer(config)).rejects.toThrow(/already registered/);
+```
+

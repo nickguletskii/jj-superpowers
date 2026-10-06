@@ -144,8 +144,13 @@ This recipe is owned here and run only by `project-layout`; `spec-drift-detector
 
 ## Conflict rules
 
-- A given code path MAY appear in multiple capabilities' `owns:` and any number of planes' `owns:` — co-ownership is allowed (a shared component legitimately participates in several capabilities). `owns:` is a hint for spec lookup, not a coverage gate.
-- If `code_map` and spec frontmatter disagree, **spec frontmatter wins**; skills update `code_map` to match (or report it as a drift finding if they aren't authorized to write).
+Canonical for every spec skill; `spec-code-sync`, `spec-drift-detector`, and `writing-specs` point here.
+
+- **`owns:` is a hint, not a coverage gate.** It tells skills which specs to consult. Files with no `code_map` entry are normal — technical/non-product code (build glue, config, internal libraries, shared helpers, test scaffolding) and helpers inside a capability. Never block a change, or report "orphan code", because a path is unmapped; never fall back to glob-matching the whole spec corpus either. Only `spec_code.modules` is exhaustive.
+- **Co-ownership is allowed.** A path MAY appear in several capabilities' and planes' `owns:`. Overlap is not a finding; a new requirement on a co-owned path must not contradict the co-owners' requirements.
+- **Spec frontmatter wins.** If `code_map` and frontmatter disagree, treat frontmatter as authoritative, re-resolve the affected paths, and update `code_map` (or report the drift if not authorized to write).
+- **Stale `code_map` is invisible per change.** Lookups and diff-scoped drift runs start from `code_map`, so a path it omits never loads its owning spec. Only `spec-drift-detector --full-audit` walks frontmatter directly; schedule it periodically.
+- **`excluded_paths` is not a mute button.** It is for generated/vendor/build paths only; deferral goes in a tech-debt queue.
 
 ## Nested manifests (monorepo)
 

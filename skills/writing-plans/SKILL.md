@@ -46,15 +46,7 @@ Create only context docs that multiple tasks would otherwise need to repeat.
 | `task` | Implementer-owned work | `file`, `files` | `scopes`, `stub` |
 | `verify` | Batched compile/test/lint/build gate, and the group reduction point | `file` | `simplify` |
 
-Implied gates — the executor runs these; you never author them:
-
-| Gate | When it runs | Scope |
-|------|--------------|-------|
-| `spec_review` | after every `task` completes | that task |
-| `design_review` | after a `stub=true` task's spec review, before its dependents start | the stubbed surface |
-| `simplification` | after a `verify` marked `simplify=true` | that verify's task group |
-| `quality_review` | after `verify` (or after `simplification` when present) | that verify's task group |
-| `final` | when every `verify` node has passed | the whole graph |
+Implied gates (`spec_review`, `design_review`, `simplification`, `quality_review`, `final`) and their triggers and scopes are owned by the Graph Contract in `jj-superpowers:subagent-driven-development`.
 
 Rules:
 - **Target Files & Collision Gate:** `files` is a space-separated list of primary target files to be created or modified. Tasks may run in parallel only when their `files` do not overlap. `files` lives **only** on the graph node — do not restate it in the task file.
@@ -63,10 +55,8 @@ Rules:
 - **API First / Early Stubbing:** The earliest task node(s) MUST establish the new public API surfaces, types, schemas, interfaces, or traits as empty/stubbed implementations (`todo!()`, `throw new Error("Not implemented")`, mock structures) and MUST be marked `stub=true`. This lets consumer tasks compile immediately, and it is what triggers the implied `design_review`. A graph with no shared API surface (independent leaf tasks) has no `stub=true` node and gets no design review.
 - **`simplify=true`:** Set on a `verify` node **only when** its task group introduced new helpers, utilities, or abstractions — otherwise there is no duplication risk to check. This triggers the implied `simplification` gate, which is the **single owner** of duplication detection (`quality_review` covers maintainability only).
 - **Cleanup / Dead Code Check:** If the plan refactors existing code, modifies internal structures, or deprecates functionality, it MUST include a dedicated cleanup `task` node (e.g. `task-cleanup.md`) before its verify node. It removes code made dead, obsolete tests, and unused imports, asking the user before deleting.
-- **Contended commands** (`cargo`, `bazel`, test suites, type checks, linters, builds) belong in `verify` nodes, never in implementer tasks — the single exception is a `stub=true` task's narrow scoped type-check. Canonical rule: **Verification Ownership** in `jj-superpowers:subagent-driven-development`.
+- **Contended commands** belong in `verify` nodes — see **Verification Ownership** in `jj-superpowers:subagent-driven-development`.
 - **REQUIRED SUB-SKILL:** Use `jj-superpowers:tool-output-discipline` when writing verification commands.
-
-**What `design_review` judges.** API *coherence* only — right variation axis, illegal states unrepresentable, explicit effects, no leaky boundaries. Its rubric defaults to `designing-with-types-and-abstractions`. It does **not** re-run type-checking: the `stub=true` task carries a narrow task-local type-check so consumers fan out against a compiling stub (see the stub type-check exception under Task Files). It gates consumer *start*, so a bad API is caught before implementations are produced against it.
 
 ### Agent-spec ecosystem integration
 
@@ -216,7 +206,7 @@ reinventing. If a needed utility genuinely does not exist, say so explicitly.]
 
 **Omit `Task-local checks` entirely unless the task genuinely has one.** The default — group commands run at the `verify` node, the implementer runs nothing contended — is a standing rule, not something each task restates. Include the section only to name a specific narrow command.
 
-**API-stub type-check exception:** a `stub=true` task MUST name a narrow, scoped type-check (e.g. `cargo check -p <crate> -q`) so the stub is known to compile before consumers start, and MUST document why it is safe and necessary. No other task kind may name a contended command.
+**API-stub type-check:** a `stub=true` task MUST name its narrow scoped type-check (e.g. `cargo check -p <crate> -q`) and document why it is safe — the one exception in SDD **Verification Ownership**.
 
 ### Reference upstream interfaces; do not transcribe them
 
@@ -246,14 +236,7 @@ Each `verify` node uses a file named `verify-NN-name.md`.
 **Expected result:** Primary commands exit 0. No ignored failures. Diagnostic commands are for concise failure reporting and may not preserve the primary command's exit status. If a command fails because of a task-owned issue, return to that task's implementer and re-run its spec review before this verification node runs again.
 ````
 
-Verification files own contended commands: compile, type check, build, lint, test suites, and smoke tests. Keep these commands batched at graph reduction points to avoid multiple agents waiting on shared build locks.
-
-Write verification commands with tool-output discipline:
-
-- Prefer quiet, structured, scoped, or filtered forms when they answer the verification question.
-- Separate primary pass/fail commands from diagnostic commands when useful; filtered diagnostic pipelines must not be the only pass/fail signal unless they preserve the underlying tool's exit status.
-- Put full-log commands behind an explicit escalation note rather than making them the default.
-- For commands likely to need unsandboxed, network, cache, or device permissions, use a short prefix-whitelistable command. Prefer checked-in helper scripts with named arguments over inline env assignments, heredocs, shell wrappers, or chained command strings.
+Verification files own the contended commands (SDD **Verification Ownership**). Write them per `jj-superpowers:tool-output-discipline`; a filtered diagnostic pipeline must not be the only pass/fail signal unless it preserves the tool's exit status, and full-log commands sit behind an explicit escalation note.
 
 ## No Placeholders & No Code Bodies
 
@@ -292,8 +275,6 @@ When editing this skill or `subagent-driven-development`, validate the behavior 
 
 ## Execution Handoff
 
-This handoff respects the autonomy level (see the Autonomy Level table in `using-superpowers`).
-
 **When this handoff applies.** The subagent-vs-inline choice below is owned here only in **Waterfall** (a single full-plan invocation). When `writing-plans` was invoked **phase-scoped** by `iterative-planning` (Agile), the execution-skill choice is owned by `iterative-planning` — decided once at roadmap time and applied to every phase — so this per-phase handoff is **SKIPPED** entirely.
 
 **Manual (Waterfall).** After saving the plan, offer execution choice:
@@ -306,7 +287,7 @@ This handoff respects the autonomy level (see the Autonomy Level table in `using
 
 **Which approach?"**
 
-**Rush (Waterfall).** Do not ask; auto-pick per the Rush resolution for the execution-handoff checkpoint in the Autonomy Level table in `using-superpowers` (subagent-driven when subagents are authorized and the harness supports named subagents; else inline).
+**Rush (Waterfall).** Do not ask; resolve per `using-superpowers` `references/autonomy.md`.
 
 If Subagent-Driven is chosen:
 - **REQUIRED SUB-SKILL:** Use `jj-superpowers:subagent-driven-development`.

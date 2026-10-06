@@ -150,7 +150,7 @@ digraph loop {
 
 ### Keep all attempts (jj)
 
-This repo uses jj. Every candidate is its own change — **never `jj abandon`**. Annotate each with its verdict so the user can prune later. Proven changes integrate into the solution line; disproven/inconclusive ones stay as retained side changes, recorded in the ledger by change id. Nothing is silently discarded.
+This repo uses jj. Every candidate is its own change. Don't `jj abandon` a candidate: it holds evidence, and abandoning is only for empty scaffolds you created (jujutsu safety rule 6); the user decides what to prune. Annotate each with its verdict so the user can prune later. Proven changes integrate into the solution line; disproven/inconclusive ones stay as retained side changes, recorded in the ledger by change id. Nothing is silently discarded.
 
 ## Parallelism
 
@@ -174,30 +174,17 @@ Baseline: <measured value / failure-mode inventory>  (measured <when/how>)
 
 ## Red Flags — STOP
 
-- Building a done-predicate, baseline, ledger, or files for a simple review loop → use simple in-line mode.
-- Stopping a review loop after one pass because the big issues are gone → loop until a round surfaces zero Critical/Important findings (Minors fold in-place).
-- Writing a fix before writing the done-predicate and baseline (full mode).
+- Building a done-predicate, baseline, ledger, or files for a simple review loop where findings are real on sight → simple in-line mode.
+- "The review found nothing major, we're done" → loop until a round surfaces **zero Critical/Important findings**; fold outstanding Minors on that round. One fresh Critical/Important reopens the loop.
+- Writing a fix before the done-predicate and baseline (full mode). "No time to instrument a baseline" means you cannot prove improvement at all; the baseline is hypothesis #1.
+- "'Eliminate all' is impossible, so I'll do my best" → write the predicate you *can* hit (enumerated modes + measured rate + regression guard) and report against it.
+- "I'm confident it's X, just ship it" → a hunch is a hypothesis, not a diagnosis. Triage, prove, measure.
 - A fix-*list* with no likelihood/impact ranking.
-- Shipping more than one change before measuring.
-- "I can tell it's faster / better" — intuition instead of measurement.
-- Declaring the objective met without re-checking the done-predicate.
+- Shipping more than one change before measuring. Bundled changes are unattributable.
+- "It looked faster" → one reading on a noisy metric is noise. Repeated runs over a stable window, against the baseline.
 - Marking an inconclusive result as processed.
-- A single metric reading on a noisy system treated as proof.
-- The loop ending without either the predicate met or an explicit residual-gap report.
-
-## Rationalization Table
-
-| Excuse | Reality |
-|--------|---------|
-| "I'm confident it's the timeout, just ship it" | A hunch is hypothesis H1, not a diagnosis. Triage it, prove it, measure it. |
-| "Ship all the fixes together to save time" | Bundled changes are unattributable. You won't know what worked or what to revert. One at a time. |
-| "'Eliminate all' is impossible, so I'll just do my best" | Then write the predicate you CAN hit (enumerated modes + measured rate + regression guard) and report against it. Vague objective ≠ no predicate. |
-| "It looked faster after deploy" | One reading on a noisy metric is noise. Repeated runs over a stable window, vs baseline. |
-| "No time to instrument a baseline" | Without a baseline you cannot prove improvement at all. Baseline is hypothesis #1, not optional. |
-| "I'll just abandon the failed attempts" | Keep them annotated. The user prunes; disproofs are evidence for the next round. |
-| "Hypotheses ran out, I'll wrap up" | Re-check the predicate. If unmet, report the residual gap explicitly — don't imply success. |
-| "I'll write a done-predicate + ledger for this spec review" | If findings are real-on-sight from a reviewer, that's simple in-line mode: review → tag severity + accept/refute → correct → loop until a zero-Critical/Important round. No predicate, no ledger, no files. |
-| "The review found nothing major, we're done" | Convergence is a round that surfaces **zero Critical/Important findings** (re-review confirms the fixes held). On that round fold outstanding Minors — but a single fresh Critical/Important finding reopens the loop. |
+- "I'll abandon the failed attempts" → keep them annotated (see Keep all attempts); disproofs are evidence for the next round.
+- Hypotheses ran out and you're wrapping up → re-check the done-predicate; if unmet, report the residual gap explicitly instead of implying success.
 
 ## Common Mistakes
 

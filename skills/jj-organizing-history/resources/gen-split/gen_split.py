@@ -41,7 +41,9 @@ Rules:
   - Patterns match the destination path (handles renames correctly).
   - Renamed files: both src and dst paths are passed to jj split.
   - Paths containing $ or " are double-quoted in jj fileset syntax.
-  - On any jj failure, jj undo is run automatically before exiting.
+  - The operation id is recorded before the first split. On any jj failure the
+    script stops and prints that id with a `jj op restore <id>` hint; it never
+    rolls back on its own.
 """
 
 import json, os, re, subprocess, sys
@@ -51,10 +53,26 @@ import json, os, re, subprocess, sys
 # jj wrapper
 # ---------------------------------------------------------------------------
 
+START_OP = None
+
+
+def record_start_op():
+    """Snapshot the working copy and remember the resulting operation id."""
+    global START_OP
+    result = subprocess.run(
+        ['jj', '--no-pager', 'op', 'log', '--no-graph', '-n1', '-T', 'id.short(12)'],
+        capture_output=True, text=True)
+    if result.returncode != 0:
+        print(result.stderr, end='', file=sys.stderr)
+        sys.exit(1)
+    START_OP = result.stdout.strip()
+    print(f"Starting operation: {START_OP}")
+
+
 def jj(*args, env_extra=None):
     """
-    Run jj with args. Prints combined output. On non-zero exit, runs
-    jj undo to roll back the last operation and exits with code 1.
+    Run jj with args. Prints combined output. On non-zero exit, prints the
+    operation id recorded at start and exits with code 1 without rolling back.
     Returns combined stdout+stderr as a string.
     """
     env = {**os.environ, **(env_extra or {})}
@@ -63,9 +81,9 @@ def jj(*args, env_extra=None):
     print(combined, end='')
     if result.returncode != 0:
         print(f"\nERROR: `jj {' '.join(args)}` exited {result.returncode}", file=sys.stderr)
-        print("Running `jj undo` to roll back last operation...", file=sys.stderr)
-        print("(If the undo was not needed, run `jj redo` to recover.)", file=sys.stderr)
-        subprocess.run(['jj', '--no-pager', 'undo'], check=False)
+        print(f"Stopped. The repo was at operation {START_OP} before this script ran.", file=sys.stderr)
+        print("Inspect `jj op log`; to discard this script's partial work, run:", file=sys.stderr)
+        print(f"  jj op restore {START_OP}", file=sys.stderr)
         sys.exit(1)
     return combined
 
@@ -175,6 +193,8 @@ def main():
     mode = cfg.get('mode', 'file')
     session_dir = cfg.get('session_dir', os.path.dirname(os.path.abspath(sys.argv[1])))
     groups = cfg['groups']
+
+    record_start_op()
 
     split_groups = [g for g in groups if 'patterns' in g or 'spec' in g]
     last_group = next((g for g in groups if 'patterns' not in g and 'spec' not in g), None)

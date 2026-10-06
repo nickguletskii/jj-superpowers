@@ -194,30 +194,6 @@ Rules:
 - Keep grep/string searches for dynamic/framework/public API risk checks even when SCIP is available.
 - If the SCIP index is unavailable, failed, or does not cover a language/path, continue with source reading + grep and label the finding `grep-only evidence`.
 
-## Finding Evidence Rules
-
-Dead-code claims require all of:
-- symbol/file name
-- defining file path when known
-- SCIP reference count when available, including command used
-- grep/string search pattern(s) used
-- result count outside the defining file
-- confirmation tests and generated files were excluded from liveness evidence
-- note of possible dynamic/framework/public API usage if applicable
-
-Duplication claims require:
-- specific files and symbols/functions
-- confirmation both implementations were read
-- the shared logic, not just similar names
-
-Abstraction opportunities require:
-- specific files and symbols/functions
-- proposed extraction name
-- what current code would be replaced
-- why it is not speculative overengineering
-
-Treat exported symbols, framework-discovered entrypoints, config-referenced files, route handlers, plugin hooks, migrations, generated clients, and public package APIs as **extra-confirmation deletion candidates** even if grep finds no internal usage.
-
 ## Deletion Approval Format
 
 Before deleting, write `[MAP_ROOT]/approved-deletions.md` with exact records approved by the user:
@@ -239,6 +215,7 @@ Rules:
 - If a file contains approved and unapproved symbols, remove only approved symbols.
 - Cleanup of imports/re-exports is allowed only when it directly references approved deletions.
 - Do not bundle refactors with deletion work.
+- Exported symbols, framework-discovered entrypoints, config-referenced files, route handlers, plugin hooks, migrations, generated clients, and public package APIs need explicit user confirmation even when no internal usage is found. (Per-finding evidence requirements live in the analysis and analysis-reviewer agents.)
 
 ## Validation Gate
 
@@ -261,16 +238,3 @@ End with:
 - validation result, or why validation did not run
 - path to `refactoring-request.md` if created
 - recommended next step
-
-## Common Mistakes
-
-| Mistake | Fix |
-|---|---|
-| Mapping a vague scope | Confirm exact paths and recursion first. |
-| Mapping only top-level directories when recursive cleanup was intended | Enumerate descendant directories and map each immediate directory separately. |
-| Treating grep-zero as safe deletion for public/framework code | Mark as extra-confirmation and ask the user explicitly. |
-| Running analysis before map review approval | Complete the review/repair loop first. |
-| Letting subagents talk to the user | Subagents report `BLOCKED`/issues; orchestrator asks. |
-| Skipping reviewers to save time | Review gates are required before proceeding. |
-| Deleting “nearby” code not in approval records | Delete only approved records. |
-| Turning findings directly into broad refactors | Produce `refactoring-request.md`, then use design/planning. |

@@ -15,7 +15,7 @@ This is a technique skill. It **delegates**: it does not reimplement planning or
 
 **REQUIRED SUB-SKILL:** Use `jj-superpowers:writing-plans` to plan each phase.
 **REQUIRED SUB-SKILL:** Use `jj-superpowers:subagent-driven-development` or `jj-superpowers:executing-plans` to execute each phase's graph.
-**REQUIRED SUB-SKILL:** Use `jj-superpowers:finishing-a-development-branch` once all phases are done.
+Once all phases are done, run the Finish checks in `subagent-driven-development`'s Change Consolidation section, then ask the user what to integrate.
 
 ## The loop
 
@@ -32,8 +32,8 @@ docs/superpowers/plans/YYYY-MM-DD-<feature>/
    a. **Plan.** Invoke `writing-plans` **scoped to this phase only** → a normal, valid phase graph that reaches its own `final`. The per-phase `writing-plans` call **skips its own Execution Handoff** — execution-skill selection is owned here (see below).
    b. **Execute** that phase's graph via the selected execution skill.
    c. **Fold learnings.** After the phase's `final`, append a completion note (new APIs/types, deviations, surprises, follow-ups) to that phase's roadmap entry, then re-examine remaining phases and adjust if warranted (split / merge / reorder / insert / drop) — within the drift guardrail below.
-   d. **Boundary checkpoint.** Manual → pause and present the phase summary + proposed next phase for approval. Rush → auto-advance. Resolve per the **Autonomy Level table in `using-superpowers`**.
-3. **All phases `[done]`** → `finishing-a-development-branch`.
+   d. **Boundary checkpoint.** Manual → pause and present the phase summary + proposed next phase for approval. Rush → auto-advance. Rush resolution: `using-superpowers` `references/autonomy.md`.
+3. **All phases `[done]`** → Finish checks (SDD Change Consolidation), then ask the user what to integrate.
 
 ```dot
 digraph iterative_planning {
@@ -44,7 +44,7 @@ digraph iterative_planning {
   fold      [shape=box, label="fold learnings;\nadjust remaining phases"];
   boundary  [shape=diamond, label="more phases?"];
   ckpt      [shape=diamond, label="autonomy?"];
-  finish    [shape=box, label="finishing-a-development-branch"];
+  finish    [shape=box, label="Finish checks,\nthen ask what to integrate"];
 
   roadmap -> plan -> exec -> fold -> boundary;
   boundary -> ckpt   [label="yes"];
@@ -55,7 +55,7 @@ digraph iterative_planning {
 
 ## Execution-skill selection (owned here)
 
-In Agile, **this skill** owns the subagent-vs-inline decision. It is made **once** at roadmap time, recorded in `roadmap.md`'s `Execution:` field, and applied to every phase. On resume the loop reads that field to rehydrate the choice — the skipped per-phase handoff has no other source, so the field is **mandatory**. Under Rush, auto-resolve this selection per the **Autonomy Level table in `using-superpowers`**.
+In Agile, **this skill** owns the subagent-vs-inline decision. It is made **once** at roadmap time, recorded in `roadmap.md`'s `Execution:` field, and applied to every phase. On resume the loop reads that field to rehydrate the choice — the skipped per-phase handoff has no other source, so the field is **mandatory**. Under Rush, see `using-superpowers` `references/autonomy.md`.
 
 ## Phase sizing heuristic (advisory, not a gate)
 

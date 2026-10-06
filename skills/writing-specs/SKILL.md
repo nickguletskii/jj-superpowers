@@ -36,7 +36,7 @@ Author and amend agent-oriented specifications: capability specs, plane specs, g
 
 1. Read `.agents/layout.yaml`. Verify `schema_version`. Refuse on unknown future versions.
 2. Read `glossary.md` and `invariants.md` — they're small and you'll reference them.
-3. If amending an existing spec, read only that spec's `SPEC.yaml`. Don't load the corpus. **Exception:** if the spec has a `parent:` field, also load the parent's `SPEC.yaml` (frontmatter + cross-cutting requirements) — parent-level requirements apply to all sub-specs and must not be contradicted.
+3. If amending an existing spec, read only that spec's `SPEC.yaml` (plus its parent's, per the parent rule below). Don't load the corpus.
 4. If the change touches a code-as-spec module, read the module file too.
 
 ## Choosing the spec kind
@@ -74,6 +74,8 @@ Split a capability or plane into sub-specs when:
 
 Cap at one level: sub-specs MUST NOT have `sub_specs:` of their own. If a sub-spec grows too large, refactor the parent into separate top-level capabilities instead.
 
+**Parent rule:** parent-level requirements apply to every sub-spec and must not be contradicted. Whenever you load a sub-spec (`parent:` set), also load the parent's `SPEC.yaml` (frontmatter + cross-cutting requirements). Other skills defer to this rule.
+
 ### Creating a sub-spec
 
 1. Create a subdirectory inside the capability/plane directory: `capabilities/<parent>/<leaf>/`.
@@ -109,7 +111,7 @@ Migrated requirements (moved from the parent) keep their stable IDs (`REQ-CHAT-0
 
 ## SPEC.yaml format
 
-A single SPEC.yaml file replaces the former SPEC.md + requirements.yaml pair. Prose sections are KYAML `|` blocks; structured data is inline YAML. Example schema:
+Prose sections are KYAML `|` blocks; structured data is inline YAML. Example schema:
 
 ```yaml
 id: video-upload
@@ -170,9 +172,7 @@ failure_modes:
 
 - Capability: `REQ-<SHORT>-NNN` (e.g., `REQ-VID-014`).
 - Plane: `INV-<SHORT>-NNN`.
-- **Sub-spec requirements** use the nested form `REQ-{PARENT_SHORT}-{SUB_SHORT}-NNN` (capabilities) or `INV-{PARENT_SHORT}-{SUB_SHORT}-NNN` (planes). See "Sub-spec authoring" for SHORT selection.
-- Migrated requirements keep their original IDs. New sub-spec requirements use the nested form.
-- Each ID MUST appear in exactly one SPEC.yaml. Moving a requirement to a sub-spec means removing it from the parent.
+- Sub-spec IDs and the one-file-per-ID ownership rule: see "REQ-ID scheme for sub-specs" above.
 - IDs are **stable across renames**.
 - **Deprecation-only retirement**: never reuse a number. Set `level: DEPRECATED` and add a `replaced_by:` if applicable.
 - Pick the next free integer; don't try to make it pretty.
@@ -195,18 +195,13 @@ Annotations are not mandatory on every line — only at the outermost entry poin
 
 ## Code-as-spec module changes (atomic three-artifact rule)
 
-When a normative requirement is encoded in a typed API (Rust trait, TS interface, etc.) registered under `spec_code.modules`, this skill is the **sole** authoring path. Every change is atomic across:
+This is the canonical statement; other skills point here. A module registered under `spec_code.modules` carries normative typed API, and this skill is the **sole** authoring path for its public surface (adding, removing, renaming, or retyping a public item, or changing its visibility). Every such change lands in **one change set** across:
 
-(a) the code-as-spec module itself — signature edit + RFC2119 doc edit in the native doc format (rustdoc / jsdoc / javadoc);
-(b) any prose section in `SPEC.yaml` that references the changed item — keep cross-references current;
-(c) `SPEC.yaml` — if a `REQ-`/`INV-` ID is bound to the item.
+(a) the module — signature + RFC2119 doc in the native doc format (rustdoc / jsdoc / javadoc);
+(b) every `SPEC.yaml` prose section that references the item (grep for its name and bound ID);
+(c) the `SPEC.yaml` `requirements:` entry bound to the item, if any.
 
-**All three in one change set.** If you edit only (a), `spec-code-sync` will treat the edit as unfinished and re-route you here.
-
-Rules for code-as-spec modules:
-1. Module contains **only API surface**: signatures, types, enums, constants. Implementation logic MUST live in sibling modules.
-2. Every public item carries RFC2119-grade docs (MUST/SHOULD/MAY).
-3. Items MAY carry stable ID prefixes (`/// REQ-INF-014:`) when bound to a numbered requirement — optional, not gated.
+The module contains **only API surface** (signatures, types, enums, constants); implementation lives in sibling modules. Items MAY carry an ID prefix (`/// REQ-INF-014:`). A rename is a deprecation plus a new item: keep the old one `#[deprecated]`, or hard-rename and set `replaced_by:`. Editing (a) alone is unfinished; `spec-code-sync` routes it back here.
 
 ## Glossary and invariants
 
@@ -229,17 +224,18 @@ Honor golden rule D: specify the *contract* (which states exist, what a transiti
 Quick inline check — fix in place, don't loop on it:
 
 1. **Clean-room sufficiency**: "Could a competent engineer with no other context implement this from the spec alone?" If no, what's missing?
-2. **RFC2119 correctness**: MUST/SHOULD/MAY used where they belong; no casual "should" that meant MUST.
+2. **RFC2119 correctness**: MUST/SHOULD/MAY used where they belong, capitalized when normative:
+   - No lowercase "should" as a normative term — write SHOULD (or MUST, if that is what you meant).
+   - No MUST plus implementation detail ("MUST use Postgres" → "MUST persist records durably across restarts").
+   - Every MUST is externally observable ("MUST be efficient" → "p99 < 100 ms at 10k QPS").
 3. **No implementation leakage**: scaling assumptions don't mandate algorithms/libraries; failure modes don't prescribe class names; nothing dictates code structure or naming.
 4. **No code duplication (golden rule D)**: read each requirement and ask "could I regenerate this by paraphrasing the signature/enum/constant?" If yes, it's transcription — cut it or replace it with the intricacy it was burying (timing model, edge case, contract, *why*).
 5. **Frontmatter ↔ `layout.yaml`**: `owns:` and `code_spec:` written; if `layout.yaml` `code_map`/`spec_code.modules` disagree, update `layout.yaml`.
-6. **Co-ownership check**: other capabilities/planes MAY share `owns:` over the same path — that's allowed. But when this spec adds/changes a requirement on a co-owned path, confirm with the user that the new requirement does not contradict requirements in the co-owning specs. List the other owners explicitly; don't paper over the overlap.
+6. **Co-ownership check** ("Conflict rules" in `project-layout/references/manifest-schema.md`): when this spec adds/changes a requirement on a co-owned path, list the other owners and confirm with the user that the new requirement does not contradict theirs.
 7. **References resolve**: every plane/glossary/invariant ID you cite exists.
 8. **`impl:` annotations**: if this spec change adds a new MUST requirement that has an obvious primary implementation site, note the file so developers know to add `// impl: REQ-XXX-NNN` there.
-9. **Sub-spec consistency (if applicable):** `sub_specs:` in parent lists exactly the leaf directory names that have a `SPEC.yaml`. No extra entries, no missing entries.
-10. **Sub-spec id format:** each sub-spec's `id` equals `{parent-slug}/{leaf-directory-name}`.
-11. **No double-nesting:** no sub-spec has a `sub_specs:` key.
-12. **UI as observable behavior (if user-facing):** states, transitions, interactions, and error/progress surfaces are specified as observable contracts (golden rule D) — no transcribed widget props — and long/async behavior names its responsiveness + progress guarantees.
+9. **Sub-specs (if applicable):** the parent's `sub_specs:` lists exactly the leaf directories that have a `SPEC.yaml`; ids, ID prefixes, and nesting follow "Sub-spec authoring".
+10. **UI as observable behavior (if user-facing):** states, transitions, interactions, and error/progress surfaces are specified as observable contracts (golden rule D) — no transcribed widget props — and long/async behavior names its responsiveness + progress guarantees.
 
 If you find a placeholder, ambiguity, or contradiction → fix and continue. Don't ship "TBD" sections.
 
@@ -258,6 +254,4 @@ If you find a placeholder, ambiguity, or contradiction → fix and continue. Don
 ## References (load on demand)
 
 - `references/spec-template.md` — copy-and-fill `SPEC.yaml` template.
-- `references/rfc2119-cheatsheet.md` — when to use MUST/SHOULD/MAY/MUST NOT/SHOULD NOT.
-- `references/code-as-spec-checklist.md` — atomic-change procedure for typed API edits.
 - `references/ui-spec-patterns.md` — express UI (states, pages, widgets, transitions, interactions, error/progress) as observable behavior.

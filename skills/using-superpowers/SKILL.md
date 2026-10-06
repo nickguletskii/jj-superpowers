@@ -3,28 +3,16 @@ name: using-superpowers
 description: Use when starting any conversation - establishes how to find and use skills, requiring Skill tool invocation before ANY response including clarifying questions
 ---
 
-<BOOTSTRAP-CONTRACT>
-Harness startup hooks should inject only a compact bootstrap that points to this
-skill; they should not paste this whole file into every session. The full skill
-body is for orchestrator sessions that need the complete skill-use discipline.
-
-Subagents should receive only bounded task context. If you were dispatched as a
-subagent, follow the stop rule below and load only skills directly relevant to
-your assigned task.
-</BOOTSTRAP-CONTRACT>
+<!--
+Maintainer note (bootstrap contract): harness startup hooks inject only a compact
+bootstrap that points to this skill; they must not paste this whole file into every
+session. The full body is for orchestrator sessions. Subagents receive bounded task
+context and their rules (including the no-nested-harness rule) from agents/_preamble.md.
+-->
 
 <SUBAGENT-STOP>
 If you were dispatched as a subagent to execute a specific task, skip this skill.
 </SUBAGENT-STOP>
-
-<SUBAGENT-HARNESS-BOUNDARY>
-Subagents must not invoke another agent harness through ANY channel — not the
-shell (`claude`, `codex`, `opencode`) and not MCP tools
-(e.g. `mcp__codex__codex`). Having the tool available is not permission to use
-it. A subagent completes only its assigned bounded task. If more agents,
-a different role, or a different model are needed, report `NEEDS_CONTEXT` or
-`BLOCKED`; the orchestrator owns all further dispatch.
-</SUBAGENT-HARNESS-BOUNDARY>
 
 <EXTREMELY-IMPORTANT>
 If you think there is even a 1% chance a skill might apply to what you are doing, you ABSOLUTELY MUST invoke the skill.
@@ -66,44 +54,6 @@ Skills use Claude Code tool names. Non-CC platforms translate tools as follows:
 
 This is about running jj-superpowers *inside* another harness — tool-name mapping only. Calling *out* to an external harness for a second opinion (ensemble review) is a different thing entirely and is owned by `jj-superpowers:choosing-model-and-effort`. Do not conflate the two senses of "harness".
 
-## Command Invocation Discipline
-
-Do not pack discovery, filtering, variable assignment, redirection, and output
-truncation into a clever shell snippet. Harnesses often gate commands by
-statically analyzing each invocation; command substitutions, pipes, shell
-variables, redirects, and compound scripts can trigger security approval prompts
-even when every underlying operation is harmless.
-
-When searching for Markdown or code that contains literal backticks, wrap the
-search pattern in single quotes or escape the backticks. In many shells,
-backticks inside double quotes are command substitution and may execute the text
-inside them.
-
-Prefer small, literal, analyzable commands that push filtering into the tool:
-
-1. Use native selectors first: path arguments, filesets, include/exclude flags,
-   query flags, `--summary`, `--stat`, `--context`, `--limit`, or equivalent
-   options. Do not dump a huge result just to pipe it into `grep` or `head`.
-2. If discovery is still needed, ask the tool for the smallest useful summary
-   and constrain it with literal arguments.
-3. Run follow-up commands with literal paths, revisions, IDs, or query terms
-   copied from the prior output. Do not hide them in shell variables.
-4. Use the harness/tool output limit as the final guard, not as the primary
-   filtering mechanism.
-
-Bad pattern:
-
-```sh
-P=$(rg --files 2>/dev/null | grep -iE 'schema\.rs')
-rg -n 'CameraSchema' "$P" 2>&1 | head -40
-```
-
-Good pattern:
-
-```sh
-rg -n -m 40 --glob '*[sS]chema.rs' 'CameraSchema'
-```
-
 ## Decision Checkpoints
 
 When orchestrator execution reaches a real user decision, pause and present 2-3 concrete alternatives. Lead with the recommended option and state the tradeoff briefly.
@@ -118,43 +68,7 @@ Subagents must not use ask/question tools. If a subagent needs a user decision, 
 
 ### Autonomy Level
 
-The **recommended option** is the lead option at a checkpoint — the one you "Lead with the recommended option" above (first in the ask tool). "Recommended", "lead", and "default" are interchangeable. A checkpoint with **no** designated recommended option is high-impact ambiguity → floor #3 (halt).
-
-Two levels:
-
-- **`Manual`** (default) — every decision-checkpoint pauses and asks, exactly as today.
-- **`Rush`** — take the recommended option without pausing, *unless the safety floor trips*. The floor is also an action policy: any action matching it halts even outside a checkpoint (e.g. an irrecoverable deletion mid-implementation).
-
-Rush auto-resolves **user checkpoints only**. Automated review nodes (`spec_review`, `design_review`, `verify`, `quality_review`, `simplification`, and the brainstorming adversarial spec-review loop) **always still run** — Rush removes the human sign-off wait on their results, never the check itself.
-
-**Safety floor (always halts and asks, even in Rush):**
-
-1. **Irrecoverable destruction** — effects not recoverable from version control: deleting untracked data the agent didn't create, discarding the user's uncommitted/dirty work, history-loss, outward-facing sends (publish/send). VCS-recoverable (committed/tracked) deletions proceed.
-2. **Structural design flaw** — the `BLOCKED_STRUCTURAL` escalation that returns to brainstorming.
-3. **High-impact ambiguity** — materially different outcomes **and** no clearly-recommended option (includes a no-designated-lead option menu and Rush × Agile net scope growth). Bias: when uncertain whether a default is clear, halt.
-4. **Stuck review** — a `spec_review`/`verify`/`quality_review`/`simplification` failure still unresolved after `N = 3` automated fix-and-re-review attempts.
-
-**Floor precedence.** Floor #2 (structural) short-circuits floor #4's retry budget: a failure diagnosed structural at *any* attempt escalates immediately, not retried to `N = 3`. The `N = 3` budget applies only to mechanical/local failures. On ambiguity, default to structural.
-
-**`N = 3`** (the canonical constant, defined here; other skills reference it by name): the original failure is attempt 0; Rush makes up to 3 fix-and-re-review attempts; halt on the 3rd. One initial fix + two retries = 3.
-
-**Canonical Rush-resolution table** (single source of truth; consumers reference it by name):
-
-| Checkpoint | Rush resolution |
-|------------|-----------------|
-| Triage tier proposal | take the proposed tier |
-| Planning strategy proposal | take the proposed strategy |
-| Execution handoff (subagent vs inline) | subagent-driven when authorized **and** the harness supports named subagents; else inline |
-| Spec user-review gate (brainstorming step 10) | auto-pass (automated adversarial spec-review loop still runs) |
-| Agile phase boundary | auto-advance + non-blocking trail entry (exception: scope-drift → floor #3 halt) |
-| `BLOCKED` / `SCOPE: related` | resolve mechanically per existing `executing-plans` rules (add edge / run producer / split); never defer; non-trivial scope expansion → floor #3 halt |
-| `BLOCKED` / `SCOPE: unrelated` | "note as separate task for later" + continue (recorded) |
-| `design_review` structural flaw | floor #2 — halt |
-| `spec_review`/`verify`/`quality_review`/`simplification` failure | auto-route-back, retry ≤ N=3, then floor #4 — halt (if diagnosed structural at any attempt → floor #2 immediately) |
-| Model/effort escalation | earned by a wall → take one step; speculative → floor #3 halt |
-| Finishing integration choice (PR/push/merge) | floor #1 — halt (outward-facing) |
-
-**Activation.** User-initiated ("rush", "autonomous mode") at or after design approval — the Rush boundary is *after* design approval, so clarifying-question and design-approval gates are never auto-resolved. The agent may offer Rush once when ambiguity is low (no nag). Explicit "pause" → `Manual`. A floor halt suspends auto-advance but does not clear the level. **Recording / read order on resume:** `roadmap.md` (Agile, authoritative if present), else the Waterfall design-doc header, else default `Manual`; every transition rewrites the record. Rush is inert at Trivial/Small (their only gate, design approval, is above the boundary); a Trivial/Small task self-escalated to Full becomes Rush- and Agile-eligible.
+Checkpoints default to `Manual`: pause and ask. When the user asks to rush or run autonomously, or a resumed run is recorded as `Rush`, load `references/autonomy.md` — it owns the Rush level, the safety floor, the retry constant `N`, and the canonical Rush-resolution table.
 
 # Using Skills
 
@@ -213,7 +127,7 @@ Your platform already injects every skill's description. The question is not *wh
 - About to claim "done", "fixed", or "passing" → `verification-before-completion`
 - Want finished work reviewed → `requesting-code-review`
 - Received review feedback → `receiving-code-review`
-- Implementation complete, needs integrating or a PR → `finishing-a-development-branch`
+- Implementation complete, needs integrating or a PR → the Finish checks in `subagent-driven-development` (Change Consolidation), then a bookmark + push per `jujutsu`
 
 **Version control (jj)**
 - Any version control in a jj repo → `jujutsu`

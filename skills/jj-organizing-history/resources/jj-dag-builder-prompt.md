@@ -56,10 +56,10 @@ Agent tool (model per jj-superpowers:choosing-model-and-effort):
 
     ```bash
     # Using uv (recommended) — automatically installs dependencies
-    uv run ~/.jj-superpowers/tools/dot-to-jj-dag.py <dot_file> --anchor-map <anchor_map_file>
+    uv run <jj-organizing-history>/resources/dot-to-jj-dag/dot-to-jj-dag.py <dot_file> --anchor-map <anchor_map_file>
 
     # Or with Python directly (requires manual dependency installation)
-    python3 ~/.jj-superpowers/tools/dot-to-jj-dag.py <dot_file> --anchor-map <anchor_map_file>
+    python3 <jj-organizing-history>/resources/dot-to-jj-dag/dot-to-jj-dag.py <dot_file> --anchor-map <anchor_map_file>
     ```
 
     **Anchor map file format** (one per line):
@@ -69,7 +69,7 @@ Agent tool (model per jj-superpowers:choosing-model-and-effort):
     ```
 
     **See:**
-    - `~/.jj-superpowers/tools/dot-to-jj-dag.py` — DAG builder script
+    - `<jj-organizing-history>/resources/dot-to-jj-dag/dot-to-jj-dag.py` — DAG builder script
     - `jj-superpowers:jj-organizing-history` — owning skill, includes script usage documentation
     - `jj-superpowers:uv-guide` — Comprehensive guide to using `uv`, including sandbox configuration if needed
 

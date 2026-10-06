@@ -19,7 +19,7 @@ This skill runs in two modes. Establish which one you are in before doing anythi
 
 Review and planning nodes load this skill as their **rubric** and cite its sections. They do not ask permission first, and they do not restate its checks. Current callers:
 
-- `jj-superpowers:subagent-driven-development` `simplification` nodes (via the `sdd-simplifier` agent or `simplification-prompt.md`) — apply **section E**, the sole owner of duplication detection in a planned graph.
+- `jj-superpowers:subagent-driven-development` `simplification` nodes (the `sdd-simplifier` agent) — apply **section E**, the sole owner of duplication detection in a planned graph.
 - `jj-superpowers:requesting-code-review` and `jj-superpowers:receiving-code-review` — apply the canonical **file-size rule** in section F.
 - `jj-superpowers:writing-plans` and `jj-superpowers:executing-plans` — apply the file-size rule when sizing touched files.
 
@@ -56,16 +56,14 @@ Six categories. Scan for each. Gather findings with evidence before presenting.
 
 ### A. Suspicious Logic
 
-Conditions, control flow, or expressions that don't mean what they appear to.
+Code that quietly does something other than what the caller would expect. Ordinary bugs (inverted conditions, off-by-one) are review basics, not slop categories.
 
-- Conditions that are always true or always false
-- Unreachable code paths not caught by linters
-- Inverted or contradictory boolean logic
-- Off-by-one errors not caught by linters
-- Wrong operator precedence assumptions
-- Security logic errors: auth bypass, privilege escalation, injection vectors (not things linters catch)
+- **Silent assumption masking in branches**: Control flow that hides unmet assumptions instead of surfacing them. When `foo.bar` is `Optional<T>` but the code assumes it's always present, silently handling the `None` case masks a potential bug. Fail fast (return `Err`, panic, throw) when assumptions are violated. If a fallback is genuinely correct — which is rare — document *why* and make the decision explicit.
+- **Silent fallbacks**: Code that silently defaults instead of surfacing a real choice or error
+- **General fallbacks**: `orElse`, `unwrap_or`, catch-all branches that hide logic rather than making it explicit
+- **Unreasonable defaults**: Defaults that silently produce wrong behavior instead of failing fast
 
-**Fix:** Correct the logic. Add an assertion or type encoding if the correct behavior should be structurally enforced.
+**Fix:** Fail fast on unmet assumptions; make any genuinely correct fallback explicit and documented.
 
 ### B. Undocumented Invariants
 
@@ -75,20 +73,12 @@ Assumptions that aren't encoded in types or documented — code that works but o
 - Preconditions callers must satisfy but aren't documented
 - State machines with unwritten transitions
 - Functions where "you just have to know" the calling order
-- **Silent assumption masking in branches**: Control flow that hides unmet assumptions instead of surfacing them. When `foo.bar` is `Optional<T>` but the code assumes it's always present, silently handling the `None` case masks a potential bug. Fail fast (return `Err`, panic, throw) when assumptions are violated. If a fallback is genuinely correct — which is rare — document *why* and make the decision explicit.
-- **Silent fallbacks**: Code that silently defaults instead of surfacing a real choice or error
-- **General fallbacks**: `orElse`, `unwrap_or`, catch-all branches that hide logic rather than making it explicit
 
-**Fix:** Encode in types, add assertions, add doc comments, or fail fast on unmet assumptions.
+**Fix:** Encode in types, add assertions, or add doc comments.
 
 ### C. Tautological / Redundant Tests
 
-(For detailed guidance → `jj-superpowers:test-driven-development` and `what-to-test.md`)
-
-- Tests that mirror the implementation (assertion restates the code)
-- Tests of type-system guarantees (compiler enforces these)
-- Tests where the assertion can never fail by construction
-- Tests whose meaning is obvious from reading the source
+Tests that restate the implementation, check what the compiler already enforces, or cannot fail by construction. Criteria live in `jj-superpowers:test-driven-development` (`what-to-test.md`).
 
 **Fix:** Remove the test, or replace it with a test of a real invariant.
 
@@ -118,8 +108,7 @@ Duplication and inconsistency that should be unified or at least made consistent
 - Comments that restate the code, are verbose, or reference transient artifacts (ticket IDs, doc/handoff paths) → for the rules and a cleanup pass, use `jj-superpowers:writing-comments`
 - Unused parameters not caught by linters
 - Code that could be made generic but isn't — same pattern across multiple types deserves a trait/interface rather than N copies
-- **Inconsistent configuration schema**: Similar config structs with slightly differing field names, enum variants with identical semantics but different names, or unreasonable default values that silently produce incorrect behavior. Even when configs can't share a schema, enforce consistent field naming so users don't track many variants of semantically identical fields.
-- **Unreasonable defaults**: Defaults that silently produce wrong behavior instead of failing fast
+- **Inconsistent configuration schema**: Similar config structs with slightly differing field names, enum variants with identical semantics but different names, Even when configs can't share a schema, enforce consistent field naming so users don't track many variants of semantically identical fields.
 - **Cacheable work not cached**: Expensive computations, lookups, or transformations that are repeated without caching — without a reason to recompute each time
 - **Unused caches**: Caches that exist but aren't consulted where they should be — the work is recomputed anyway, making the cache dead code
 

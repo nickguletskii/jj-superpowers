@@ -32,13 +32,24 @@ Do not optimize tiny bounded commands.
 
 ## Permission-Friendly Commands
 
-Commands that may need network, cache, device, or unsandboxed filesystem permissions must be short, stable, and allowlist-friendly.
+Harnesses often gate commands by statically analyzing each invocation; command substitutions, pipes, shell variables, redirects, and compound scripts can trigger approval prompts even when every underlying operation is harmless. Commands that may need network, cache, device, or unsandboxed filesystem permissions must be short, stable, and allowlist-friendly.
 
 - Prefer a direct command or checked-in helper script with named arguments.
 - Avoid inline environment assignments, heredocs, command substitution, subshells, redirection-heavy commands, and chained `&&` / `||` logic for permission-gated work.
 - Avoid opaque `bash -lc` / `sh -c` wrappers when a direct command or helper script can do the job.
 - If a command repeatedly needs approval, create or use a permanent helper script so the harness can whitelist a common prefix.
 - In verification plans, name the helper command directly instead of a one-off shell incantation.
+- Do not pack discovery, filtering, variable assignment, redirection, and truncation into one clever snippet. Push filtering into the tool's own selectors (path arguments, filesets, include/exclude, `--stat`, `--limit`), then run follow-ups with literal paths, revisions, or IDs copied from the prior output — not hidden in shell variables. The harness output limit is the final guard, not the primary filter.
+- When a search pattern contains literal backticks, single-quote it or escape them: inside double quotes, backticks are command substitution.
+
+```sh
+# Bad: variable, substitution, pipes, redirects
+P=$(rg --files 2>/dev/null | grep -iE 'schema\.rs')
+rg -n 'CameraSchema' "$P" 2>&1 | head -40
+
+# Good: one literal, analyzable command
+rg -n -m 40 --glob '*[sS]chema.rs' 'CameraSchema'
+```
 
 ## Output Patterns
 

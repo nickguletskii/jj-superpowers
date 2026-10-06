@@ -49,7 +49,7 @@ Change descriptions are governed by the **Change Description Rules** in `jj-supe
 2. Inspect each `wip(...)` change with `jj show -r <id> --stat --no-pager` — this `--stat` summary is the bounded-summary exception to the inline-diff ban in `jj-superpowers:jujutsu` ("Never run full diffs inline"), so it is safe to run inline; do not run a full inline diff.
 3. Group commits by logical concern and dependency.
 4. Present the proposed DAG and assignments to the user using the decision-checkpoint pattern.
-5. Build the DAG using the `jj-superpowers:subagent-driven-development` skill's `jj-dag-builder-prompt.md` and the skill-relative `resources/dot-to-jj-dag/dot-to-jj-dag.py` script.
+5. Build the DAG using the skill-relative `resources/jj-dag-builder-prompt.md` and the skill-relative `resources/dot-to-jj-dag/dot-to-jj-dag.py` script.
 6. Move content into target `todo:` nodes with `jj squash --from <wip-id> --into <target-id> <files> -u`.
 7. Describe each completed node with its real, final description (see Change Description Discipline above) and abandon empty `wip(...)` commits. There is no intermediate label — describe it once, correctly.
 8. Verify **no scaffold survives** — `jj log -r 'trunk()..@ & (description(glob:"wip(*") | description(glob:"todo:*"))'` must return empty. Then confirm `@` is empty and no divergent/conflicted changes exist.
@@ -82,11 +82,11 @@ The config sets `rev` (the full change ID to split), `mode` (`file` or `hunk`), 
 - **`file` mode** assigns paths from a `jj diff --summary` dump (`files_txt`) to groups by regex `patterns` matched against the destination path; the first matching group wins, and renames pass both src and dst paths.
 - **`hunk` mode** splits each group by a `jj-hunk` `spec` (e.g. `{"files": {"src/a.rs": {"hunks": [0, 2]}}, "default": "keep"}`).
 
-The final group with no `patterns`/`spec` receives `jj describe` (not a split) for the remaining change. On any `jj` failure the script runs `jj undo` automatically before exiting.
+The final group with no `patterns`/`spec` receives `jj describe` (not a split) for the remaining change. It records the starting operation id; on any `jj` failure it stops and prints `jj op restore <id>` for you to run after inspecting `jj op log`. It never rolls back on its own.
 
 ## Integration
 
 Called from:
 
-- `jj-superpowers:finishing-a-development-branch` before final integration.
+- The "Finish" step of `jj-superpowers:subagent-driven-development` (Change Consolidation), when the user wants a different history shape before integration.
 - Direct user requests to split, clean, reorganize, or prepare jj history.

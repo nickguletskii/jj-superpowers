@@ -30,6 +30,10 @@ Tests that verify things **obvious from reading the source** or **already enforc
 - **Tautological assertions**: `expect(true).toBe(true)` in disguise — assertions that can never fail because they check something the code guarantees by construction.
 - **Obvious-from-reading tests**: Tests for logic so simple that any developer reading the source can immediately see correctness. A getter that returns a field doesn't need a test.
 
+### Exception: types erased at runtime
+
+TypeScript types are erased at runtime and Python hints are never enforced. Data crossing a boundary (API response, user input, `JSON.parse`, `any`/`unknown`, dynamic import) may not match its declared type. When there is concrete evidence it might (an external API that sometimes omits a field, a parse result cast to an interface), a test of the actual runtime shape is warranted. Don't write such tests speculatively.
+
 ### The boundary: "obvious" is contextual
 
 A test for `fn add(a: i32, b: i32) -> i32 { a + b }` is low-value — the behavior is obvious from reading.
@@ -90,7 +94,7 @@ digraph what_to_test {
 ## Cross-References
 
 - **For removing existing redundant tests:** See `jj-superpowers:deslopify` skill
-- **For test anti-patterns (mocking):** See `testing-anti-patterns.md`
+- **For mocks and test doubles:** See "Mocks and Test Doubles" in SKILL.md
 - **For TDD process:** See SKILL.md in this directory
 
 ## The Bottom Line

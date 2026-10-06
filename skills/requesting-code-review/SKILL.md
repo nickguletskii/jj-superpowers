@@ -23,7 +23,7 @@ Dispatch jj-superpowers:code-reviewer subagent to catch issues before they casca
 
 ## Relationship to Planned Graphs
 
-For planned graph execution, code quality review belongs to `quality_review` nodes — use `subagent-driven-development/code-quality-reviewer-prompt.md` there, and follow the review cadence the plan graph defines.
+For planned graph execution, code quality review belongs to `quality_review` nodes — dispatch the `sdd-quality-reviewer` agent there, and follow the review cadence the plan graph defines.
 
 This skill is for ad hoc/manual review outside that gate, or for explicit user-requested review. It is not mandatory after every graph task. Outside a graph quality gate, request manual review before integration and after substantial ad hoc batches.
 
@@ -38,23 +38,21 @@ Choose the narrowest scope that covers the work:
 - **File list:** Use when the review should focus on specific touched files.
 - **Current `@` diff:** Use when no change id or explicit range exists.
 
-If there is no change id, do not invent one. Use the supplied file list or diff range, or capture the current diff with:
-
-```bash
-jj diff --git --color=never --no-pager
-```
+If there is no change id, do not invent one. Use the supplied file list or diff range, or the current `@` diff (`jj diff --stat --no-pager` first, then `jj diff --git --color=never --no-pager <paths>`).
 
 **2. Dispatch code-reviewer subagent:**
 
 Use the Agent tool with `subagent_type: "jj-superpowers:code-reviewer"`, filling the template at `code-reviewer.md`
 
 **Placeholders:**
-- `{WHAT_WAS_IMPLEMENTED}` - What you just built
-- `{PLAN_REFERENCE}` - What it should do (plan path or requirements)
-- `{CHANGE_ID}` - The review scope: revision/change id, diff range, explicit file list, or current `@` diff
-- `{DESCRIPTION}` - Brief summary
+- `{WHAT_WAS_IMPLEMENTED}` — what you just built; `{DESCRIPTION}` — brief summary
+- `{PLAN_REFERENCE}` — what it should do (plan path or requirements)
+- `{REVIEW_SCOPE}` — revision/change id, diff range, file list, or current `@` diff
+- `{INSPECT_COMMANDS}` — the exact commands for a revision or range
+- `{DIFF_OR_FILE_CONTEXT}` — for a file list or `@` diff, the files or diff text the reviewer needs; otherwise empty
+- `{VERIFICATION_SUMMARY}` — commands you ran and their results
 
-When the template labels this section `CHANGE_ID` but the scope is not a revision, treat that field as `REVIEW_SCOPE` and replace revision-only inspection commands with the supplied range, file list, or current `@` diff. When using a file list or current `@` diff, include the exact files or diff text/context needed for review in the request body. When using a revision or range, include the command the reviewer should use to inspect it.
+The checklist (including file-size and decomposition) lives in the `jj-superpowers:code-reviewer` agent; don't restate it in the request.
 
 **3. Act on feedback:**
 
@@ -70,16 +68,6 @@ This is the one severity scale for every jj-superpowers review — code, spec, p
 
 Critical and Important are the **blocking** severities. Iterative review loops (`jj-superpowers:hypothesis-driven-improvement`, `jj-superpowers:brainstorming`, `writing-plans/plan-document-reviewer-prompt.md`) keep the same scale but handle Minors differently: they fold accepted Minors immediately, in the same round, and drop purely cosmetic ones, instead of noting them for later.
 
-## Required Review Lens: File Size and Decomposition
-
-The reviewer must evaluate file boundaries, not just correctness.
-
-- Apply the file-size discipline owned by `jj-superpowers:deslopify` — load its canonical file-size rule for the thresholds. Flag touched files that cross them unless there is a strong, explicit reason not to split them.
-- Ask whether parsing, validation, orchestration, rendering, state management, and I/O are being mixed in one file when they could be separate logical units.
-- Prefer extracting self-contained units with narrow interfaces so each file is easier for humans and agents to read, review, and modify.
-
-When requesting review, explicitly ask the reviewer to check for oversized files and missing decomposition.
-
 ## Example
 
 ```
@@ -90,7 +78,7 @@ You: Let me request code review before proceeding.
 [Dispatch jj-superpowers:code-reviewer subagent]
   WHAT_WAS_IMPLEMENTED: Verification and repair functions for conversation index
   PLAN_REFERENCE: docs/superpowers/plans/deployment-plan.md
-  CHANGE_ID: current @ diff for files indexer.ts, verifier.ts, verifier.test.ts
+  REVIEW_SCOPE: current @ diff for files indexer.ts, verifier.ts, verifier.test.ts
   DESCRIPTION: Added verifyIndex() and repairIndex() with 4 issue types
 
 [Subagent returns]:
@@ -109,4 +97,4 @@ You: [Fix progress indicators]
 - `jj-superpowers:receiving-code-review` — what to do with the findings once the reviewer returns them, including how to push back when the reviewer is wrong (technical reasoning, not deference; verify the claim against the code first)
 - `jj-superpowers:deslopify` — canonical file-size rule and duplication/overengineering taxonomy the reviewer applies
 
-Template: `requesting-code-review/code-reviewer.md`
+Request template: `requesting-code-review/code-reviewer.md`. Review checklist: `agents/code-reviewer.md`.

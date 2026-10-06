@@ -77,7 +77,7 @@ Fetch and follow instructions from https://raw.githubusercontent.com/nickguletsk
 
 5. **requesting-code-review** - Activates for ad hoc/manual review. Reviews against plan, reports issues by severity. Critical issues block progress.
 
-6. **finishing-a-development-branch** - Activates when tasks complete. Verifies tests, presents options (PR/integrate/keep/discard), and may use `jj-organizing-history` to organize commits into a reviewable jj DAG.
+6. **Finish** - When every `verify` node passes, the executor confirms no scaffold, divergence, or conflict survives (the Finish step of `subagent-driven-development`), then asks what to integrate: a bookmark + push per `jujutsu`, optionally after `jj-organizing-history` reshapes the commits into a reviewable jj DAG.
 
 **The agent checks for relevant skills before any task.** Mandatory workflows, not suggestions.
 
@@ -85,7 +85,7 @@ Fetch and follow instructions from https://raw.githubusercontent.com/nickguletsk
 
 ### Skills Library
 
-All 30 skills. `using-superpowers` carries a routing map from situation → skill.
+All 29 skills. `using-superpowers` carries a routing map from situation → skill.
 
 **Design & planning**
 - **brainstorming** - Socratic design refinement before any creative work
@@ -108,7 +108,6 @@ All 30 skills. `using-superpowers` carries a routing map from situation → skil
 **Review & integration**
 - **requesting-code-review** - Pre-review checklist
 - **receiving-code-review** - Respond to feedback with rigor, not performative agreement
-- **finishing-a-development-branch** - PR/integrate/discard decision workflow
 
 **Code & docs quality**
 - **deslopify** - Remove slop: suspicious logic, tautological tests, over- and under-engineering

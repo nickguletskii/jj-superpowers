@@ -39,6 +39,7 @@ test("skill consolidation leaves only intended entry points discoverable", () =>
     "jj-split-parallel",
     "dot-to-jj-dag",
     "jj-agent-config",
+    "finishing-a-development-branch",
   ]) {
     assert.ok(!skills.includes(name), `${name} should not be discoverable`);
     assert.ok(

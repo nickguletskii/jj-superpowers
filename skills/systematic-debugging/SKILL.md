@@ -76,7 +76,7 @@ You MUST complete each phase before proceeding to the next.
 
    **WHEN error is deep in call stack:**
 
-   See `root-cause-tracing.md` in this directory for the complete backward tracing technique.
+   See "Root-Cause Tracing" in `techniques.md` in this directory for the full backward-tracing technique.
 
    **Quick version:**
    - Where does bad value originate?
@@ -208,11 +208,13 @@ If systematic investigation reveals issue is truly environmental, timing-depende
 
 ## Supporting Techniques
 
-These techniques are part of systematic debugging and available in this directory:
+`techniques.md` in this directory covers:
 
-- **`root-cause-tracing.md`** - Trace bugs backward through call stack to find original trigger
-- **`defense-in-depth.md`** - Add validation at multiple layers after finding root cause
-- **`condition-based-waiting.md`** - Replace arbitrary timeouts with condition polling
+- **Root-cause tracing** — trace a bad value backward through the call chain to its origin
+- **Defense in depth** — which layers to guard after the root-cause fix
+- **Condition-based waiting** — replace arbitrary sleeps in tests with condition polling
+
+`find-polluter.sh` bisects which test creates an unwanted file or directory.
 
 **Related skills:**
 - **jj-superpowers:test-driven-development** - For creating failing test case (Phase 4, Step 1)

@@ -13,14 +13,39 @@ const preamblePath = path.join(sourceDir, "_preamble.md");
 
 const PREAMBLE_START = "<!-- BEGIN SHARED PREAMBLE - generated, do not edit -->";
 const PREAMBLE_END = "<!-- END SHARED PREAMBLE -->";
+const EDITING_MARKER = "<!-- EDITING AGENTS ONLY -->";
 
-// Prepended verbatim to every agent body. Byte-identical and first-in-prompt across
-// all agents, so it forms a shared prefix that providers can serve from cache.
-function loadPreamble() {
-  return fs
-    .readFileSync(preamblePath, "utf8")
-    .replace(/^<!--[\s\S]*?-->\n*/, "")
-    .trim();
+// Agents that never edit shared files or write change descriptions. They get only the
+// preamble core; every other agent (including new ones) also gets the editing section.
+export const READ_ONLY_AGENTS = new Set([
+  "code-reviewer",
+  "codebase-cleanup-analysis-reviewer",
+  "codebase-cleanup-deletion-reviewer",
+  "codebase-cleanup-directory-mapper",
+  "codebase-cleanup-map-consolidator",
+  "codebase-cleanup-map-reviewer",
+  "codebase-cleanup-refactoring-request",
+  "sdd-design-reviewer",
+  "sdd-quality-reviewer",
+  "sdd-simplifier",
+  "sdd-spec-reviewer",
+  "sdd-verifier",
+]);
+
+// Returns { core, editing }. The core is prepended to every agent body: byte-identical
+// and first-in-prompt across all agents, so it forms a shared prefix that providers can
+// serve from cache. The editing section follows it only for editing agents.
+export function loadPreamble(text = fs.readFileSync(preamblePath, "utf8")) {
+  const stripped = text.replace(/^<!--[\s\S]*?-->\n*/, "");
+  const parts = stripped.split(EDITING_MARKER);
+  if (parts.length !== 2) {
+    throw new Error(`${preamblePath} must contain exactly one ${EDITING_MARKER}`);
+  }
+  return { core: parts[0].trim(), editing: parts[1].trim() };
+}
+
+export function preambleFor(name, { core, editing }) {
+  return READ_ONLY_AGENTS.has(name) ? core : `${core}\n\n${editing}`;
 }
 
 // Claude Code consumes agents/*.md directly, while .codex/.opencode are generated from
@@ -158,6 +183,14 @@ function main() {
     .filter((file) => /^[a-z0-9-]+\.md$/.test(file))
     .sort();
 
+  // A stale entry would silently hand a renamed agent the wrong preamble.
+  const names = new Set(sourceFiles.map((file) => file.replace(/\.md$/, "")));
+  for (const name of READ_ONLY_AGENTS) {
+    if (!names.has(name)) {
+      throw new Error(`READ_ONLY_AGENTS lists unknown agent: ${name}`);
+    }
+  }
+
   for (const file of sourceFiles) {
     const sourcePath = path.join(sourceDir, file);
     const raw = fs.readFileSync(sourcePath, "utf8");
@@ -171,7 +204,7 @@ function main() {
       throw new Error(`${sourcePath} is missing frontmatter description`);
     }
 
-    agent.body = withPreamble(agent.body, preamble);
+    agent.body = withPreamble(agent.body, preambleFor(name, preamble));
 
     // Sync the source file itself — Claude Code reads these directly.
     const frontmatterBlock = raw.match(/^---\n[\s\S]*?\n---\n/)[0];
@@ -191,4 +224,6 @@ function main() {
   }
 }
 
-main();
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  main();
+}

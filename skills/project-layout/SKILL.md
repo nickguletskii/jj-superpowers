@@ -7,18 +7,12 @@ description: Use when bootstrapping or auditing a project's agent-discoverable l
 
 Establish and maintain the per-project structure that every other skill in this set relies on. The hub is `.agents/layout.yaml`. Everything else (specs, queues, blogs, project-specific skills) hangs off it.
 
-## Golden rules (apply throughout)
-
-> **A. Shorter is better.** Shorter docs are easier to read, modify, keep current, and cheaper in agent context. Cut anything that doesn't earn its tokens.
->
-> **B. Shorter is not an excuse to skip.** If a fact belongs in docs per these policies, write it. Brevity is about *how*, not *whether*.
-
 ## When to use
 
 - A project has no `.agents/layout.yaml` and you're about to do non-trivial work in it.
 - `AGENTS.md` has grown long with layout details that should live in the manifest.
 - You need to register a project-specific code-style skill (the `projx-frontend` pattern).
-- A user asks to audit docs structure for token / cache / exploration efficiency.
+- A user asks to audit the layout (manifest, `AGENTS.md`, spec and queue directories).
 - A subsystem has developed its own spec/skill set and needs a nested AGENTS.md.
 
 **Not for:**
@@ -112,18 +106,13 @@ When a subsystem grows its own spec set and skills, add a nested `AGENTS.md` (e.
 
 Keep these as short as the root.
 
-## Doc-improvement audit
+## Handoffs and agent blog (end of a work session)
 
-When a user asks to audit docs:
+When a work session ends, check `layout.yaml`:
+- **`handoffs.enabled`** and the work is incomplete, blocked, or paused → write `.agents/handoffs/<YYYY-MM-DD>/<HHMM>-<topic>.md` (under `handoffs.path`): what was done, what remains, the blocker, and where to resume.
+- **`agent_blog.enabled`** → write `.agents/blog/<YYYY-MM-DD>/<HHMM>-<topic>.md` (under `agent_blog.path`), ~10-30 lines: what happened and what was learned.
 
-| Smell | Fix |
-|---|---|
-| Skill SKILL.md > ~200 lines | Move long material to `references/<topic>.md`; SKILL.md keeps the index. |
-| Two files agents always read together | Merge or cross-link with a single load directive. |
-| Two files agents read in different sessions but both load eagerly | Split eagerness — load one on-demand. |
-| Directory with many files and no index | Add a small `README.md` index listing files with one-line purposes. |
-| Long `AGENTS.md` | Move layout to `layout.yaml`; move behavioral guidance to project-specific skills. |
-| Duplicated facts across docs | Pick one home; replace others with links. (Apply per `documentation` skill's iron law.) |
+Skip both when disabled. Retention is pruned by `spec-drift-detector`.
 
 ## Anti-patterns
 

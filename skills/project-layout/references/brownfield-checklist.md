@@ -27,7 +27,5 @@ Concrete questions to ask the user during step 3 of the bootstrap loop. Use the 
 - Which paths should be in `excluded_paths`? Common: generated files, vendored deps, build outputs. Resist adding application code here.
 
 ## Subsystems detected
-- List the subsystem candidates from step 1. For each, classify as one of:
-  - **Capability/plane-bearing** → assigned in `code_map`, OR has a stub `SPEC.yaml` (status `draft`), OR has a `tech-debt/docs/` defer entry.
-  - **Infrastructure / non-product** → build glue, internal libraries, dev tooling, test scaffolding. No spec needed; absence from `code_map` is correct.
+- List the subsystem candidates from step 1 and classify each per Step 7 (termination check) in `SKILL.md`.
 - Are any worth their own nested `.agents/layout.yaml`? (Rule of thumb: only when the subsystem has materially different conventions from the root.)

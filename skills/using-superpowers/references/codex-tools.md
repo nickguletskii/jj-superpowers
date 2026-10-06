@@ -50,7 +50,8 @@ When a skill says to dispatch a named agent type:
 1. If a matching Codex custom agent exists, spawn that `agent_type`.
 2. Put only dynamic task context in `message`: file paths, node ids, allowed files,
    reports, and commands.
-3. If no custom agent exists, fall back to the skill's prompt-template wrapping.
+3. If no custom agent exists, `spawn_agent(message=...)` with `agents/_preamble.md` +
+   the body of `agents/<name>.md` + the dynamic context.
 
 | Skill instruction | Codex equivalent |
 |-------------------|------------------|
@@ -77,12 +78,11 @@ Orchestrator notes:
 - ...
 ```
 
-If falling back to generic agents without a custom agent, wrap the filled prompt
-template in clear task-delegation framing and XML tags as before.
+When falling back to a generic agent, put the role body ahead of this payload.
 
 ## Environment Detection
 
-Skills that set up work scopes or finish branches should detect whether
+Skills that set up work scopes or integrate finished work should detect whether
 jj is available before proceeding:
 
 ```bash
@@ -93,14 +93,12 @@ jj root --no-pager 2>/dev/null && echo "jj" || echo "git"
 - If jj: use `jujutsu` for version-control operations and `jj-organizing-history` for optional post-implementation history organization
 - If git only: use traditional branch workflow
 
-For `finishing-a-development-branch` in sandbox environments where push
-is blocked, the agent can still run tests and output suggested bookmark
-names and PR descriptions for the user to copy.
+## Integrating When Push Is Blocked
 
-## Codex App Finishing
-
-When the sandbox blocks push operations, the agent commits/squashes all
-work and informs the user to use the App's native controls:
+When the sandbox blocks push, the agent still runs the Finish checks
+(`subagent-driven-development`, Change Consolidation), outputs suggested bookmark
+names and PR descriptions for the user to copy, and points the user to the Codex
+App's native controls:
 
 - **"Create branch"** — names the bookmark, then push/PR via App UI
 - **"Hand off to local"** — transfers work to the user's local checkout

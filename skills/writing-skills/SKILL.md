@@ -13,7 +13,11 @@ description: Use when creating new skills, editing existing skills, or verifying
 
 **REQUIRED BACKGROUND:** You MUST understand jj-superpowers:test-driven-development before using this skill. That skill defines the fundamental RED-GREEN-REFACTOR cycle; this skill adapts it to documentation.
 
-**Official guidance:** For Anthropic's official skill authoring best practices, see anthropic-best-practices.md. It complements the TDD-focused approach here.
+**Official guidance:** [Anthropic skill authoring best practices](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/best-practices). Where this library differs:
+- Descriptions state triggering conditions only ("Use when..."), never what the skill does or its workflow (see CSO below).
+- Every new skill or edit needs baseline and with-skill subagent runs first (The Iron Law).
+- Cross-reference other skills by `jj-superpowers:<name>`, never by `@` path.
+- Skill dirs ship whole: no test logs, scenarios, or packaging files inside (No-Ship Hygiene).
 
 **Personal skills live in agent-specific directories** (`~/.claude/skills` for Claude Code, `~/.agents/skills/` for Codex).
 
@@ -70,7 +74,7 @@ skills/
 
 **Separate files only for:**
 1. **Heavy reference** (100+ lines) — API docs, comprehensive syntax (e.g. `pptx/` with `pptxgenjs.md`, `ooxml.md`)
-2. **Reusable tools** — scripts, utilities, working helpers to adapt (e.g. `condition-based-waiting/example.ts`)
+2. **Reusable tools** — scripts, utilities, working helpers to adapt (e.g. `systematic-debugging/find-polluter.sh`)
 
 ### No-Ship Hygiene (What Must NOT Live in a Skill Dir)
 
@@ -252,7 +256,7 @@ Absent a repo signal, prefer **Rust or TypeScript**. Both have type systems stro
 
 ## Testing Skills
 
-**Testing methodology:** see `testing-skills-with-subagents.md` in this directory for how to write pressure scenarios, pressure types (time, sunk cost, authority, exhaustion), plugging holes systematically, and meta-testing.
+**Testing methodology:** see `testing-skills-with-subagents.md` in this directory for baseline vs with-skill runs, over-trigger (negative) scenarios, and the meta-test question.
 
 ### RED-GREEN-REFACTOR
 
@@ -283,8 +287,6 @@ Absent a repo signal, prefer **Rust or TypeScript**. Both have type systems stro
 ## Bulletproofing Skills Against Rationalization
 
 Skills that enforce discipline (like TDD) need to resist rationalization. Agents are smart and will find loopholes under pressure.
-
-**Psychology note:** understanding WHY persuasion techniques work helps you apply them systematically. See persuasion-principles.md for the research foundation (Cialdini, 2021; Meincke et al., 2025) on authority, commitment, scarcity, social proof, and unity.
 
 **1. Close every loophole explicitly.** Don't just state the rule — forbid the specific workarounds.
 
@@ -355,6 +357,7 @@ This cuts off an entire class of "I'm following the spirit" rationalizations.
 - [ ] Code inline OR link to separate file
 - [ ] One excellent example (not multi-language)
 - [ ] Run scenarios WITH skill — verify agents now comply
+- [ ] Run at least one negative scenario — verify the skill does not fire or over-apply
 
 **REFACTOR Phase — Close Loopholes:**
 - [ ] Identify NEW rationalizations from testing

@@ -53,47 +53,33 @@ Options:
 - `--files` — list files with hunk counts only
 - `--spec-template` — emit a spec template (JSON/YAML only)
 
-Output (JSON):
+Output (JSON; abbreviated — the examples below use these hunks):
 ```json
 {
   "files": [
     {
-      "path": "src/foo.rs",
+      "path": "src/db/schema.ts",
       "status": "modified",
       "hunks": [
-        {
-          "id": "hunk-7c3d...",
-          "index": 0,
-          "type": "replace",
-          "removed": "old\n",
-          "added": "new\n",
-          "before": {"start": 1, "lines": 1},
-          "after": {"start": 1, "lines": 1}
-        },
-        {
-          "id": "hunk-2f91...",
-          "index": 1,
-          "type": "insert",
-          "removed": "",
-          "added": "// added\n",
-          "before": {"start": 2, "lines": 0},
-          "after": {"start": 2, "lines": 1}
-        }
+        {"id": "hunk-98af...", "index": 0, "type": "insert", "removed": "", "added": "import { pgTable }...\n", "before": {"start": 1, "lines": 0}, "after": {"start": 1, "lines": 1}},
+        {"id": "hunk-21b3...", "index": 1, "type": "insert", "removed": "", "added": "export const users = pgTable...\n", "before": {"start": 2, "lines": 0}, "after": {"start": 2, "lines": 1}}
       ]
     },
     {
-      "path": "src/bar.rs",
+      "path": "src/api/routes.ts",
       "status": "modified",
       "hunks": [
-        {
-          "id": "hunk-aa12...",
-          "index": 0,
-          "type": "delete",
-          "removed": "removed\n",
-          "added": "",
-          "before": {"start": 3, "lines": 1},
-          "after": {"start": 3, "lines": 0}
-        }
+        {"id": "hunk-cc19...", "index": 0, "type": "replace", "removed": "// TODO\n", "added": "app.get('/users', ...);\n", "before": {"start": 10, "lines": 1}, "after": {"start": 10, "lines": 1}},
+        {"id": "hunk-4b20...", "index": 1, "type": "insert", "removed": "", "added": "app.get('/posts', ...);\n", "before": {"start": 11, "lines": 0}, "after": {"start": 11, "lines": 1}}
+      ]
+    },
+    {
+      "path": "src/lib/utils.ts",
+      "status": "modified",
+      "hunks": [
+        {"id": "hunk-11bf...", "index": 0, "type": "replace", "removed": "function old()...\n", "added": "function new()...\n", "before": {"start": 5, "lines": 1}, "after": {"start": 5, "lines": 1}},
+        {"id": "hunk-ee43...", "index": 1, "type": "insert", "removed": "", "added": "export function helper()...\n", "before": {"start": 6, "lines": 0}, "after": {"start": 6, "lines": 1}},
+        {"id": "hunk-09ad...", "index": 2, "type": "delete", "removed": "// dead code\n", "added": "", "before": {"start": 20, "lines": 1}, "after": {"start": 20, "lines": 0}}
       ]
     }
   ]
@@ -109,10 +95,10 @@ Select hunks by index or `id` (emitted as `hunk-<sha256>`), or use file-level ac
 ```json
 {
   "files": {
-    "src/foo.rs": {"hunks": [0, "hunk-7c3d..."]},
-    "src/bar.rs": {"ids": ["hunk-aa12..."]},
-    "src/baz.rs": {"action": "keep"},
-    "src/qux.rs": {"action": "reset"}
+    "src/lib/utils.ts": {"hunks": [0, "hunk-09ad..."]},
+    "src/api/routes.ts": {"ids": ["hunk-cc19..."]},
+    "src/db/schema.ts": {"action": "keep"},
+    "src/wip.ts": {"action": "reset"}
   },
   "default": "reset"
 }
@@ -211,48 +197,8 @@ JJ_HUNK_SELECTION="$TMPDIR/spec.json" jj split -i --tool=jj-hunk -m "message"
 | `delete` | Lines removed |
 | `replace` | Lines changed (removed + added) |
 
+
 ## Agent Workflow Examples
-
-### Understanding the Output
-
-Always start by inspecting what hunks exist:
-
-```bash
-jj-hunk list
-```
-
-Example output:
-```json
-{
-  "files": [
-    {
-      "path": "src/db/schema.ts",
-      "status": "modified",
-      "hunks": [
-        {"id": "hunk-98af...", "index": 0, "type": "insert", "removed": "", "added": "import { pgTable }...\n", "before": {"start": 1, "lines": 0}, "after": {"start": 1, "lines": 1}},
-        {"id": "hunk-21b3...", "index": 1, "type": "insert", "removed": "", "added": "export const users = pgTable...\n", "before": {"start": 2, "lines": 0}, "after": {"start": 2, "lines": 1}}
-      ]
-    },
-    {
-      "path": "src/api/routes.ts",
-      "status": "modified",
-      "hunks": [
-        {"id": "hunk-cc19...", "index": 0, "type": "replace", "removed": "// TODO\n", "added": "app.get('/users', ...);\n", "before": {"start": 10, "lines": 1}, "after": {"start": 10, "lines": 1}},
-        {"id": "hunk-4b20...", "index": 1, "type": "insert", "removed": "", "added": "app.get('/posts', ...);\n", "before": {"start": 11, "lines": 0}, "after": {"start": 11, "lines": 1}}
-      ]
-    },
-    {
-      "path": "src/lib/utils.ts",
-      "status": "modified",
-      "hunks": [
-        {"id": "hunk-11bf...", "index": 0, "type": "replace", "removed": "function old()...\n", "added": "function new()...\n", "before": {"start": 5, "lines": 1}, "after": {"start": 5, "lines": 1}},
-        {"id": "hunk-ee43...", "index": 1, "type": "insert", "removed": "", "added": "export function helper()...\n", "before": {"start": 6, "lines": 0}, "after": {"start": 6, "lines": 1}},
-        {"id": "hunk-09ad...", "index": 2, "type": "delete", "removed": "// dead code\n", "added": "", "before": {"start": 20, "lines": 1}, "after": {"start": 20, "lines": 0}}
-      ]
-    }
-  ]
-}
-```
 
 ### File-Level Selection
 
@@ -296,30 +242,27 @@ jj describe -m "refactor: utils cleanup"
 
 ### Complete Workflow Example
 
-Starting with a messy commit containing schema, API, and refactoring changes:
+Starting with a messy commit containing schema, API, and refactoring changes. Target it with `--rev`/`-r` — never `jj edit` onto it (moves `@`, jujutsu safety rule 2):
 
 ```bash
-# 1. Edit the commit
-jj edit <revision>
+# 1. Inspect all hunks of the target revision
+jj-hunk list --rev <revision>
 
-# 2. Inspect all hunks
-jj-hunk list
-
-# 3. Split in narrative order
+# 2. Split in narrative order
 
 # Infrastructure first
-jj-hunk split '{"files": {"src/db/schema.ts": {"action": "keep"}}, "default": "reset"}' "feat: add database schema"
+jj-hunk split -r <revision> '{"files": {"src/db/schema.ts": {"action": "keep"}}, "default": "reset"}' "feat: add database schema"
 
-# Refactoring second (specific hunks from utils.ts)
-jj-hunk split '{"files": {"src/lib/utils.ts": {"hunks": [0, 2]}}, "default": "reset"}' "refactor: clean up utils"
+# Each split leaves the remainder in a new child; read its id, re-list, split again
+jj log --no-pager -r '<revision>::' --no-graph -T 'change_id.short(8) ++ " " ++ description.first_line() ++ "\n"'
+jj-hunk list --rev <remainder>
+jj-hunk split -r <remainder> '{"files": {"src/lib/utils.ts": {"hunks": [0, 2]}}, "default": "reset"}' "refactor: clean up utils"
+# ...repeat for the users endpoint...
 
-# Feature using the refactored code
-jj-hunk split '{"files": {"src/lib/utils.ts": {"action": "keep"}, "src/api/routes.ts": {"hunks": [0]}}, "default": "reset"}' "feat: add users endpoint"
+# Describe the last remainder
+jj describe -r <last-remainder> -m "feat: add posts endpoint"
 
-# Remaining changes
-jj describe -m "feat: add posts endpoint"
-
-# 4. Verify
+# 3. Verify (jujutsu safety rule 5)
 jj log -r 'trunk()..@' --no-pager
 ```
 
