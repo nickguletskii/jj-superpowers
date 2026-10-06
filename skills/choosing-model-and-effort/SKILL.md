@@ -13,7 +13,7 @@ More effort cannot lift a model past its ceiling. So when a task keeps failing, 
 
 **Pick the cheapest configuration that clears the task's bar.** This skill exists to make dispatch cheaper and better targeted. It is *not* a licence to reach for bigger models.
 
-Concrete models, effort ranges, availability, and the cost/capability data live in `models.md`. This file is the decision procedure and changes rarely; `models.md` carries the volatile facts.
+Concrete model ids, classes, and availability live in `models.md`. This file is the decision procedure and changes rarely; `models.md` carries the volatile facts.
 
 ## The Two Axes
 
@@ -26,22 +26,22 @@ These are different levers with different curves. Conflating them is the most co
 
 | Task shape | Model | Effort |
 |---|---|---|
-| Easy, well-specified, mechanical; named files and APIs | `claude-sonnet-5` | low |
-| Standard implementation | `claude-opus-4.8` | medium |
-| Subtle, cross-file, integration, ambiguous failure | `claude-opus-4.8` | high |
-| Design judgment, graph repair, code-quality review | `claude-opus-4.8` | high–xhigh |
-| Hardest reasoning | `claude-fable-5` | low–high — **provenance rule below** |
+| Easy, well-specified, mechanical; named files and APIs | `claude-sonnet-5-5` | low |
+| Standard implementation | `claude-sonnet-5-5` or `claude-opus-5-5` | medium |
+| Subtle, cross-file, integration, ambiguous failure | `claude-opus-5-5` | high |
+| Design judgment, graph repair, code-quality review | `claude-opus-5-5` | high–xhigh |
+| Hardest reasoning | `claude-fable-5-1` | low–high — **provenance rule below** |
 
-**Sonnet's only defensible rung is `low`.** The moment you want Sonnet at `medium`, dispatch `claude-opus-4.8[low]` instead — on *both* benchmarks in `models.md` it is cheaper **and** better. Sonnet is cheap per token but flails: it burns 2–5× the steps, so per-task cost catches up while the score does not.
+If a fast-class model needs repeated retries or many more steps than the task warrants, it is not cheaper: move the task up a class rather than raising its effort.
 
 ## The Fable Provenance Rule
 
-**Dispatch `claude-fable-5` only if the orchestrator is already running `claude-fable-5`.**
+**Dispatch `claude-fable-5-1` only if the orchestrator is already running `claude-fable-5-1`.**
 
 - **Orchestrator is not Fable → never dispatch Fable.** No matter how hard the task looks. This is not negotiable and no task difficulty overrides it.
 - **Orchestrator is Fable →** it may dispatch Fable implementers and verifiers, but **most tasks still go to sonnet/opus.** Fable is rationed — spend it on judgment, not bulk work.
 
-This is a **provenance** rule, not a capability rule. Fable's benchmark strength is irrelevant if you are not permitted to spend it.
+This is a **provenance** rule, not a capability rule. Fable's capability is irrelevant if you are not permitted to spend it.
 
 ## Escalation
 
@@ -55,13 +55,13 @@ This is a **provenance** rule, not a capability rule. Fable's benchmark strength
 
 A wall is **empirical**: the cheap option was *disproven*, not merely doubted. "It looks hard" is not a wall.
 
-**Escalate class before effort.** `opus[max]` costs 2–6× `opus[medium]` and is still only matched by `fable[low]` (see `models.md`). If medium → high did not help, higher will not.
+**Escalate class before effort.** The top effort levels cost the most and buy the least on every model; a stronger class at lower effort usually beats a weaker one at `max`. If medium → high did not help, higher will not.
 
 **Check the task before spending anything.** A task that fails at `opus[high]` is far more often *underspecified* than *under-powered*. Re-read it. A sharper task file is cheaper than a bigger model and fixes the actual problem.
 
 ## Availability
 
-Models can be unavailable — `claude-fable-5` especially, since it is rationed.
+Models can be unavailable — `claude-fable-5-1` especially, since it is rationed.
 
 - Wanted model unavailable → **degrade to the nearest available option and say so.**
 - **Never substitute silently.** A silent downgrade on a hard task is indistinguishable from a genuine failure later, and you will misdiagnose it.
@@ -78,7 +78,7 @@ Models can be unavailable — `claude-fable-5` especially, since it is rationed.
 
 Detection: the codex MCP tool (`mcp__codex__codex`); the `gemini` and `opencode` CLIs if installed.
 
-Suggested review configuration: `gpt-5.6-sol[high]` — near-top score at low cost on both benchmarks.
+Suggested review configuration: GPT-6.1 Sol at `high`.
 
 **Codex is often *cheaper* than maxing out Opus.** Do not let that tempt you past the gate. **The gate is about role, not cost.** "It would save money" is not a reason to hand Codex the implementation.
 
@@ -95,10 +95,9 @@ A subagent must not invoke another agent harness **through any channel** — not
 | Mistake | Reality |
 |---|---|
 | "It failed — retry at higher effort." | Effort cannot lift a ceiling. Change class, or fix the task. |
-| "Sonnet is the cheap one." | Only at `low`. At `medium`+ Opus is cheaper **and** better. Sonnet flails — 2–5× the steps. |
+| "Sonnet is the cheap one." | Only while it is not flailing. Count steps and retries, not price per token. |
 | "This looks hard, start at max." | Speculative escalation. Ask first. |
 | "Fable is strongest, so use Fable." | Provenance rule. If you are not Fable, you do not get Fable. |
 | "Codex is cheaper, so use it for the work." | Codex is a reviewer. Off-label use asks. The gate is role, not cost. |
 | "The MCP tool is in my tool list, so I may call it." | Subagents delegate through **no** channel. |
-| "The benchmark says X, so X." | The two benchmarks in `models.md` disagree. Only cross-validated findings are rules. |
 | "The model is unavailable, so I'll use a bigger one." | Unavailable is not a wall. Degrade down and say so. |
