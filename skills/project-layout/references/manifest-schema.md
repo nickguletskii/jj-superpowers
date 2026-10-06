@@ -22,6 +22,13 @@ mdbook:                                             # optional
   spec_include: disabled                            # opt-in: enables {{#include}} from specs
   citation_format: "REQ-<ID>"
 
+docs:                                               # optional; where non-spec docs live and how they look
+  architecture: docs/architecture/                  # module/system docs
+  adr: docs/adr/                                    # ADR-NNNN-<slug>.md
+  runbooks: docs/runbooks/
+  diagrams: mermaid                                 # mermaid | graphviz | none
+  naming: kebab-case
+
 # Paths skipped by spec-drift-detector during audits (generated code, vendor, build output).
 # NOT consulted by spec-code-sync (which surfaces hints, not coverage).
 # Use sparingly; drift-detector reports if this list grows without justification.

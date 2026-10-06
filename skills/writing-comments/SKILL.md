@@ -20,7 +20,7 @@ Provenance belongs in version control and the tracker. In source it turns into d
 A comment should make sense without opening another document. This skill defines the durable references in-code text may carry, and other skills follow it. These are sync anchors and never replace the explanation:
 
 - A stable in-repo requirement ID: `// impl: REQ-VID-001` (no file path; a ticket ID doesn't qualify)
-- A stable ADR or doc anchor: `ADR-0007`, `// See DOCS.md#auth-flow`
+- A stable ADR or doc anchor: `ADR-0007`, `// See docs/architecture/auth.md#session-flow`
 
 ## 2. Don't restate the code
 

@@ -25,6 +25,8 @@ Assume the project is brownfield. Bootstrapping is a conversation that repeats s
 6. **Triage existing docs.** Leave unrelated docs alone (LICENSE, diagrams). Hand normative prose to `writing-specs`, and don't auto-convert it. For outdated docs, queue a rewrite at `.agents/tech-debt/docs/<YYYY-MM-DD>/<HHMMSS>-<slug>.md`. Never generate specs from code or prose here: this skill triages and queues, and `writing-specs` authors.
 
    **Legacy queues.** If the manifest has `schema_version: 1`, or the queues are single `.md` files, convert them with the migration recipe in `references/manifest-schema.md`: split them into per-entry files, drop `status:`/`last_verified:`, delete the old `<queue>.md`, and bump `schema_version` to 2. That recipe is the only migration path, and `spec-drift-detector` sends legacy queues here.
+
+   **Legacy `DOCS.md`.** If a root `DOCS.md` exists, move its doc locations, naming, and diagram format into the `docs:` section of `layout.yaml`, move any remaining prose into `AGENTS.md` or the docs it describes, and delete `DOCS.md`.
 7. **Termination.** You're done when both of these hold:
    - Every candidate subsystem is classified as either **capability/plane-bearing** (in `code_map`, has a draft `SPEC.yaml` stub, or has a `tech-debt/docs/` entry deferring the spec) or **infrastructure** (build glue, internal libraries, tooling, test scaffolding). Infrastructure needs no spec or queue entry, but the user has to confirm that classification.
    - The user confirms the overall structure.

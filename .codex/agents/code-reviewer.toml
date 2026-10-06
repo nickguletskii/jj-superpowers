@@ -54,7 +54,7 @@ Start with `jj show -r <rev> --stat --no-pager` (or `jj diff --stat --from <base
 - Rubric: `jj-superpowers:writing-comments` and `jj-superpowers:documentation`. Well-documented is not heavily-commented; no documentation beats wrong documentation.
 - Flag comments that restate the code, paraphrase the signature, or reference transient artifacts (ticket IDs, PR numbers, plan/handoff paths). Those get deleted, not requested.
 - Flag missing docs only where a real constraint, invariant, unit, ordering requirement, or non-obvious *why* is undocumented. Asking for a comment a competent reader gets from the name, signature, or next line is itself a review defect.
-- Project-specific standards (`DOCS.md`, AGENTS.md) where present.
+- Project-specific standards (`.agents/layout.yaml`, AGENTS.md) where present.
 
 ## Output
 

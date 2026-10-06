@@ -1,6 +1,6 @@
 ---
 name: documentation
-description: Use when writing, placing, or maintaining documentation outside code — mdbook chapters, runbooks, ADRs, module/architecture docs, `DOCS.md` — when code lacking docs is hard to understand, when deciding whether to document something, or when docs are redundant, stale, or duplicate the code.
+description: Use when writing, placing, or maintaining documentation outside code — mdbook chapters, runbooks, ADRs, module/architecture docs — when code lacking docs is hard to understand, when deciding whether to document something, or when docs are redundant, stale, or duplicate the code.
 ---
 
 # Living Documentation
@@ -35,9 +35,9 @@ Each fact has one home, chosen by audience:
 
 mdbook and specs don't overlap. Narrative and tutorials go in mdbook with no spec coupling. For behavior, link to the spec ("See also"). When a specific value has to stay in sync (rare), restate it with a citation such as `(REQ-VID-001)`, which `spec-drift-detector` verifies. Use `{{#include}}` for tight tables like error codes when `spec_include: enabled`. MUST-level detail stays in the spec.
 
-## `DOCS.md`
+## Doc locations and conventions
 
-Check the root `DOCS.md` first (monorepo packages may override it). It sets doc locations, forms, naming, and diagram format. If there isn't one, use these defaults.
+The `docs:` section of the nearest `.agents/layout.yaml` sets doc locations, naming, and diagram format (nested manifests override per subsystem). Without one, use the defaults above. A legacy root `DOCS.md` is folded into `docs:` by `project-layout`.
 
 ## Maintenance
 
