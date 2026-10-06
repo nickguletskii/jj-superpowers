@@ -33,7 +33,7 @@ A description is an index entry, not documentation. If an explanation is worth k
 
 ### Never name a transient workflow artifact
 
-Graph node ids (`task_01`), phase numbers (`Phase5`), plan/spec/handoff paths (`docs/superpowers/plans/…`), review-round provenance ("address quality review finding"), "per the plan", or a scaffold prefix (`toorg`, `todo:`).
+Graph node ids (`task_01`), phase numbers (`Phase5`), plan/spec/handoff paths (`docs/superpowers/plans/…`), review-round provenance ("address quality review finding"), "per the plan", or a scaffold prefix (`wip(...)`, `todo:`).
 
 The plan directory is deleted after merge; the commit is permanent. A description that leans on one becomes a dead pointer.
 
@@ -53,7 +53,7 @@ A requirement ID may appear **in the body**, where a reader has already chosen t
 **Permitted in the title:** conventional-commit type/scope, and issue/PR references **when the project's convention uses them** — a tracker outlives the commit, a plan file does not.
 
 ```text
-✗  toorg: Phase5 wire CachedThumbnailStore behind the disk-cache feature flag
+✗  wip(thumbs-k3f9/task_05): wire CachedThumbnailStore behind the disk-cache feature flag
 
    This change wires the thumbnail store to read from disk before falling back
    to regeneration, returning the cached bytes on a hit and regenerating on a
@@ -151,6 +151,32 @@ Use this pattern before and after every `jj-hunk split` or other split-style rew
 
 See [workflows.md](references/workflows.md) for detailed non-interactive patterns.
 
+### 7. Concurrent agents: one lock, no snapshotting reads
+
+jj never locks the repo. Every jj command snapshots the working copy first, and two operations that rewrite the same commit concurrently leave it **divergent** — this includes a plain `jj log` snapshotting `@` while another agent commits. Whenever more than one agent (or the user) may be running jj against this repo:
+
+- **Every mutation goes through the guard** — the skill-relative `scripts/jj-guard.mjs`. It holds a repo-wide lock (covering every workspace), repairs a stale workspace, and exits non-zero if the operation left a divergent or conflicted change.
+  - `node <skill>/scripts/jj-guard.mjs commit -m '<msg>' <path>...` — **paths are required**; a bare `jj commit` files every agent's edits. Prints the new change id.
+  - `node <skill>/scripts/jj-guard.mjs run <jj args>...` — any other mutation (`squash`, `describe`, `rebase`, `workspace add`).
+  - `node <skill>/scripts/jj-guard.mjs check [--prefix <scaffold>] [--all]` — divergent, conflicted, or leftover-scaffold changes under any workspace (`--all`: every mutable change). Mutations fail only on problems they introduced, so unrelated conflicted branches do not block work.
+- **Every read passes `--ignore-working-copy`** (`jj log --ignore-working-copy ...`). It reads the last recorded state without snapshotting. Run a snapshotting read only when no other agent is active.
+- **No `jj git fetch`, `jj git push`, or bookmark moves while agents are running.**
+
+Two execution modes, chosen per run by the orchestrator:
+
+| Mode | When | How |
+|---|---|---|
+| **Shared working copy** (default) | Short tasks, shared build cache matters | All agents edit `@`; file scopes are disjoint; implementers `commit` their own paths through the guard. |
+| **Workspace per implementer** | Long or noisy tasks, or a task needs its own build/run state | `jj-guard.mjs run workspace add --name <run>-<node> -r <base> <dir>`; the implementer works and commits inside it; after consolidation the coordinator rebases the task's change into the main line (`run rebase -r <id> -B @`) and runs `run workspace forget <run>-<node>`. |
+
+Either way, consolidation targets **change ids reported by the guard**, never a description search across the whole repo.
+
+**Recovering from divergence** (orchestrator only; subagents report `BLOCKED`):
+1. Stop dispatching and wait for running agents. `jj op log --ignore-working-copy -n 10` — a `reconcile divergent operations` entry marks the race.
+2. List copies: `jj log --ignore-working-copy -r 'divergent()' -T 'change_id.short(8) ++ "/" ++ change_offset ++ " " ++ description.first_line() ++ "\n"' --no-graph`.
+3. Copies with different content are separate work: `jj metaedit --update-change-id -r <id>/<n>` gives each its own change. A copy whose diff against another is empty is a duplicate snapshot.
+4. If the graph is still tangled (stray sibling `@` children), `jj op restore` to the op before the reconcile and re-file the lost commit through the guard. Ask the user before abandoning anything.
+
 ### Red Flags - STOP
 
 These are self-check thoughts that mean you are about to break a safety rule above. If you catch yourself thinking one, **stop before running the command** — surface to the user or use the safe alternative.
@@ -158,6 +184,7 @@ These are self-check thoughts that mean you are about to break a safety rule abo
 - "Let me `jj edit <old-change>` / `jj next` / `jj prev` real quick" → moves `@` (rule 2).
 - "I'll `jj new` to start fresh here" → plain `jj new` moves `@`; use `jj new --no-edit --insert-after ... --insert-before ...` (rules 2, 4). **Only exception:** `children(@)` is non-empty, where plain `jj new` is the *required* way to make `@` a leaf before editing.
 - "I'll `jj split -o @-` to extract this quickly" → leaves the remainder as a sibling (rule 4).
+- "Just a quick `jj log` / `jj commit` while the subagents run" → snapshotting read or unguarded write; use `--ignore-working-copy` and the guard (rule 7).
 - "I'll just run `jj describe` / `jj squash -i` / `jj split` without filesets / *bare* `jj resolve` / `jj diffedit`" → opens an editor or interactive UI (rule 3). (`jj resolve --list` and `jj resolve --tool :ours|:theirs` are non-interactive and allowed.)
 - "I'll drop to raw `git` for this one" → rule 1.
 - "I'll run a full `jj show` / `jj diff` inline to check" → use the bounded `--stat` form or hand the command to the user (rule 6).

@@ -10,14 +10,14 @@ Agent tool (general-purpose):
   prompt: |
     You are implementing graph task node `[task_node_id]`: Task N: [task name]
 
-    🚨 **CRITICAL CONSTRAINT:** You may only run this jj command form: `jj commit [FILES] -m 'toorg(<NODE_ID>): [what changed]'` to file completed work into a commit, using the graph node id given to you above. All other jj commands are forbidden. That includes:
+    🚨 **CRITICAL CONSTRAINT:** You may only run this jj command form: `node <jujutsu-skill>/scripts/jj-guard.mjs commit -m 'wip(<RUN>/<NODE_ID>): [what changed]' <paths>...` to file completed work into a commit, using the graph node id given to you above. All other jj commands are forbidden. That includes:
     - ❌ `jj new`, `jj describe`, `jj squash`, `jj edit`, `jj next`, `jj prev`
     - ❌ `jj delete`, `jj abandon`
     - ❌ Any other jj subcommand
 
-    When you complete a logical unit of work, run: `jj commit [list of files] -m 'toorg(<NODE_ID>): [short description of what changed]'`
+    When you complete a logical unit of work, run: `node <jujutsu-skill>/scripts/jj-guard.mjs commit -m 'wip(<RUN>/<NODE_ID>): [short description]' <paths>...` and report the change id it prints
 
-    The `toorg(<NODE_ID>)` prefix is a scaffold. The orchestrator uses it to find and consolidate your changes once your work passes review, and then replaces it with the real description. Never omit the node id, and do not spend effort on the wording — it will be rewritten.
+    The `wip(<RUN>/<NODE_ID>)` prefix is a scaffold. The orchestrator uses your reported change ids to consolidate your changes once your work passes review, and then replaces it with the real description. Never omit the node id, and do not spend effort on the wording — it will be rewritten.
     This moves those files out of `@` into a new commit preceding it. File one logical unit at a time — do not dump all files into a single commit.
 
     ## Your Task
@@ -54,7 +54,7 @@ Agent tool (general-purpose):
     Once you're clear on requirements:
     1. Implement exactly what the task specifies
     2. Write task-local tests if helpful (following TDD if task says to)
-    3. File completed logical units: `jj commit [files] -m 'toorg(<NODE_ID>): [what changed]'`
+    3. File completed logical units through the guard (above) and report the change ids
     4. Self-review (see below)
     5. Report back
 

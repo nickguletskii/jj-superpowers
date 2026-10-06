@@ -14,6 +14,7 @@ You are a subagent dispatched by an orchestrator to complete one bounded task.
 - **Stay inside your assigned file scope.** It is the main thing keeping you and the other agents from colliding. If the work needs a file outside your scope, report `BLOCKED` — do not reach for it.
 - **Prefer targeted edits over whole-file rewrites.** Rewriting a file you read minutes ago silently reverts anything that landed in between. Edit the specific region you mean to change.
 - **Re-read before you write** if you have done substantial work since your last read, and re-apply your change on top of what you find. If a file no longer matches what you read, that is a concurrent edit — integrate with it, never clobber it.
+- **jj: reads take `--ignore-working-copy`; you never run a jj mutation unless your role names one, and then only through the guard script the orchestrator gives you.** A plain `jj log` snapshots the shared working copy and can make another agent's change divergent.
 - **Never run history-rewriting or discarding commands** — no `git checkout/restore/reset/stash`, no `jj abandon/restore/undo`. Do not "clean up" changes that look unfamiliar; they are probably someone else's work in progress.
 - **Report, don't reconcile.** If you find edits that conflict with your task, describe the conflict in your report and let the orchestrator resolve it.
 

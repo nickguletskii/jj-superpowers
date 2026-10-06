@@ -11,7 +11,7 @@ Organize jj changes without losing work or moving `@` unexpectedly.
 
 Use this skill for:
 
-- Unconsolidated `toorg` commits from inline or ad hoc work that should become a reviewable DAG. (Graph execution consolidates as it goes — see `jj-superpowers:subagent-driven-development` — so its history arrives here already clean.)
+- Unconsolidated `wip(...)` commits from inline or ad hoc work that should become a reviewable DAG. (Graph execution consolidates as it goes — see `jj-superpowers:subagent-driven-development` — so its history arrives here already clean.)
 - Arbitrary committed jj history that needs cleanup before review.
 - Splitting one change into logical pieces.
 - Deciding whether history should be linear, parallel, or left as-is.
@@ -34,29 +34,29 @@ Change descriptions are governed by the **Change Description Rules** in `jj-supe
 
 | Situation | Mode |
 |---|---|
-| Unconsolidated `toorg` commits from inline or ad hoc work | Reorganize `toorg:` commits |
+| Unconsolidated `wip(...)` commits from inline or ad hoc work | Reorganize `wip(...)` commits |
 | Existing committed history has mixed concerns | Clean committed history |
 | One change should become independent siblings | Parallel split |
 | One change should become a dependency chain | Sequential/hunk split via `jj-hunk` |
 
-## Reorganize `toorg:` Commits
+## Reorganize `wip(...)` Commits
 
 1. List candidates:
    ```bash
    jj log -r 'trunk()..@' --no-pager \
      --template 'change_id.short(8) ++ "  " ++ description.first_line() ++ "\n"'
    ```
-2. Inspect each `toorg:` change with `jj show -r <id> --stat --no-pager` — this `--stat` summary is the bounded-summary exception to the inline-diff ban in `jj-superpowers:jujutsu` ("Never run full diffs inline"), so it is safe to run inline; do not run a full inline diff.
+2. Inspect each `wip(...)` change with `jj show -r <id> --stat --no-pager` — this `--stat` summary is the bounded-summary exception to the inline-diff ban in `jj-superpowers:jujutsu` ("Never run full diffs inline"), so it is safe to run inline; do not run a full inline diff.
 3. Group commits by logical concern and dependency.
 4. Present the proposed DAG and assignments to the user using the decision-checkpoint pattern.
 5. Build the DAG using the `jj-superpowers:subagent-driven-development` skill's `jj-dag-builder-prompt.md` and the skill-relative `resources/dot-to-jj-dag/dot-to-jj-dag.py` script.
-6. Move content into target `todo:` nodes with `jj squash --from <toorg-id> --into <target-id> <files> -u`.
-7. Describe each completed node with its real, final description (see Change Description Discipline above) and abandon empty `toorg` commits. There is no intermediate label — describe it once, correctly.
-8. Verify **no scaffold survives** — `jj log -r 'trunk()..@ & (description(glob:"toorg*") | description(glob:"todo:*"))'` must return empty. Then confirm `@` is empty and no divergent/conflicted changes exist.
+6. Move content into target `todo:` nodes with `jj squash --from <wip-id> --into <target-id> <files> -u`.
+7. Describe each completed node with its real, final description (see Change Description Discipline above) and abandon empty `wip(...)` commits. There is no intermediate label — describe it once, correctly.
+8. Verify **no scaffold survives** — `jj log -r 'trunk()..@ & (description(glob:"wip(*") | description(glob:"todo:*"))'` must return empty. Then confirm `@` is empty and no divergent/conflicted changes exist.
 
 ## Clean Committed History
 
-Use for arbitrary committed jj history, not raw `toorg:` implementation output.
+Use for arbitrary committed jj history, not raw `wip(...)` implementation output.
 
 1. Confirm `@` is empty with `jj diff --no-pager -r @`; refuse cleanup if it is not.
 2. Analyze commits in the selected range for mixed concerns.

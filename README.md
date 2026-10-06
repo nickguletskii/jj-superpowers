@@ -6,7 +6,7 @@ A personal fork of [superpowers](https://github.com/obra/superpowers) by Jesse V
 
 ## What's different from upstream
 
-- **jj workflow** — keeps one working copy while implementation produces `toorg:` commits; optional organization into a reviewable jj DAG is handled later by `jj-organizing-history`.
+- **jj workflow** — keeps one working copy while implementers file `wip(<run>/<node>)` commits through a locking guard, consolidated per task as reviews pass; optional organization into a reviewable jj DAG is handled later by `jj-organizing-history`.
 - **No visual companion** — brainstorming is text-only.
 - **jj skill library** — includes `jj-hunk`, `jj-organizing-history`, and `jujutsu` reference skills.
 
@@ -77,7 +77,7 @@ Fetch and follow instructions from https://raw.githubusercontent.com/nickguletsk
 
 5. **requesting-code-review** - Activates for ad hoc/manual review. Reviews against plan, reports issues by severity. Critical issues block progress.
 
-6. **finishing-a-development-branch** - Activates when tasks complete. Verifies tests, presents options (PR/integrate/keep/discard), and may use `jj-organizing-history` to organize `toorg:` commits into a reviewable jj DAG.
+6. **finishing-a-development-branch** - Activates when tasks complete. Verifies tests, presents options (PR/integrate/keep/discard), and may use `jj-organizing-history` to organize commits into a reviewable jj DAG.
 
 **The agent checks for relevant skills before any task.** Mandatory workflows, not suggestions.
 
@@ -118,7 +118,7 @@ All 30 skills. `using-superpowers` carries a routing map from situation → skil
 
 **jujutsu**
 - **jujutsu** - Comprehensive jj reference (daily workflow, revsets, GitLab integration, git→jj mapping)
-- **jj-organizing-history** - Organize `toorg:` commits, clean jj history, and split changes
+- **jj-organizing-history** - Organize `wip(...)` commits, clean jj history, and split changes
 - **jj-hunk** - Programmatic hunk-level splitting and squashing (jj-hunk tool)
 
 **Project layout & specs**

@@ -72,11 +72,11 @@ digraph process {
     fanin       [shape=box, label="Fan-in: wait for all results"];
     asks        [shape=diamond, label="Any implementer asks questions\nor blocks?"];
     answer      [shape=box, label="Answer, amend plan, or re-dispatch"];
-    filed       [shape=box, label="Task filed as toorg change"];
+    filed       [shape=box, label="Task filed as wip(run/node) change"];
     spec        [shape=box, label="Run implied spec review\n(scope: that task)"];
     spec_ok     [shape=diamond, label="Spec review passes?"];
     task_fix    [shape=box, label="Return to implementer for task fix"];
-    consolidate [shape=box, label="Consolidate task into ONE change\n(squash toorg scaffolds, write real description)"];
+    consolidate [shape=box, label="Consolidate task into ONE change\n(squash reported change ids, write real description)"];
     is_stub     [shape=diamond, label="Task marked stub=true?"];
     design      [shape=box, label="Run implied design review\n(coherence only; scope: the stubbed surface)"];
     design_out  [shape=diamond, label="Design review outcome?"];
@@ -212,68 +212,48 @@ Platform locations:
 
 The graph already tells you when a unit of work is done and correct: **its spec review passed.** That is the consolidation point.
 
-### The scaffold
+### Run id and scaffold
 
-Implementers file with the node id in the description:
+At graph start the orchestrator picks a **run id**: the plan slug plus four random characters (`parser-k3f9`). It namespaces every scaffold so concurrent runs, sessions, and work streams never match each other's changes.
+
+Implementers file through the guard (`jj-superpowers:jujutsu`, safety rule 7), naming their paths explicitly:
 
 ```sh
-jj commit [FILES] -m 'toorg(<node_id>): [what changed]'
+node <jujutsu-skill>/scripts/jj-guard.mjs commit -m 'wip(<run>/<node_id>): [what changed]' <paths>...
 ```
 
-The `toorg(<node_id>)` prefix is a **scaffold**, not a description. It exists so consolidation can mechanically find a task's changes, and it is **guaranteed to be destroyed** at the consolidation step — it must never reach final history. This is why implementers are not asked to write good descriptions: the orchestrator writes the real one when the work is known-correct.
+The guard prints the new change id; the implementer reports every id it created. The `wip(<run>/<node_id>)` prefix is a **scaffold**: a human-readable label and a leftover check, destroyed at consolidation. Implementers are not asked for good descriptions — the orchestrator writes the real one once the work is known-correct.
 
 ### Consolidate on spec-review pass
 
-When a task's implied spec review passes, collapse that task's changes into exactly one, then give it a real description (Change Description Rules in `jj-superpowers:jujutsu`):
+When a task's spec review passes, the coordinator collapses the task's reported change ids into the newest one and describes it (Change Description Rules in `jj-superpowers:jujutsu`):
 
 ```sh
-# Newest change for this task becomes the target.
-jj log -r 'heads(description(substring:"toorg(task_01):"))' --no-graph -T 'change_id.short(8)'
-
-# Fold the task's other changes into it.
-jj squash --from 'description(substring:"toorg(task_01):") ~ heads(description(substring:"toorg(task_01):"))' \
-          --into <target> --use-destination-message
-
-# Replace the scaffold with the real description.
-jj describe -r <target> -m 'feat(parser): parse input with empty-input handling'
+G="node <jujutsu-skill>/scripts/jj-guard.mjs"
+$G run squash --from '<id1> | <id2>' --into <id3> --use-destination-message
+$G run describe -r <id3> -m 'feat(parser): parse input with empty-input handling'
 ```
 
-Parallel implementers interleave their commits, so a task's changes are usually **not contiguous**. That is fine — jj rebases around the intervening changes, and the collision gate guarantees disjoint files, so this does not conflict.
+Parallel implementers interleave, so a task's changes are usually not contiguous; jj rebases around them, and disjoint file scopes keep this conflict-free. In workspace mode, the coordinator then moves the change into the main line (`$G run rebase -r <id3> -B @`) and forgets the workspace.
 
-`description()` takes an **exact** match by default. The `substring:` prefix is required; omitting it silently selects nothing.
+When `verify`, `simplification`, or `quality_review` sends a fix back, the re-dispatched implementer reports new ids; once re-review passes, squash them **into the task's consolidated change**. A review round is not a unit of work.
 
-### Fold fixes into the change they fix
-
-When `verify`, `simplification`, or `quality_review` routes a failure back to a task, the re-dispatched implementer files another `toorg(<node_id>)` change. Once the re-review passes, squash it **into the task's existing consolidated change** — never leave it as its own commit:
-
-```sh
-jj squash --from 'description(substring:"toorg(task_01):")' --into <task_01_change> --use-destination-message
-```
-
-A review round is not a unit of work: history should record the code's evolution, not the agent's stumbles.
-
-**The invariant: one change per `task` node, always — independent of how many commits the implementer made or how many review round-trips it took.**
+**The invariant: one change per `task` node, regardless of commit count or review rounds.** Off-graph work (Small tier) has no node: the implementer commits through the guard with the orchestrator-supplied final description and no scaffold.
 
 ### Who runs it
 
-The orchestrator decides; `sdd-jj-coordinator` executes. Implementers keep their narrow `jj commit` constraint and never squash, describe, or reorganize.
+The orchestrator decides; `sdd-jj-coordinator` executes through the guard. Implementers only `commit` their own paths and never squash, describe, or reorganize.
 
-Group-level consolidation (collapsing a whole verify group into one change) stays available at `finishing-a-development-branch` for cases where the individual tasks are not independently meaningful — but it is now an *option* on already-clean history, not a rescue operation.
+### Finish: no scaffold, divergence, or conflict survives
 
-### No scaffold survives the graph
-
-A **scaffold** is a disposable description prefix that exists only so tooling can find a change mid-flight. There are two: `toorg(<node_id>)`, written by implementers and destroyed at consolidation; and `todo:`, written by the DAG builder in `jj-organizing-history` and destroyed when that node is described.
-
-**Neither may exist once the graph reaches `final`.** A surviving scaffold means a step was skipped, and it will otherwise sail into a PR as a permanent commit whose description says nothing about the code.
-
-`final` is not reached until this returns empty:
+Scaffolds are `wip(<run>/<node>)` (implementers) and `todo:` (the DAG builder in `jj-organizing-history`). `final` is not reached until all agents have stopped and these return nothing:
 
 ```sh
-jj log -r 'trunk()..@ & (description(glob:"toorg*") | description(glob:"todo:*"))' \
-  --no-pager -T 'change_id.short(8) ++ "  " ++ description.first_line() ++ "\n"'
+node <jujutsu-skill>/scripts/jj-guard.mjs check --prefix 'wip(<run>/'
+jj diff --ignore-working-copy --stat     # @ holds no unfiled edits
 ```
 
-Any output is a bug, not a choice. Squash each listed change into the change it belongs to and describe it (Change Description Rules in `jj-superpowers:jujutsu`) before handing off to `finishing-a-development-branch`. Do not "fix it later" — later is a PR.
+Any output is a bug: squash each leftover into the change it belongs to and describe it; recover divergence per `jj-superpowers:jujutsu` safety rule 7. Collapsing a whole verify group into one change, or reshaping history, is optional — `jj-superpowers:jj-organizing-history`.
 
 ## Verification Ownership
 
@@ -369,7 +349,7 @@ You: I'm using Subagent-Driven Development to execute project-network.dot.
 [Fan-out: dispatch task_01 + task_02 implementers — both Agent calls in ONE response.
  Each gets files/scopes from its node; neither task file restates them]
 
-task_01: DONE, filed toorg change    task_02: DONE_WITH_CONCERNS, filed toorg change
+task_01: DONE, filed 2 changes       task_02: DONE_WITH_CONCERNS, filed 1 change
 
 [Implied spec review fires per task; include task_02's concern in its review message]
 [Fan-out: both spec reviews in one response] -> both pass
