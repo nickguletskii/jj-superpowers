@@ -30,7 +30,7 @@ Dispatch this subagent with these values substituted for the bracketed placehold
 
 ---
 
-You are reviewing the dead code deletions from Step 5 before synthesis begins.
+You are reviewing the dead code deletions from the Delete confirmed items phase before validation and synthesis.
 
 ## Checks
 
@@ -71,5 +71,5 @@ ISSUES FOUND
 - [Issue 2]: [specific file or symbol and exactly what is wrong]
 ```
 
-If APPROVED: deletions are clean and Step 6 synthesis can proceed.
+If APPROVED: deletions are clean and the Validate phase can proceed.
 If ISSUES FOUND: the deletion agent must fix the listed issues. Re-dispatch this reviewer after fixes are complete.

@@ -5,7 +5,7 @@ Use this template when dispatching a verification subagent for a `verify` node.
 **Purpose:** Run the exact commands from a `verify-*.md` file once every upstream task has passed its spec review.
 
 ```
-Task tool (cheap model unless debugging is required):
+Agent tool (model per jj-superpowers:choosing-model-and-effort):
   description: "Verify graph node [verify_node_id]"
   prompt: |
     You are verifying graph node `[verify_node_id]`.

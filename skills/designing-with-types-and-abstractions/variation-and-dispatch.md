@@ -34,7 +34,10 @@ fn run_with_retry<P: RetryPolicy>(
         match op() {
             Ok(()) => return Ok(()),
             Err(err) => match policy.next_delay(attempt) {
-                Some(_) => attempt += 1,
+                Some(delay) => {
+                    std::thread::sleep(delay);
+                    attempt += 1;
+                }
                 None => return Err(err),
             },
         }

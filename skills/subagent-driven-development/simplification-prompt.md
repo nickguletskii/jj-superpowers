@@ -11,7 +11,7 @@ Use this template when dispatching a simplification reviewer subagent. Simplific
 **Verification command policy:** The upstream `verify` node owns compile, type-check, build, lint, test-suite, and smoke-test execution. Inspect the verified diff and verification report. Do not rerun those commands unless code inspection gives a concrete reason to believe the report is stale or contradicted by the diff.
 
 ```
-Task tool (sdd-simplifier preferred; fallback general-purpose):
+Agent tool (sdd-simplifier preferred; fallback general-purpose):
   Use the named `sdd-simplifier` agent when available.
 
   description: "Simplification review for [verify node id]"

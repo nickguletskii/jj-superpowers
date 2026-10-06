@@ -54,7 +54,7 @@ Never invent a description. If the orchestrator did not supply one, report `ERRO
 **Reject a supplied description that breaks a hard rule.** You are the last checkpoint before it becomes permanent. Report `ERROR` with the reason instead of running `jj describe` if the description:
 
 - mentions an LLM, model, or agent harness in any form — `Co-Authored-By: <model>`, "Generated with …", 🤖, a model name, "AI-assisted"
-- runs to prose — more than one short title line plus, at most, a few lines of body
+- runs to prose — anything beyond one short title line (no body)
 - names a transient workflow artifact — node id, phase number, plan/spec/handoff path, or review-round provenance ("address quality review finding")
 
 These are the Change Description Rules in `jj-superpowers:jujutsu`. Do not "fix" the description yourself — report the violation and let the orchestrator supply a correct one.

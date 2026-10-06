@@ -116,7 +116,7 @@ After design approval, match the planning ceremony to the task. You (the orchest
 - **Small** — local scope, ≤2 implementer dispatches, obvious file boundaries, **no new architecture, no cross-file design risk** (design risk forces Full, because the `design_review` gate lives only there).
 - **Full** — new architecture, new public API surface, multiple interacting components, cross-file design risk, or anything that benefits from a written, reviewable spec/plan.
 
-**Choosing the lightest adequate tier is the CORRECT default, not a risk.** Do not reflexively reach for Full. If the work genuinely fits Trivial, run it inline no plan files (with or without subagents). If the overhead of writing plan files is expected to be larger than direct invocation of subagents, skip writing plan files and dispatch subagents directly.
+**Choosing the lightest adequate tier is the CORRECT default, not a risk.** Do not reflexively reach for Full. If the work genuinely fits Trivial, implement it inline in this session with no plan files and no subagents. If the work fits Small, or the overhead of writing plan files is expected to be larger than direct invocation of subagents, skip writing plan files and dispatch subagents directly.
 
 ## Planning Strategy (Full tier only)
 
@@ -198,21 +198,20 @@ Fix any issues inline. No need to re-review — just fix and move on.
 
 Keep the step 8 spec self-review above (your own fresh-eyes pass). Then run a **convergent review loop** as the default, invoking `jj-superpowers:hypothesis-driven-improvement`'s **Simple In-Line Mode** over the written spec.
 
-*Severity taxonomy.* Every finding is tagged **Major**, **Minor**, or **Nit**:
+*Severity.* Every finding is tagged **Critical**, **Important**, or **Minor** — the scale defined once in `jj-superpowers:requesting-code-review` (Severity Scale). In this loop:
 
-- **Major** — changes the outcome: structural/design flaw, correctness error, genuine ambiguity (two readings → materially different builds), missing/contradicted requirement, wrong abstraction boundary. Must be resolved **and** re-reviewed.
-- **Minor** — under-specification or local improvement resolvable unambiguously with no design decision. Folded in immediately, same round; does not by itself trigger another round.
-- **Nit** — cosmetic/preference. Dropped (or folded trivially). Never loops.
+- **Critical / Important** (blocking) — must be resolved **and** re-reviewed.
+- **Minor** — folded in immediately, same round (purely cosmetic ones may be dropped); does not by itself trigger another round.
 
-**Convergence = a review round that surfaces zero Major findings.** On that round, fold in any outstanding Minors (you, the orchestrator, edit the spec doc directly — there is no implementer here) and drop Nits, with **no confirming round on the Minors**. Minors remain subject to the accept/refute gate: a Minor-looking finding that is actually wrong may be refuted with justification.
+**Convergence = a review round that surfaces zero Critical/Important findings.** On that round, fold in any outstanding Minors (you, the orchestrator, edit the spec doc directly — there is no implementer here), with **no confirming round on the Minors**. Minors remain subject to the accept/refute gate: a Minor-looking finding that is actually wrong may be refuted with justification.
 
 *Lenses.* Each round dispatches ~**3 reviewers**, each assigned a **distinct lens** from this encouraged menu: correctness/soundness, completeness/missing-requirements, ambiguity/interpretability, API & design soundness, concurrency, parallelism, performance, DRYness/duplication, ease of abstraction & extensibility, testability/verification, over- and under-engineering. Pick the ~3 most relevant (or high-risk) to this spec and **rotate lens assignments across rounds** for diversity. Reviewers read the immutable spec read-only, so they fan out safely.
 
-*External-harness ensembling.* After the subagent loop converges (a zero-Major round), run a **default-on-when-available** ensemble pass at the **orchestrator** level (the subagent no-other-harness rule is unaffected — that governs the reviewer subagents, not you). This skill owns the review **loop**; `jj-superpowers:choosing-model-and-effort` owns the **harness** — detection, harness choice, model and effort, and the reviewer-only gate. Do not restate them here.
+*External-harness ensembling.* After the subagent loop converges (a zero-Critical/Important round), run a **default-on-when-available** ensemble pass at the **orchestrator** level (the subagent no-other-harness rule is unaffected — that governs the reviewer subagents, not you). This skill owns the review **loop**; `jj-superpowers:choosing-model-and-effort` owns the **harness** — detection, harness choice, model and effort, and the reviewer-only gate. Do not restate them here.
 
 - Run the **same lens-based review** through each available harness.
-- The combined loop is `subagent-converge → ensemble pass`. An ensemble pass's **Major** findings **re-open the subagent loop**; after it re-converges, ensemble runs again. The loop ends when an **ensemble pass yields zero Major**.
-- External **Minor/Nit** findings are folded-and-go (or dropped) exactly like subagent Minors/Nits, and **do NOT re-open the loop** — only an ensemble **Major** re-opens it.
+- The combined loop is `subagent-converge → ensemble pass`. An ensemble pass's **Critical/Important** findings **re-open the subagent loop**; after it re-converges, ensemble runs again. The loop ends when an **ensemble pass yields zero Critical/Important**.
+- External **Minor** findings are folded-and-go (or dropped) exactly like subagent Minors, and **do NOT re-open the loop** — only an ensemble **Critical/Important** finding re-opens it.
 - If **no** external harness is available, **skip silently**. The user may opt out.
 
 **User Review Gate (step 10):**

@@ -4,7 +4,7 @@ Use this template when dispatching a jj-dag-builder subagent to create the jj
 change DAG for a new work scope.
 
 ```
-Task tool (haiku model):
+Agent tool (model per jj-superpowers:choosing-model-and-effort):
   description: "JJ: build DAG for <feature name>"
   prompt: |
     You are a jj DAG builder. Your only job is to run jj commands to create

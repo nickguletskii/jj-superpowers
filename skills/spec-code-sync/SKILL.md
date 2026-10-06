@@ -68,7 +68,7 @@ After the candidate-spec lookup runs, classify the change. Use the **operational
 - **Design-time intent** ⇔ the brainstorming-step design doc named the spec amendment BEFORE any code task was authored.
   - **Action**: require a `spec-update` task in the plan, scheduled BEFORE the implementing task. `writing-specs` runs first; code runs second.
 - **Post-implementation refinement** (= queued normative debt that MUST be resolved later, not optional polish) ⇔ everything else, including mid-implementation realizations that a spec should change.
-  - **Action**: implement first; immediately enqueue an entry by writing a new file `.agents/tech-debt/docs/<YYYY-MM-DD>/<HHMMSS>-<slug>.md` describing what spec change is owed (per-entry format in `project-layout/references/manifest-schema.md`). Drift-detector will surface this later as a queue item and pair it with related drift findings. The debt is real and persistent until resolved through `writing-specs`.
+  - **Action**: implement first; immediately enqueue an entry by writing a new file `.agents/tech-debt/docs/<YYYY-MM-DD>/<HHMMSS>-<slug>.md` describing what spec change is owed (per-entry format in `project-layout/references/manifest-schema.md`). Drift-detector will surface this later as a queue item and downgrade the matching `mismatch` to `queued`. The debt is real and persistent until resolved through `writing-specs`.
 
 ```dot
 digraph classify {

@@ -18,7 +18,7 @@ This skill has a heavyweight mode and a lightweight one. **Default to simple in-
 | | **Simple in-line** | **Full** |
 |--|--|--|
 | Use when | findings come from a reviewer/critic and are real-on-sight (adversarial spec/design/code review, doc hardening) | you must discover causes/levers and *prove* each affects a metric or failure rate (flaky-behavior hardening, perf/optimization) |
-| Convergence | a review round surfaces zero Major findings | the done-predicate holds, or hypotheses run dry |
+| Convergence | a review round surfaces zero Critical/Important findings | the done-predicate holds, or hypotheses run dry |
 | Overhead | none — runs in the conversation, no files | done-predicate + baseline + ledger + triage |
 
 Everything below the Simple In-Line Mode section (Iron Law, ledger, triage, prove/disprove gate) is **full mode**. Don't apply it to a simple review loop — that's the bureaucracy this mode exists to avoid.
@@ -27,15 +27,14 @@ Everything below the Simple In-Line Mode section (Iron Law, ledger, triage, prov
 
 When the loop's "findings" come from a reviewer/critic and are self-evidently real once surfaced, you do **not** need a done-predicate, baseline, ledger, or triage scoring. Run it inline, in the conversation. **No files.**
 
-**Severity taxonomy (governs the loop):** every finding is one of three buckets.
+**Severity (governs the loop):** tag every finding **Critical**, **Important**, or **Minor** — the scale defined once in `jj-superpowers:requesting-code-review` (Severity Scale). Loop behavior in this mode:
 
-| Severity | Definition | Loop behavior |
-|----------|------------|---------------|
-| **Major** | Changes the outcome: structural/design flaw, correctness error, genuine ambiguity (two readings → materially different builds), missing/contradicted requirement, wrong abstraction boundary | Must be resolved **and** re-reviewed. Loop continues while any Major appears. |
-| **Minor** | Deterministically resolvable with no design decision (under-specification, local improvement with one unambiguous fix) | Folded in **immediately, same round**; does **not** by itself trigger another round. |
-| **Nit** | Cosmetic/preference | Dropped or folded trivially. Never loops. |
+| Severity | Loop behavior |
+|----------|---------------|
+| **Critical / Important** (blocking) | Must be resolved **and** re-reviewed. Loop continues while any blocking finding appears. |
+| **Minor** | Folded in **immediately, same round** (purely cosmetic ones may be dropped); does **not** by itself trigger another round. |
 
-**Convergence = a review round that surfaces zero Major findings.** On that round, fold any outstanding Minors and drop Nits — there is **no extra confirming round** just for Minors. Fold Minors surfaced in earlier rounds proactively so they don't accumulate.
+**Convergence = a review round that surfaces zero Critical/Important findings.** On that round, fold any outstanding Minors — there is **no extra confirming round** just for Minors. Fold Minors surfaced in earlier rounds proactively so they don't accumulate.
 
 **Who folds a Minor in (context-dependent):**
 - **Document review** (spec/plan/design text, no implementer) → the **orchestrator** edits the document directly.
@@ -46,16 +45,16 @@ The lite loop:
 1. **Review** — dispatch ~**3 adversarial reviewer subagents** over the current artifact (hostile charter: find real problems, construct the concrete failure), **each with a distinct lens**. Read-only over shared immutable text → safe to fan out (see jj-superpowers:dispatching-parallel-agents).
    - Encouraged lens menu (default, not mandatory): correctness/soundness, completeness/missing-requirements, ambiguity/interpretability, API & design soundness, concurrency, parallelism, performance, DRYness/duplication, ease of abstraction & extensibility, testability/verification, over- and under-engineering.
    - The orchestrator picks the ~3 most relevant lenses for the artifact and **rotates lens assignments across rounds** for diversity. Add (e.g. Security) or drop lenses per artifact.
-2. **Tag and accept/refute** — for each finding, assign a **Major/Minor/Nit** severity, then decide: *accept* (real, in scope) or *refute* (reviewer is wrong / out of scope). Both directions need justification, not reflex. When a finding is plausible but you think it's wrong, have a second subagent adversarially check before discarding it; equally, don't blindly accept a confident-sounding finding that may be wrong. **Fold-and-go applies only to ACCEPTED Minors** — a Minor may still be refuted with justification.
-3. **Correct** — resolve accepted Majors; fold accepted Minors (per the context rule above); drop/fold Nits.
-4. **Repeat** — re-review until a round surfaces **zero Major findings**. On that round, fold outstanding Minors and drop Nits — that zero-Major round is your convergence signal. A Major reopens the loop; Minors/Nits alone do not.
+2. **Tag and accept/refute** — for each finding, assign a **Critical/Important/Minor** severity, then decide: *accept* (real, in scope) or *refute* (reviewer is wrong / out of scope). Both directions need justification, not reflex. When a finding is plausible but you think it's wrong, have a second subagent adversarially check before discarding it; equally, don't blindly accept a confident-sounding finding that may be wrong. **Fold-and-go applies only to ACCEPTED Minors** — a Minor may still be refuted with justification.
+3. **Correct** — resolve accepted Critical/Important findings; fold accepted Minors (per the context rule above).
+4. **Repeat** — re-review until a round surfaces **zero Critical/Important findings**. On that round, fold outstanding Minors — that round is your convergence signal. A Critical/Important finding reopens the loop; Minors alone do not.
 
 **Lite-mode invariants (the only discipline that survives):**
 - Adversarially verify findings — tag severity, then accept/refute *with justification*, both directions.
-- **Convergence is a zero-Major round**, not a quiet first pass — a fresh Major always forces another resolve-and-re-review cycle; Minors fold in-place and Nits drop without looping.
+- **Convergence is a zero-Critical/Important round**, not a quiet first pass — a fresh Critical/Important finding always forces another resolve-and-re-review cycle; Minors fold in-place without looping.
 - No ledger, predicate, baseline, or triage. No files. Keep it in the conversation.
 
-**Ensembling (optional, default-on when available):** after the subagent loop converges (a zero-Major round), an external-harness ensemble pass may run the **same lens-based review** through any available external harness. An ensemble pass's **Major** findings re-open the subagent loop; external **Minor/Nit** findings fold-and-go (or drop) and do **not** re-open it. **Skip silently if no harness is available.** The combined loop terminates when an ensemble pass yields zero Major. (Brief by design — `jj-superpowers:brainstorming` is authoritative for the **loop**; `jj-superpowers:choosing-model-and-effort` is authoritative for the **harness** — detection, harness choice, model and effort, and the reviewer-only gate.)
+**Ensembling (optional, default-on when available):** after the subagent loop converges (a zero-Critical/Important round), an external-harness ensemble pass may run the **same lens-based review** through any available external harness. An ensemble pass's **Critical/Important** findings re-open the subagent loop; external **Minor** findings fold-and-go (or drop) and do **not** re-open it. **Skip silently if no harness is available.** The combined loop terminates when an ensemble pass yields zero Critical/Important. (Brief by design — `jj-superpowers:brainstorming` is authoritative for the **loop**; `jj-superpowers:choosing-model-and-effort` is authoritative for the **harness** — detection, harness choice, model and effort, and the reviewer-only gate.)
 
 Switch to full mode the moment you need to measure a metric, attribute *which* change helped, or carry state across many rounds.
 
@@ -84,7 +83,7 @@ Triggers: "eliminate all possibilities of…", "make X never fail to…", "harde
 
 ## The Iron Law (Full Mode)
 
-This law governs **full mode**. In simple in-line mode the equivalent invariants are the lite-mode ones above (adversarial accept/refute + loop until a zero-Major round).
+This law governs **full mode**. In simple in-line mode the equivalent invariants are the lite-mode ones above (adversarial accept/refute + loop until a zero-Critical/Important round).
 
 ```
 NO LOOP WITHOUT A WRITTEN DONE-PREDICATE AND A MEASURED BASELINE FIRST
@@ -155,7 +154,7 @@ This repo uses jj. Every candidate is its own change — **never `jj abandon`**.
 
 ## Parallelism
 
-Default is **sequential**, because proven changes are additive and shift the baseline. Parallelize a batch ONLY when hypotheses are **orthogonal** (touch disjoint code/behavior, cannot interact) **and** each is provable with an easy, fast, deterministic test. Use worktree isolation for concurrent code changes. When in doubt, sequential. **REQUIRED BACKGROUND:** jj-superpowers:dispatching-parallel-agents.
+Default is **sequential**, because proven changes are additive and shift the baseline. Parallelize a batch ONLY when hypotheses are **orthogonal** (touch disjoint code/behavior, cannot interact) **and** each is provable with an easy, fast, deterministic test. Use jj workspace isolation (`jj workspace add`) for concurrent code changes. When in doubt, sequential. **REQUIRED BACKGROUND:** jj-superpowers:dispatching-parallel-agents.
 
 ## The Ledger
 
@@ -176,7 +175,7 @@ Baseline: <measured value / failure-mode inventory>  (measured <when/how>)
 ## Red Flags — STOP
 
 - Building a done-predicate, baseline, ledger, or files for a simple review loop → use simple in-line mode.
-- Stopping a review loop after one pass because the big issues are gone → loop until a round surfaces zero Major findings (Minors fold in-place; Nits drop).
+- Stopping a review loop after one pass because the big issues are gone → loop until a round surfaces zero Critical/Important findings (Minors fold in-place).
 - Writing a fix before writing the done-predicate and baseline (full mode).
 - A fix-*list* with no likelihood/impact ranking.
 - Shipping more than one change before measuring.
@@ -197,8 +196,8 @@ Baseline: <measured value / failure-mode inventory>  (measured <when/how>)
 | "No time to instrument a baseline" | Without a baseline you cannot prove improvement at all. Baseline is hypothesis #1, not optional. |
 | "I'll just abandon the failed attempts" | Keep them annotated. The user prunes; disproofs are evidence for the next round. |
 | "Hypotheses ran out, I'll wrap up" | Re-check the predicate. If unmet, report the residual gap explicitly — don't imply success. |
-| "I'll write a done-predicate + ledger for this spec review" | If findings are real-on-sight from a reviewer, that's simple in-line mode: review → tag severity + accept/refute → correct → loop until a zero-Major round. No predicate, no ledger, no files. |
-| "The review found nothing major, we're done" | Convergence is a round that surfaces **zero Major findings** (re-review confirms the fixes held). On that round fold outstanding Minors and drop Nits — but a single fresh Major reopens the loop. |
+| "I'll write a done-predicate + ledger for this spec review" | If findings are real-on-sight from a reviewer, that's simple in-line mode: review → tag severity + accept/refute → correct → loop until a zero-Critical/Important round. No predicate, no ledger, no files. |
+| "The review found nothing major, we're done" | Convergence is a round that surfaces **zero Critical/Important findings** (re-review confirms the fixes held). On that round fold outstanding Minors — but a single fresh Critical/Important finding reopens the loop. |
 
 ## Common Mistakes
 

@@ -50,7 +50,7 @@ Then write `[OUTPUT_PATH]`.
 [List of directories and semantic groups covered, from index.md]
 
 ## What was removed
-[Bulleted list of items actually deleted in Step 5, with rationale.
+[Bulleted list of items actually deleted in the Delete confirmed items phase, with rationale.
  Only include entries annotated with `✓ removed` in the ## Analysis → ### Dead code sections,
  or annotated with `(deleted)` in the ## Dead / obsolete tests sections.
  Do not include dead code or tests that were identified but not deleted.]

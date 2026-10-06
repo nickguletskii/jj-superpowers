@@ -3,7 +3,7 @@
 Use this low-level helper when dispatching a jj-coordinator subagent to file an already-completed graph node or verified group. This prompt does not decide graph structure or review scope.
 
 ```
-Task tool (haiku model):
+Agent tool (model per jj-superpowers:choosing-model-and-effort):
   description: "JJ: file graph node/group: [change description]"
   prompt: |
     You are a jj coordinator. Your only job is to run jj commands.

@@ -54,13 +54,11 @@ Redundant, contradictory, or unverifiable documentation MUST be deleted or fixed
 | Information type | Where it belongs |
 |---|---|
 | What the code does | Code itself (names, types, structure) |
-| Why a decision was made | Doc comment or ADR |
-| Invariants not expressible in types | Doc comment near the invariant |
+| Why a decision was made, invariants not expressible in types, temporal ordering constraints | Placement rule in `jj-superpowers:writing-comments` (local → comment; cross-component contract → spec; else module doc/ADR) |
 | How to use the module/API | Module-level doc comment |
 | System architecture / data flow | Mermaid diagram in module doc |
 | How to run/debug/deploy | Runbook |
 | Acknowledged limitations/drawbacks | Doc comment |
-| Temporal ordering constraints | Doc comment |
 | Cross-cutting architectural decisions | ADR |
 
 **Cross-reference:** Express invariants via types first (`jj-superpowers:designing-with-types-and-abstractions`). Only document what types can't capture. For projects with an agent-spec ecosystem (i.e., `.agents/layout.yaml` exists), normative behavior belongs in capability/plane specs (`jj-superpowers:writing-specs`), not in code comments or mdbook — see "Specs vs. mdbook vs. code-as-spec vs. AGENTS.md" below.
@@ -131,7 +129,7 @@ Project-specific documentation conventions live in `DOCS.md` at the project root
 - Where docs live (directory structure)
 - What doc forms are used (ADR format, module READMEs, etc.)
 - Naming conventions
-- Diagram format preference (Mermaid for human-facing, Graphviz for specs)
+- Diagram format preference (Mermaid for human-facing, Graphviz for plans and skill files)
 - RFC2119 usage (MUST/SHOULD/MAY)
 - Monorepo hierarchy (root defaults, package overrides)
 
@@ -140,8 +138,7 @@ Project-specific documentation conventions live in `DOCS.md` at the project root
 ## Bidirectional Referencing
 
 Code and docs MUST reference each other:
-- **Doc comments** → link to architecture docs: `// See DOCS.md#auth-flow for the full picture`
-- **Spec references** → link to permanent agent specs (not transient artifacts), but do not assume the developer is going to go read them - these are primarily for agents
+- **Code comments** → only the anchors `jj-superpowers:writing-comments` permits (see below)
 - **Architecture docs** → link to code: `Implemented in src/auth/session.ts`
 - **ADRs** → link to both implementing code and discussing docs
 - **Module doc comments** → reference the module file path they describe
@@ -150,9 +147,7 @@ Unreferenced docs are stale docs. If you can't find the code a doc references, t
 
 ### Comment reference discipline
 
-What may and may not appear *inside a code comment* — transient artifacts, the `impl: REQ-` carve-out, self-containment — is owned by `jj-superpowers:writing-comments` (its rule 1). Apply that rule; it is not restated here.
-
-This skill owns the other half: which **targets** are durable enough to be linked at all. The [Bidirectional Referencing](#bidirectional-referencing) rules above sanction `DOCS.md` sections and ADRs. Planning artifacts (`docs/superpowers/` plans, brainstorming/design filenames) are not doc targets this skill sanctions, so a comment may not anchor to one.
+What may and may not appear *inside a code comment* — transient artifacts, permitted anchors (`impl: REQ-…`, stable ADR/doc anchors), self-containment — is owned by `jj-superpowers:writing-comments` (its rule 1). Apply that rule; it is not restated here.
 
 ## Maintenance
 
@@ -164,17 +159,12 @@ When maintaining docs alongside code changes:
 
 ## When You Struggle
 
-Two paths when you spent significant effort reading multiple files or tracing execution to understand something a short doc could have explained:
-
-1. **Propose it** — Create a proposal in `docs/superpowers/docwishlist/` following the doc-wishlist format, then write the doc following this skill's rules.
-2. **Write it directly** — Write the doc immediately following this skill's rules. No proposal needed.
-
-Choose based on confidence. Understand the domain well enough? Write directly. Unsure about scope or content? Propose first.
+When you spent significant effort reading multiple files or tracing execution to understand something a short doc could have explained, write that doc immediately following this skill's rules. Unsure about scope or content? Ask the user.
 
 ## Diagrams
 
 - **Human-facing docs** (README, architecture docs, runbooks) → Mermaid
-- **Specs, plans, skill files** → Graphviz/DOT (existing project convention)
+- **Plans, skill files** → Graphviz/DOT (existing project convention)
 
 Use diagrams only when they add clarity beyond what a list or table provides.
 

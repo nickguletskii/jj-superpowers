@@ -10,7 +10,7 @@ the orchestrator owns further dispatch.
 
 **Your task:**
 1. Review {WHAT_WAS_IMPLEMENTED}
-2. Compare against {PLAN_OR_REQUIREMENTS}
+2. Compare against the requirements/plan below
 3. Check code quality, architecture, testing
 4. Categorize issues by severity
 5. Assess production readiness

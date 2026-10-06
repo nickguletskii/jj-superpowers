@@ -27,7 +27,7 @@ WHEN receiving code review feedback:
 ## Forbidden Responses
 
 **NEVER:**
-- "You're absolutely right!" (explicit CLAUDE.md violation)
+- "You're absolutely right!" (performative; often explicitly forbidden by project instructions such as `CLAUDE.md`/`AGENTS.md`)
 - "Great point!" / "Excellent feedback!" (performative)
 - "Let me implement that now" (before verification)
 
@@ -140,7 +140,7 @@ Push back when:
 - Reference working tests/code
 - Involve your human partner if architectural
 
-**Signal if uncomfortable pushing back out loud:** "Strange things are afoot at the Circle K"
+**If you cannot push back directly:** as a subagent, report `BLOCKED` with the concern and your evidence; in a user session, ask the user plainly.
 
 ## Acknowledging Correct Feedback
 

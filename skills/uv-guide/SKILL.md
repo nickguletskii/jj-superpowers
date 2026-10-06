@@ -59,7 +59,7 @@ uv --version                                                # verify
 | `uv run script.py` | Run script with PEP 723 deps |
 | `uv run --python 3.11 -c "import sys; print(sys.version)"` | Run inline code on a specific Python |
 | `uv run --with pandas -c "..."` | Run with an extra dep, no manifest |
-| `uv run httpie https://httpbin.org/get` | Run a tool without installing it globally |
+| `uvx --from httpie http https://httpbin.org/get` | Run a tool without installing it (`uvx` = `uv tool run`; `--from` when the command name differs from the package) |
 | `uv init` | Initialize a project (creates `pyproject.toml`) |
 | `uv venv` | Create virtual environment |
 | `uv pip install pkg` | Install package to venv |
@@ -81,10 +81,7 @@ Symptoms: `uv run` / `uv pip install` / `uv sync` reports `Permission denied` or
 
 1. **Request the narrowest permission for the exact command you need**, via the platform's approval/escalation flow (Codex) or by allowlisting the cache path. Do not request broad arbitrary Python execution (`python`, `python3`, arbitrary script execution) when the blocked operation is a specific `uv run`, `uv sync`, or `uv pip install`.
 
-   Claude Code allowlists paths with `/sandbox`:
-   ```bash
-   /sandbox --allow-read ~/.cache/uv --allow-write ~/.cache/uv
-   ```
+   In Claude Code, ask the user to run `/sandbox` (interactive) to manage sandbox restrictions and allow `~/.cache/uv`.
 
 2. **Fall back to a temporary cache** when persistent cache access cannot be granted:
    ```bash
@@ -108,7 +105,7 @@ For OpenCode and other agent platforms the pattern is the same: run `uv` normall
 Skill-provided Python tools (CLI utilities, DAG builders, data pipelines) run under `uv run`, which resolves their PEP 723 deps automatically:
 
 ```bash
-uv run ~/.jj-superpowers/tools/dot-to-jj-dag.py example.dot --anchor-map anchors.txt
+uv run skills/jj-organizing-history/resources/dot-to-jj-dag/dot-to-jj-dag.py example.dot --anchor-map anchors.txt
 ```
 
 ## Resources

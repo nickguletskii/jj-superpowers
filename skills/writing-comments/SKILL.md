@@ -22,7 +22,7 @@ A comment lives as long as the code. Anything that will outlive its referent —
 **Forbidden in comments:**
 - Ticket / task / Jira / issue IDs (`TASK-1029`, `PROJ-991`, `JIRA-44`)
 - PR or commit references, review-thread mentions
-- Paths to docs/specs/handoffs/agent-blog files (`docs/superpowers/handoffs/...`, `docs/.../design.md §3.2`), or "the design"/"the plan" — planning artifacts are ephemeral; a comment that leans on one rots the moment the plan is archived
+- Paths to transient files — handoffs, plans, design docs, agent-blog files, spec file paths (`docs/superpowers/handoffs/...`, `docs/.../design.md §3.2`) — or "the design"/"the plan". Planning artifacts are ephemeral; a comment that leans on one rots the moment the plan is archived
 - Internal section/paragraph cross-references — no `§`, no "see section 4.2", no design-doc subsection numbers. The code is the artifact; a comment may not outsource its meaning to a numbered heading.
 - "Created for X", "Added in sprint Y", author names, dates-written
 - `TODO(ticket)` / `FIXME(ticket)` — describe the work, not the tracker
@@ -31,9 +31,9 @@ A comment lives as long as the code. Anything that will outlive its referent —
 
 **A comment must be self-contained:** it explains the code in front of the reader without sending them to another document to make sense.
 
-**The permitted durable references** — a *sync anchor*, never a substitute for the self-contained explanation:
+**The permitted durable references** — a *sync anchor*, never a substitute for the self-contained explanation. This skill is canonical for what in-code text may reference; other skills defer to this list:
 - A stable, in-repo requirement ID from the spec system (`// impl: REQ-VID-001`) — a maintained index, not transient provenance. A ticket ID is not. No file path on the anchor.
-- A link to a durable in-repo doc target that `jj-superpowers:documentation` sanctions (`// See DOCS.md#auth-flow`, an ADR). That skill owns which targets qualify.
+- A stable ADR or doc anchor (`// See DOCS.md#auth-flow`, `ADR-0007`). Never a transient path (handoffs, plans, tickets).
 
 Write the explanation first, then add the anchor if the code satisfies a normative requirement.
 
@@ -73,7 +73,12 @@ Say it in the fewest words. Prefer a phrase over a sentence, one line over a par
 // Clock can jump backward (NTP); treat negative elapsed as zero.
 ```
 
-Multi-paragraph comments are a smell. If a behavior genuinely needs that much explanation, the explanation is a *requirement* → see `jj-superpowers:writing-specs`, not a wall of comment.
+Multi-paragraph comments are a smell. If a behavior genuinely needs that much explanation, move it out of the comment per the placement rule below.
+
+**Placement rule** (where a non-obvious *why* or ordering fact goes; other skills defer to this):
+- Local to the code in front of the reader → a short comment.
+- Cross-component or an observable contract, and `.agents/layout.yaml` exists → a spec requirement (`jj-superpowers:writing-specs`).
+- Otherwise → module doc or ADR (`jj-superpowers:documentation`).
 
 ## What TO comment
 
@@ -83,7 +88,7 @@ Keep the comment when a competent reader would be **surprised or misled** withou
 - Units, ranges, and non-obvious contracts not in the type
 - *Why* a surprising decision was made (not what it does)
 - Edge-case / concurrency / ordering semantics that aren't visible locally
-- References to specs (keep extremely short, don't assume the developer is going to open the spec and read it - cross-referencing only).
+- A permitted anchor from rule 1 (`impl: REQ-…`, ADR/doc anchor) — cross-referencing only, never the explanation itself.
 
 The test for every comment: **"Does this add something the code can't say?"** If no → delete.
 
@@ -106,12 +111,12 @@ When asked to clean up comments (or as part of `deslopify`):
 | "The reviewer asked for well-documented code" | Well-documented ≠ heavily-commented. The fewest comments that carry real context IS well-documented. |
 | "The doc comment helps editor tooltips" | A tooltip that paraphrases the signature adds nothing. Keep only constraints/units the type lacks. |
 | "More explanation is safer" | Verbose comments bury the one line that matters and rot faster. Shorter survives. |
-| "It links to the design doc for context" | File paths to docs/handoffs go stale on the first move. If the fact matters, it's a spec requirement, not a comment. |
+| "It links to the design doc for context" | File paths to docs/handoffs go stale on the first move. If the fact matters, state it in the comment or move it per the placement rule. |
 | "I'll keep it as a TODO with the ticket" | Describe the work in the TODO; drop the tracker ref. |
 
 ## Red Flags — STOP
 
-- A comment contains `TASK-`, `PROJ-`, `JIRA-`, a PR number, or a `docs/`/`.md` path
+- A comment contains `TASK-`, `PROJ-`, `JIRA-`, a PR number, or a path to a handoff/plan/design file
 - A doc-comment line you could regenerate from the signature
 - A comment longer than the code it describes
 - `TODO(ticket)` / `FIXME(ticket)`

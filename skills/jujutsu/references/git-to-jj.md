@@ -16,7 +16,7 @@
 |-----|---------|-------|
 | `git init` | `jj git init` | Creates jj repo backed by git |
 | `git clone <url>` | `jj git clone <url>` | Clones and sets up colocated git repo |
-| | `jj git init --colocate` | Initialize jj in existing git repo |
+| | `jj git init` | Initialize jj in existing git repo (colocated by default; `--no-colocate` to hide the git repo inside `.jj`) |
 
 ## Daily Workflow
 
@@ -172,7 +172,7 @@ jj log -r 'author("alice") & ::@' --no-pager
 
 ## Migration Tips
 
-- **Start with colocated repos**: Use `jj git init --colocate` in existing git repos to try jj alongside git
+- **Start with colocated repos**: `jj git init` in an existing git repo colocates by default, so you can try jj alongside git
 - **Trust automatic tracking**: Stop thinking about `git add` - jj handles it
 - **Use `jj new` frequently**: Create fresh working copies to separate concerns
 - **Use `jj commit -m`**: Shorthand for `jj describe -m` + `jj new` (never bare `jj commit` — it opens an editor)

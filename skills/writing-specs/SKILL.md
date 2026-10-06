@@ -9,13 +9,13 @@ Author and amend agent-oriented specifications: capability specs, plane specs, g
 
 ## Golden rules
 
-> **A. Shorter is better.** Shorter specs are easier to read, modify, and keep current. Nobody reads long documentation. Keep each spec to 1-3 short, simple sentences. The first sentence should be sufficient to understand what the spec is about.
+> **A. Shorter is better.** Shorter specs are easier to read, modify, and keep current. Nobody reads long documentation. Keep each requirement to 1-3 short, simple sentences. The first sentence should be sufficient to understand what the requirement is about.
 >
 > **B. Shorter is not an excuse to skip.** If a normative requirement exists, write it. Brevity is about *how*, not *whether*.
 >
 > **C. No fact in two places.** Spec frontmatter is canonical for `owns:`/`code_spec:`; `layout.yaml` indices follow. Glossary terms are defined once. Each requirement has exactly one home (prose REQ-, plane INV-, or code-as-spec item).
 >
-> **D. Don't duplicate the code.** A spec captures intent the code can't carry: time/clock models, ordering and concurrency semantics, edge-case behavior, cross-component contracts, the *why* behind a value. A requirement that merely transcribes a signature, type, enum, or visible constant (`reject files > 2 GiB`, `formats are MP4/MOV/MKV`) adds nothing — the code is already canonical for that fact. **Test:** if you could regenerate the requirement text by paraphrasing the code, it's duplication. Cut it, or replace it with the non-obvious intricacy it was burying. When a value IS a normative external contract, bind it to a code-as-spec item or REQ that states the *guarantee clients depend on*, not a re-typed copy of the constant.
+> **D. Don't duplicate the code.** A spec captures intent the code can't carry: time/clock models, ordering and concurrency semantics, edge-case behavior, cross-component contracts, the *why* behind a value. A requirement that merely transcribes a signature, type, enum, or visible constant (`reject files > 2 GiB`, `formats are MP4/MOV/MKV`) adds nothing — the code is already canonical for that fact. **Test:** if you could regenerate the requirement text by paraphrasing the code, it's duplication. Cut it, or replace it with the non-obvious intricacy it was burying. When a value IS a normative external contract, bind it to a code-as-spec item or REQ that states the *guarantee clients depend on*, not a re-typed copy of the constant. Whether a non-obvious fact belongs in a spec, a comment, or a doc is decided by the placement rule in `jj-superpowers:writing-comments`.
 >
 > **E. No outdated/superseeded specs.** Remove superseeded/out of date specs immediately to avoid confusion.
 
@@ -143,24 +143,25 @@ out_of_scope: |                 # optional — explicit non-goals
 
 requirements:
   - id: REQ-VID-001
-    summary: File size limit
+    summary: Upload visible only after commit
     level: MUST
     text: |
-      The upload service MUST reject any file exceeding 2 GiB with error
-      code ERR-VID-001.
+      A video MUST NOT appear in listings until all its bytes are durably
+      stored; a listed video MUST be fully downloadable.
   - id: REQ-VID-002
-    summary: Allowed formats
+    summary: Stale presigned URLs
     level: MUST
     text: |
-      The upload service MUST accept MP4, MOV, and MKV containers only.
+      A presigned upload URL MUST stop accepting bytes once it expires, even
+      mid-upload; the client restarts with a fresh URL (ERR-VID-002).
 
 failure_modes:
   - code: ERR-VID-001
-    condition: Uploaded file exceeds 2 GiB
-    behavior: Reject with HTTP 413 and structured error body.
+    condition: Storage commit fails after bytes were received
+    behavior: Discard the partial upload; the video never becomes listed.
   - code: ERR-VID-002
-    condition: Unsupported container format
-    behavior: Reject with HTTP 415 and structured error body.
+    condition: Presigned URL expired before the upload completed
+    behavior: Reject the remaining bytes; the client must request a new URL.
 ```
 
 > **Note:** `references` uses slugs/IDs only — never file paths.

@@ -4,7 +4,7 @@ Load this when a capability spec covers user-facing behavior — screens, panels
 
 ## The golden-rule-D guardrail (read first)
 
-A UI spec captures intent the **code already carries**: which states exist, which transitions are legal, what an interaction guarantees, when an error or progress signal must appear, and *why*. It MUST NOT transcribe what the component code already shows.
+A UI spec captures intent the **code cannot carry**: which states exist, which transitions are legal, what an interaction guarantees, when an error or progress signal must appear, and *why*. It MUST NOT transcribe what the component code already shows.
 
 - ❌ Transcription (delete it): "the SaveButton has props `disabled`, `loading`, `label`." That's the code.
 - ✅ Contract (keep it): "While a save is in flight, the surface MUST reject a second save submission and MUST show progress until the save resolves or fails."

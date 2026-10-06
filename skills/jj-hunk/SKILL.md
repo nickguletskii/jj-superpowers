@@ -20,7 +20,7 @@ Use `jj-hunk` for non-interactive hunk selection in jj — for creating clean, l
 cargo install jj-hunk
 ```
 
-Add to `~/.jjconfig.toml`:
+Add to your user config (`~/.config/jj/config.toml`; `jj config path --user` prints the location):
 ```toml
 [merge-tools.jj-hunk]
 program = "jj-hunk"
@@ -197,10 +197,10 @@ The commands above are wrappers. For direct control:
 
 ```bash
 # Write spec to file
-echo '{"files": {"src/foo.rs": {"hunks": [0]}}, "default": "reset"}' > /tmp/spec.json
+echo '{"files": {"src/foo.rs": {"hunks": [0]}}, "default": "reset"}' > "$TMPDIR/spec.json"
 
 # Run jj with the tool
-JJ_HUNK_SELECTION=/tmp/spec.json jj split -i --tool=jj-hunk -m "message"
+JJ_HUNK_SELECTION="$TMPDIR/spec.json" jj split -i --tool=jj-hunk -m "message"
 ```
 
 ## Hunk Types

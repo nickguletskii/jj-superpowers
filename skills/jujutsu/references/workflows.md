@@ -196,7 +196,7 @@ jj rebase -s <change> -o <base> --skip-emptied
 
 **Workspace safety:** rebasing rewrites the targeted revisions *and* rebases their descendants. If any rewritten or rebased change is another workspace's working copy (or an ancestor of it), that workspace is rewritten out from under it. Don't rebase changes other workspaces depend on without coordinating — and make your own `@` a leaf first if it has descendants (safety rule 2 exception in [SKILL.md](../SKILL.md)).
 
-**Verify after rewriting:** snapshot `@`'s commit id before, and confirm content is unchanged after — see "Verifying History Rewrites Didn't Change the Working Copy" in [SKILL.md](../SKILL.md).
+**Verify after rewriting:** snapshot `@`'s commit id before, and confirm content is unchanged after — see safety rule 5, "Verify graph shape after any history rewrite", in [SKILL.md](../SKILL.md).
 
 ### 7. Conflict Resolution
 

@@ -33,7 +33,7 @@ Dispatch this subagent with these values substituted for the bracketed placehold
 
 ---
 
-You are reviewing the code map produced in Step 2 for accuracy and completeness before analysis begins.
+You are reviewing the code map produced in the Map directories and Consolidate map phases for accuracy and completeness before analysis begins.
 
 ## Checks
 
@@ -71,5 +71,5 @@ ISSUES FOUND
 - [Issue 2]: [specific file or entry and exactly what is wrong]
 ```
 
-If APPROVED: map is ready for Step 3. Step 3 analysis agents may be dispatched.
-If ISSUES FOUND: the consolidator subagent must fix the listed issues. Re-dispatch this reviewer after fixes are complete.
+If APPROVED: map is ready for the Analyze groups phase; analysis agents may be dispatched.
+If ISSUES FOUND: the orchestrator routes each issue per the codebase-cleanup repair table — missing symbols or bad dead-test evidence in a directory map go to the directory mapper for that directory; grouping, index coverage, or cross-directory dependency issues go to the consolidator. Re-dispatch this reviewer after fixes are complete.

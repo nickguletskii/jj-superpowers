@@ -7,7 +7,7 @@ Use this template when dispatching a spec compliance reviewer subagent. The spec
 **File scope comes from the graph node, not the task file.** Fill in the same `files`/`scopes` you gave the implementer so the reviewer can check containment.
 
 ```
-Task tool (general-purpose):
+Agent tool (general-purpose):
   description: "Review spec compliance for Task N"
   prompt: |
     You are reviewing whether one graph task node implementation matches its task specification.
@@ -92,8 +92,8 @@ Task tool (general-purpose):
     ## Reporting Gaps
 
     **If you spent significant effort exploring or reading code** to understand something
-    that a short documentation file could have explained immediately, invoke
-    **jj-superpowers:documentation** to create that document.
+    that a short documentation file could have explained immediately, note the
+    documentation gap in your report. Do not write the doc; the orchestrator decides.
 
     Continue with your review; do not block on reporting gaps.
 ```

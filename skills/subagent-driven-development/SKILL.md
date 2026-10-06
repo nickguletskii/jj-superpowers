@@ -177,7 +177,7 @@ Keep this order **identical across dispatches**: reordering segments invalidates
 
 Default to **3–5 concurrent subagents** unless the user specifies otherwise. Maximize parallelism: keep all available slots filled at all times. When a subagent completes and a slot opens, immediately dispatch the next ready task — do not wait for other in-flight agents to finish first. Graph dependencies still govern sequencing: a `verify` node cannot start until all its upstream tasks have passed spec review, but there is no need to hold back dispatch just to form a tidy batch.
 
-If the harness supports Workflows, you may use them to fan out even more.
+If the Workflow tool is available and the user has opted into multi-agent orchestration, you may use it to fan out further.
 
 **Subagent freshness:** By default, fresh subagents should handle every node — clean context reduces noise. When routing spec review or code-quality failures back to an implementer, dispatch a new subagent with the review report and relevant context rather than reusing the original session.
 
@@ -202,7 +202,7 @@ Platform locations:
 
 | Platform | Project/user agent files | Invocation |
 |----------|--------------------------|------------|
-| Claude Code | plugin `agents/*.md`, `.claude/agents/*.md`, or `~/.claude/agents/*.md` | `Task` with the named agent |
+| Claude Code | plugin `agents/*.md`, `.claude/agents/*.md`, or `~/.claude/agents/*.md` | Agent tool with `subagent_type` set to the named agent |
 | Codex | `.codex/agents/*.toml` or `~/.codex/agents/*.toml` | `spawn_agent(agent_type="<name>", message=...)` when custom agents are available |
 | OpenCode | plugin-registered agents, `.opencode/agents/*.md`, or `~/.config/opencode/agents/*.md` | `@<name>` or Task tool with the named subagent |
 

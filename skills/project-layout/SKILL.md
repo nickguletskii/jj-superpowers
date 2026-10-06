@@ -59,7 +59,7 @@ Don't try to be exhaustive — name what's obvious, leave the rest for user inpu
 Use the question tool. Cover: which mdbook sections this project needs (users / developers / operators / contributors — some projects have none), preferred spec partition tweaks, glossary seeds, `external_tracker` config, whether `agent_blog` is on, whether handoffs are committed (default no).
 
 ### Step 4 — Refine
-Edit `layout.yaml` per answers. Add `schema_version: 1`. Keep `excluded_paths:` short — generated files, vendored code, build output.
+Edit `layout.yaml` per answers. Add `schema_version: 2`. Keep `excluded_paths:` short — generated files, vendored code, build output.
 
 ### Step 5 — Write
 Create:
@@ -80,7 +80,7 @@ For each existing doc that overlaps with the new system:
 Never auto-generate specs from code or prose. Quality > coverage.
 
 ### Step 6.5 — Migrate legacy tech-debt queues
-If the project predates schema v2 — manifest is `schema_version: 1`, or `tech_debt.queues.*` point at `.md` files / single-file queues exist on disk — convert them to per-entry directories using the **migration recipe** in `references/manifest-schema.md` (split each entry into `<queue>/<YYYY-MM-DD>/<HHMMSS>-<slug>.md`, drop `status:`/`last_verified:`, delete the old `<queue>.md`, bump `schema_version` to `2`). This is the authoritative, user-visible migration path; `spec-drift-detector` also performs it opportunistically during `--full-audit`.
+If the project predates schema v2 — manifest is `schema_version: 1`, or `tech_debt.queues.*` point at `.md` files / single-file queues exist on disk — convert them to per-entry directories using the **migration recipe** in `references/manifest-schema.md` (split each entry into `<queue>/<YYYY-MM-DD>/<HHMMSS>-<slug>.md`, drop `status:`/`last_verified:`, delete the old `<queue>.md`, bump `schema_version` to `2`). This is the only migration path; `spec-drift-detector` reports legacy queues and routes them here.
 
 ### Step 7 — Termination check
 Stop when **both** are true:

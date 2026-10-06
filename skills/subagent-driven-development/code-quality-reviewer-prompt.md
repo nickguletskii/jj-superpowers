@@ -17,7 +17,7 @@ to use it. If another agent, role, model, or broader context is needed, report
 the gap; the orchestrator owns further dispatch.
 
 ```
-Task tool (sdd-quality-reviewer preferred; fallback jj-superpowers:code-reviewer):
+Agent tool (sdd-quality-reviewer preferred; fallback jj-superpowers:code-reviewer):
   Use the named `sdd-quality-reviewer` agent when available.
   If falling back, fill the template at `../requesting-code-review/code-reviewer.md`.
 

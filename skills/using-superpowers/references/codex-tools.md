@@ -4,11 +4,11 @@ Skills use Claude Code tool names. When you encounter these in a skill, use your
 
 | Skill references | Codex equivalent |
 |-----------------|------------------|
-| `Task` tool (dispatch subagent) | `spawn_agent` with a built-in or custom `agent_type` |
-| Multiple `Task` calls (parallel) | Multiple `spawn_agent` calls |
-| Task returns result | `wait` |
-| Task completes automatically | `close_agent` to free slot |
-| `TodoWrite` (task tracking) | `update_plan` |
+| `Agent` tool (dispatch subagent; `subagent_type`) | `spawn_agent` with a built-in or custom `agent_type` |
+| Multiple `Agent` calls (parallel) | Multiple `spawn_agent` calls |
+| Agent returns result | `wait` |
+| Agent completes automatically | `close_agent` to free slot |
+| Harness task tracker (task tracking) | `update_plan` |
 | AskUserQuestion / structured user choice | `request_user_input` when available in the active mode; otherwise ask one concise plain-text question |
 | `Skill` tool (invoke a skill) | Skills load natively — just follow the instructions |
 | `Read`, `Write`, `Edit` (files) | Use your native file tools |
@@ -54,11 +54,11 @@ When a skill says to dispatch a named agent type:
 
 | Skill instruction | Codex equivalent |
 |-------------------|------------------|
-| `Task tool (sdd-implementer)` | `spawn_agent(agent_type="sdd-implementer", message=...)` |
-| `Task tool (sdd-spec-reviewer)` | `spawn_agent(agent_type="sdd-spec-reviewer", message=...)` |
-| `Task tool (sdd-verifier)` | `spawn_agent(agent_type="sdd-verifier", message=...)` |
-| `Task tool (sdd-quality-reviewer)` | `spawn_agent(agent_type="sdd-quality-reviewer", message=...)` |
-| `Task tool (general-purpose)` with inline prompt | `spawn_agent(message=...)` with the same prompt |
+| `Agent tool (sdd-implementer)` | `spawn_agent(agent_type="sdd-implementer", message=...)` |
+| `Agent tool (sdd-spec-reviewer)` | `spawn_agent(agent_type="sdd-spec-reviewer", message=...)` |
+| `Agent tool (sdd-verifier)` | `spawn_agent(agent_type="sdd-verifier", message=...)` |
+| `Agent tool (sdd-quality-reviewer)` | `spawn_agent(agent_type="sdd-quality-reviewer", message=...)` |
+| `Agent tool (general-purpose)` with inline prompt | `spawn_agent(message=...)` with the same prompt |
 
 ### Message framing
 

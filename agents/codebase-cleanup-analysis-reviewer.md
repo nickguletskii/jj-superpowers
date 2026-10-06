@@ -27,10 +27,12 @@ You are a subagent dispatched by an orchestrator to complete one bounded task.
 
 Dispatch this subagent with these values substituted for the bracketed placeholders:
 - `[BY_GROUP_PATH]` — path to the group files (e.g. `docs/superpowers/code-map/2026-04-12-1430/by-group/`)
+- `[SCIP_INDEX_PATH]` — optional SCIP index path, or `unavailable`
+- `[SCIP_QUERY_TOOL]` — resolved command/path for the SCIP query helper, or `unavailable`
 
 ---
 
-You are reviewing the dead code and duplication analysis from Step 3 before findings are presented to the user.
+You are reviewing the dead code and duplication analysis from the Analyze groups phase before findings are presented to the user.
 
 ## Checks
 
@@ -41,7 +43,7 @@ For each group file in `[BY_GROUP_PATH]`, verify its `## Analysis` section conta
 Every dead code entry must include: (a) SCIP reference evidence when a SCIP symbol is available, (b) the grep/string pattern used, (c) a result count of 0 outside the defining file (excluding test and generated files), and (d) confirmation that import statements, direct call sites, and dynamic/string risks were checked. Flag any entry missing required evidence.
 
 **3. Independent verification of 2–3 dead code claims**
-Pick 2–3 dead code entries. When SCIP evidence is cited, rerun the same `[SCIP_QUERY_TOOL] refs ...` command or an equivalent exact-symbol query using the resolved query tool from `run-config.md`. Also run the same grep/string search the analysis agent used, excluding `*.test.*`, `*.spec.*`, and generated files. Check both import statements and call sites. If independent verification contradicts a dead-code claim, include it as an ISSUES FOUND item with your SCIP or grep result count.
+Pick 2–3 dead code entries. When SCIP evidence is cited and `[SCIP_QUERY_TOOL]` is not `unavailable`, rerun the same `[SCIP_QUERY_TOOL] refs [SCIP_INDEX_PATH] ...` command or an equivalent exact-symbol query from the target project root. Also run the same grep/string search the analysis agent used, excluding `*.test.*`, `*.spec.*`, and generated files. Check both import statements and call sites. If independent verification contradicts a dead-code claim, include it as an ISSUES FOUND item with your SCIP or grep result count.
 
 **4. Specificity and spot-check of duplication claims**
 Duplication entries must name specific files and functions. A claim that just says "similar logic" or "similar implementation" without naming the files is too vague. Flag vague claims.
@@ -69,5 +71,5 @@ ISSUES FOUND
 - [Issue 2]: [specific group file, symbol, and exactly what is wrong]
 ```
 
-If APPROVED: analysis is ready for Step 4 discussion with the user.
+If APPROVED: analysis is ready for the Present findings phase with the user.
 If ISSUES FOUND: the relevant analysis subagent(s) must fix the listed issues. Re-dispatch this reviewer after fixes are complete.

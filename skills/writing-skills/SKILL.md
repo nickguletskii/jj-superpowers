@@ -86,12 +86,12 @@ If an artifact isn't referenced by `SKILL.md` and isn't a tool the skill uses, i
 ## SKILL.md Structure
 
 **Frontmatter (YAML):** two required fields, `name` and `description` (see [agentskills.io/specification](https://agentskills.io/specification) for all supported fields). Max 1024 characters total.
-- `name`: letters, numbers, and hyphens only (no parentheses or special chars)
+- `name`: lowercase letters, numbers, and hyphens only (no parentheses or special chars)
 - `description`: see CSO below
 
 ```markdown
 ---
-name: Skill-Name-With-Hyphens
+name: skill-name-with-hyphens
 description: Use when [specific triggering conditions and symptoms]
 ---
 

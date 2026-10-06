@@ -5,7 +5,7 @@ Use this template when dispatching an implementer subagent.
 **Target files and allowed scopes come from the graph node's `files` and `scopes` attributes, not from the task file** — the task file no longer restates them. The orchestrator fills them in below. Assemble the segments in the order given by the Prompt Assembly Order table in `SKILL.md`, and keep that order identical across dispatches.
 
 ```
-Task tool (general-purpose):
+Agent tool (general-purpose):
   description: "Implement Task N: [task name]"
   prompt: |
     You are implementing graph task node `[task_node_id]`: Task N: [task name]
@@ -46,7 +46,8 @@ Task tool (general-purpose):
     - Dependencies or assumptions
     - Anything unclear in the task description
 
-    **Ask them now.** Raise any concerns before starting work.
+    **Do not ask the user.** Report `NEEDS_CONTEXT` before starting work, naming
+    what is unclear and the concrete options you see.
 
     ## Your Job
 
@@ -207,8 +208,8 @@ Task tool (general-purpose):
     ## Reporting Gaps
 
     **If you spent significant effort exploring or reading code** to understand something
-    that a short documentation file could have explained immediately, invoke
-    **jj-superpowers:documentation** to create that document.
+    that a short documentation file could have explained immediately, note the
+    documentation gap in your report. Do not write the doc; the orchestrator decides.
 
     Continue with your task; do not block on reporting gaps.
 ```

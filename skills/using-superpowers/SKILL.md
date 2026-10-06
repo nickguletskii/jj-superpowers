@@ -243,7 +243,7 @@ Your platform already injects every skill's description. The question is not *wh
 
 Track multi-step and subagent-driven work against the **durable artifact** — the
 skill's own checklist, `project-network.dot`, or `roadmap.md` — **not** the
-harness task/todo tracker (TodoWrite and its per-platform equivalents).
+harness task tracker (Claude Code task-list tools and their per-platform equivalents).
 
 The harness task list does not survive subagent dispatch: subagents cannot update
 it, it drifts out of sync with what dispatched agents actually did, and it goes

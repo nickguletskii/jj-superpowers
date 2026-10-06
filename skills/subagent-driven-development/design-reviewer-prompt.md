@@ -9,7 +9,7 @@ Use this template when dispatching a design reviewer subagent. The design review
 **Verification command policy:** this gate judges coherence, NOT compilation. Do not run type-check, compile, build, lint, or test commands. The stub task carries its own narrow, documented task-local type-check so consumers fan out against a compiling stub; re-running it here is out of scope and duplicates verification-node turf.
 
 ```
-Task tool (sdd-design-reviewer preferred; fallback general-purpose):
+Agent tool (sdd-design-reviewer preferred; fallback general-purpose):
   Use the named `sdd-design-reviewer` agent when available.
 
   description: "Design-review stubbed API for [stub task node id]"

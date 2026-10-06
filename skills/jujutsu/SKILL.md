@@ -82,7 +82,6 @@ The following commands reassign which change is `@` and must **not** be used unl
 | `jj edit <id>` | Moves `@` to a different change |
 | `jj next` / `jj prev` | Moves `@` along the graph |
 | `jj new` (without `--no-edit`) | Creates a change and moves `@` to it — forbidden **except** to make `@` a leaf when it has descendants (see exception below) |
-| `jj checkout` / `jj co` | Alias for `jj edit` |
 
 **Exception — make `@` a leaf when it has descendants.** Plain `jj new` (which moves `@`) is the **correct and required** tool in exactly one case: when `@` has descendants (children that depend on it). Editing files in a non-leaf `@` auto-amends it and forces every descendant to be rebased — and if a descendant is **another workspace's working copy**, that rewrites that workspace out from under it (stale state, conflicts). Plain `jj new` here moves `@` onto a **new empty child** (a fresh leaf), never onto an existing change, so it cannot lose or corrupt work. (`jj new --no-edit` does **not** help — it leaves `@` in place, so `@` stays non-leaf.)
 
@@ -107,7 +106,7 @@ Every `jj` command that can open an editor must be made non-interactive. Never r
 | `jj new` | `jj new --no-edit -m "message" --insert-after X --insert-before Y` |
 | `jj commit` | `jj commit -m "message"` |
 | `jj squash -i` | `jj squash --from <id> --into <id> [files] -u` |
-| `jj split` | Use `jj-hunk split` via the `jj-hunk` skill instead |
+| `jj split` (no filesets) | File-level: `jj split -r <id> -m "message" <paths>` (non-interactive when filesets are given; never with `-i`/`--tool`) · hunk-level: `jj-hunk split` via the `jj-hunk` skill |
 | `jj resolve` | `jj resolve --list` to inspect · `jj resolve --tool :ours\|:theirs [filesets] [-r <rev>]` to take side #1/#2 non-interactively · or edit conflict markers manually |
 | `jj diffedit` | Not usable by agents — edit files directly |
 
@@ -156,10 +155,10 @@ See [workflows.md](references/workflows.md) for detailed non-interactive pattern
 
 These are self-check thoughts that mean you are about to break a safety rule above. If you catch yourself thinking one, **stop before running the command** — surface to the user or use the safe alternative.
 
-- "Let me `jj edit <old-change>` / `jj checkout` / `jj co` / `jj next` / `jj prev` real quick" → moves `@` (rule 2).
+- "Let me `jj edit <old-change>` / `jj next` / `jj prev` real quick" → moves `@` (rule 2).
 - "I'll `jj new` to start fresh here" → plain `jj new` moves `@`; use `jj new --no-edit --insert-after ... --insert-before ...` (rules 2, 4). **Only exception:** `children(@)` is non-empty, where plain `jj new` is the *required* way to make `@` a leaf before editing.
 - "I'll `jj split -o @-` to extract this quickly" → leaves the remainder as a sibling (rule 4).
-- "I'll just run `jj describe` / `jj squash -i` / `jj split` / *bare* `jj resolve` / `jj diffedit`" → opens an editor or interactive UI (rule 3). (`jj resolve --list` and `jj resolve --tool :ours|:theirs` are non-interactive and allowed.)
+- "I'll just run `jj describe` / `jj squash -i` / `jj split` without filesets / *bare* `jj resolve` / `jj diffedit`" → opens an editor or interactive UI (rule 3). (`jj resolve --list` and `jj resolve --tool :ours|:theirs` are non-interactive and allowed.)
 - "I'll drop to raw `git` for this one" → rule 1.
 - "I'll run a full `jj show` / `jj diff` inline to check" → use the bounded `--stat` form or hand the command to the user (rule 6).
 - "I'll just `jj abandon` / `jj op abandon` to clean this up", or "I'll blind-`jj undo` / `jj op restore` to escape this state" → rule 6.
@@ -391,8 +390,10 @@ jj op show <operation_id>
 # Show diff of changes introduced by an operation
 jj op diff --operation <operation_id>
 
-# Undo the most recent operation (alias for jj op restore '@-')
+# Undo the most recent operation; repeating jj undo walks further back.
+# jj redo reverses the most recent undo.
 jj undo
+jj redo
 
 # Restore the repo to an earlier state (non-destructive: creates a new operation)
 jj op restore <operation_id>

@@ -75,6 +75,7 @@ SPEC.yaml replaces the former `requirements.yaml` + `SPEC.md` split. The structu
   - `mismatch` — clear contradiction.
   - `suspect` — likely conflict, low confidence.
   - `unverified` — couldn't check (couldn't locate code, ambiguous spec, etc.).
+  - `queued` — a `mismatch` whose requirement is covered by an open tech-debt entry (a post-implementation refinement per `spec-code-sync`). Report it with the entry path; it is known debt, not new drift.
 
 ### 2b. Code-duplicating requirements (spec slop)
 LLM judgement, same sampled requirements as check 2. For each sampled requirement, ask: **does this requirement add intent the owned code can't carry, or does it merely transcribe a signature/enum/constant the reader already sees in the code?** (writing-specs golden rule D.)
@@ -124,8 +125,8 @@ Two — and only two — categories of state change are authorized. Both touch a
 ### Queue janitoring
 Each queue is a directory of per-entry files (`<queue>/<YYYY-MM-DD>/<HHMMSS>-<slug>.md`). For each entry file across configured queues:
 - Re-check each `locations:` reference. If the file is gone or the code at the cited range no longer matches, the entry is resolved or abandoned: **delete the entry file** (VCS history is the audit trail — there is no `status:` field or retention sweep for queue entries).
-- Leave entries that remain open and still apply untouched (entry files are write-once; janitoring only creates via migration or deletes).
-- **Legacy migration**: if a queue is still a single `.md` file (schema v1), convert it to per-entry files using the migration recipe in `project-layout/references/manifest-schema.md`, then continue janitoring the resulting entries.
+- Leave entries that remain open and still apply untouched (entry files are write-once; janitoring only deletes).
+- **Legacy queues**: if a queue is still a single `.md` file (schema v1), do not migrate it; report "needs migration → project-layout" and skip janitoring that queue.
 
 ### Ephemeral-artifact retention
 Per `layout.yaml`:
@@ -148,14 +149,14 @@ Write to `docs/agent-specs/drift-reports/<YYYY-MM-DD>/<HHMM>-<scope>.md` (gitign
 **Suggested route**: writing-specs to amend spec, OR code change to align with spec — user/agent decides.
 ```
 
-End the report with a counts summary: `N findings (M mismatch, K suspect, L unverified), J orphans, P queue entries deleted, R queues migrated, Q ephemerals pruned`.
+End the report with a counts summary: `N findings (M mismatch, K suspect, L unverified, G queued), J orphans, P queue entries deleted, R queues needing migration, Q ephemerals pruned`.
 
 ## What this skill does NOT do
 
 - Edit specs, code, mdbook, or `layout.yaml`.
 - Open issues in external trackers.
 - Run tests, builds, or linters.
-- Re-author requirements based on what the code does (the code may be wrong; the spec is canonical until amended by `writing-specs`).
+- Re-author requirements based on what the code does (the code may be wrong; the spec is canonical until amended by `writing-specs`). A queued refinement entry only downgrades the matching `mismatch` to `queued`; it does not make the code canonical.
 
 ## Anti-patterns
 

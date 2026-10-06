@@ -38,7 +38,7 @@ An upstream node's implied gates are part of that dependency. A `task` is not pa
 
 **Task nodes:** Execute ready `task` nodes locally. Read the node's task file and the relevant context docs. Take the target file list from the node's `files` attribute and the allowed directory scopes from its `scopes` attribute — the task file does not restate them, and the graph is their only source. Follow the task file exactly, and run only the narrow, non-contended task-local checks that task file names. Contended commands (compile, build, lint, type-check, test suite, smoke test) belong at `verify` nodes — canonical rule, including the single `stub=true` scoped-type-check exception: **Verification Ownership** in `jj-superpowers:subagent-driven-development`.
 
-**Never start implementation on trunk without explicit user consent.**
+**Never move the trunk bookmark or rewrite immutable/trunk commits without explicit user consent.**
 
 **Spec sync (when the project has `.agents/layout.yaml`)**: before editing any source file in a task node, MUST invoke `jj-superpowers:spec-code-sync` to run the candidate-spec lookup (surface specs likely relevant to touched paths), classify the change, and detect code-as-spec edits. The lookup is a hint, not a gate; the skill's findings may still require routing through `jj-superpowers:writing-specs` first.
 

@@ -97,6 +97,7 @@ project_skills:
 
 ## Field semantics
 
+- **Write ownership** — only `project-layout`, `writing-specs`, and `spec-code-sync` write `layout.yaml`; `spec-drift-detector` only reports.
 - **`schema_version`** — integer. Skills MUST check; refuse unknown future versions; MAY migrate older.
 - **`specs.id_prefix` / `plane_id_prefix`** — short uppercase. IDs are stable across renames; deprecation-only retirement (numbers never reused).
 - **`excluded_paths`** — globs. Used by `spec-drift-detector` to skip irrelevant areas during audits (generated code, vendor, build output). NOT used by `spec-code-sync` (which surfaces hints, not coverage). Sparing use; growth is audited.
@@ -139,7 +140,7 @@ Run when a manifest is `schema_version: 1`, or when `tech_debt.queues.*` still p
 4. Preserve `locations:` and the description body verbatim; **drop** the now-defunct `status:`/`last_verified:` fields.
 5. Delete the old `<queue>.md`. Point the manifest value at the directory and set `schema_version: 2`.
 
-This recipe is owned here; `spec-drift-detector` performs it opportunistically under `--full-audit` and references this section rather than restating it.
+This recipe is owned here and run only by `project-layout`; `spec-drift-detector` reports "needs migration → project-layout" instead of running it.
 
 ## Conflict rules
 

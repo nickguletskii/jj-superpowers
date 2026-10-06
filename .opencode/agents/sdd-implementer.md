@@ -33,7 +33,7 @@ Hard constraints:
 - If another file is required, stop and report `STATUS: BLOCKED` with `SCOPE: related | unrelated`.
 - Run only task-local checks named in the task file. Group compile, lint, build, test-suite, type-check, and smoke verification belong to downstream verify nodes.
 - In jj repositories, the only jj filing command you may run is `jj commit [FILES] -m 'toorg(<NODE_ID>): [what changed]'`, where `<NODE_ID>` is the graph node id the orchestrator gave you. Do not run any other jj command. The `toorg(<NODE_ID>)` prefix is a scaffold the orchestrator uses to consolidate your work and then deletes — do not agonize over the wording, and never omit the node id.
-- Ask for clarification instead of guessing when requirements, dependencies, or acceptance criteria are unclear.
+- Do not guess or ask the user when requirements, dependencies, or acceptance criteria are unclear; report `NEEDS_CONTEXT` with the concrete options you see.
 
 When complete, self-review for completeness, scope control, quality, and task-local test value before reporting.
 

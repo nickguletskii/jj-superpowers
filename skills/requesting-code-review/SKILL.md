@@ -46,11 +46,11 @@ jj diff --git --color=never --no-pager
 
 **2. Dispatch code-reviewer subagent:**
 
-Use Task tool with jj-superpowers:code-reviewer type, fill template at `code-reviewer.md`
+Use the Agent tool with `subagent_type: "jj-superpowers:code-reviewer"`, filling the template at `code-reviewer.md`
 
 **Placeholders:**
 - `{WHAT_WAS_IMPLEMENTED}` - What you just built
-- `{PLAN_OR_REQUIREMENTS}` - What it should do
+- `{PLAN_REFERENCE}` - What it should do (plan path or requirements)
 - `{CHANGE_ID}` - The review scope: revision/change id, diff range, explicit file list, or current `@` diff
 - `{DESCRIPTION}` - Brief summary
 
@@ -60,10 +60,15 @@ When the template labels this section `CHANGE_ID` but the scope is not a revisio
 
 Reception is its own discipline. When the review comes back, load `jj-superpowers:receiving-code-review` — it owns verifying feedback before implementing, when and how to push back, implementation order, and the no-performative-agreement rule.
 
-Severity routing for reviews requested through this skill:
-- Critical — fix immediately; blocks everything
-- Important — fix before proceeding
-- Minor — note for later
+### Severity Scale
+
+This is the one severity scale for every jj-superpowers review — code, spec, plan, and design. Other skills reference it rather than redefine it.
+
+- **Critical** — blocks everything: correctness, security, or data-loss error; broken build or tests; missing or contradicted requirement. Fix immediately.
+- **Important** — changes the outcome: structural/design flaw, genuine ambiguity (two readings → materially different builds), wrong abstraction boundary, missing test coverage for real behavior. Fix before proceeding.
+- **Minor** — deterministically resolvable with no design decision (local improvement, under-specification with one unambiguous fix), or cosmetic/preference. Note for later.
+
+Critical and Important are the **blocking** severities. Iterative review loops (`jj-superpowers:hypothesis-driven-improvement`, `jj-superpowers:brainstorming`, `writing-plans/plan-document-reviewer-prompt.md`) keep the same scale but handle Minors differently: they fold accepted Minors immediately, in the same round, and drop purely cosmetic ones, instead of noting them for later.
 
 ## Required Review Lens: File Size and Decomposition
 
@@ -84,7 +89,7 @@ You: Let me request code review before proceeding.
 
 [Dispatch jj-superpowers:code-reviewer subagent]
   WHAT_WAS_IMPLEMENTED: Verification and repair functions for conversation index
-  PLAN_OR_REQUIREMENTS: docs/superpowers/plans/deployment-plan.md
+  PLAN_REFERENCE: docs/superpowers/plans/deployment-plan.md
   CHANGE_ID: current @ diff for files indexer.ts, verifier.ts, verifier.test.ts
   DESCRIPTION: Added verifyIndex() and repairIndex() with 4 issue types
 

@@ -71,7 +71,7 @@ Rules:
 - For Rust, try `rust-analyzer scip .` or the project’s documented rust-analyzer SCIP command. For TypeScript and Python, use the project’s documented SCIP/indexer command if present; otherwise mark the index unavailable and continue with source reading + grep.
 - Use `~/.jj-superpowers/tools/scip-query` as the installed jj-superpowers SCIP query helper. The jj-superpowers installer creates this stable symlink for supported harnesses.
 - If the target project has its own `./tools/scip-query`, the orchestrator may prefer it and record that path instead.
-- Pass the recorded query command to subagents as `[SCIP_QUERY_TOOL]`. Do not dump raw `.scip` files into agent context.
+- Pass the recorded query command and index path as `[SCIP_QUERY_TOOL]` and `[SCIP_INDEX_PATH]` to the directory mapper, analysis, and analysis reviewer subagents. Do not dump raw `.scip` files into agent context.
 - Identify validation commands before deletion when possible. If none are obvious, record that and ask the user before destructive edits whether to proceed without validation.
 
 ## Dispatch Modes

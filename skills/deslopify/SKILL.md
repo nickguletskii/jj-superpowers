@@ -52,7 +52,7 @@ For broad cleanup, reorganization, deduplication, or dead-code removal across mu
 
 ## The Deslopify Checklist
 
-Five categories. Scan for each. Gather findings with evidence before presenting.
+Six categories. Scan for each. Gather findings with evidence before presenting.
 
 ### A. Suspicious Logic
 

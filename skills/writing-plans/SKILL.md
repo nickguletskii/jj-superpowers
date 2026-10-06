@@ -11,8 +11,6 @@ Write comprehensive implementation plans assuming the engineer has zero context 
 
 Every plan is an execution graph. A small one-task change is just a small graph; do not create separate "simple", "chain", or "parallel" workflow modes.
 
-If the harness supports workflows, your plan may make use of them if appropriate.
-
 **Phase-scoped invocation.** `writing-plans` may be invoked **phase-scoped** — typically by `iterative-planning`, to produce one phase's `project-network.dot` reaching its own `final`. A phase graph is just a normal plan graph (same node kinds, same rules); behavior is otherwise unchanged.
 
 **Announce at start:** "I'm using the writing-plans skill to create the implementation plan."
@@ -286,7 +284,7 @@ After writing the complete plan, check it yourself:
 
 Fix issues inline. If a spec requirement has no task, add the task and update `project-network.dot`.
 
-For a deeper adversarial pass — or when you want to dispatch a separate reviewer subagent over the finished plan — use the prompt template in `plan-document-reviewer-prompt.md`. It checks the same dimensions as this self-review (completeness, spec alignment, task decomposition, graph validity, file contention, verification ownership, buildability) with the shared Major/Minor/Nit severity taxonomy.
+For a deeper adversarial pass — or when you want to dispatch a separate reviewer subagent over the finished plan — use the prompt template in `plan-document-reviewer-prompt.md`. It checks the same dimensions as this self-review (completeness, spec alignment, task decomposition, graph validity, file contention, verification ownership, buildability) with the shared Critical/Important/Minor severity scale (defined in `jj-superpowers:requesting-code-review`).
 
 ## Skill Validation
 

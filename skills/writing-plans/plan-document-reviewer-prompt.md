@@ -7,7 +7,7 @@ Use this template when dispatching a plan document reviewer subagent.
 **Dispatch after:** The complete plan is written.
 
 ```
-Task tool (general-purpose):
+Agent tool (subagent_type: general-purpose):
   description: "Review plan document"
   prompt: |
     You are a plan document reviewer. Verify this plan is complete and ready for graph-based implementation.
@@ -38,16 +38,18 @@ Task tool (general-purpose):
 
     Tag each finding with exactly one severity:
 
-    - **Major** — changes the outcome: a structural/design flaw, a correctness
-      error, genuine ambiguity (two readings yield materially different builds), a
-      missing or contradicted requirement, a wrong abstraction boundary, or an
-      invalid graph structure. Only Majors block convergence.
+    - **Critical** — blocks everything: a correctness error, a missing or
+      contradicted requirement, or an invalid graph structure.
+    - **Important** — changes the outcome: a structural/design flaw, genuine
+      ambiguity (two readings yield materially different builds), or a wrong
+      abstraction boundary.
     - **Minor** — under-specification or a local improvement that is
-      deterministically resolvable, with no design decision required. The
-      orchestrator folds these into the plan directly; they do not by themselves
-      re-open the review loop. A Minor may still be refuted if it is actually
-      wrong.
-    - **Nit** — cosmetic or preference. Dropped or folded trivially.
+      deterministically resolvable, with no design decision required, or a
+      cosmetic/preference point. The orchestrator folds these into the plan
+      directly (or drops cosmetic ones); they do not by themselves re-open the
+      review loop. A Minor may still be refuted if it is actually wrong.
+
+    Only Critical and Important findings block convergence.
 
     ## Lens
 
@@ -60,25 +62,27 @@ Task tool (general-purpose):
     ## Calibration
 
     **Only flag issues that would cause real problems during implementation.**
-    An implementer building the wrong thing or getting stuck is a Major issue.
-    Minor wording, stylistic preferences, and "nice to have" suggestions are Nits,
-    not substantive findings. Do not flag stylistic preference as substantive.
+    An implementer building the wrong thing or getting stuck is a Critical or
+    Important issue. Wording, stylistic preferences, and "nice to have"
+    suggestions are at most Minor, not substantive findings. Do not flag stylistic preference as substantive.
 
     ## Output Format
 
     ## Plan Review
 
-    **Status:** Converged (zero Major) | Major findings
+    **Status:** Converged (zero Critical/Important) | Blocking findings
 
-    (Status is "Converged (zero Major)" when no Major finding remains; outstanding
-    Minors/Nits may still be listed for the orchestrator to fold in and do not
+    (Status is "Converged (zero Critical/Important)" when no Critical or Important
+    finding remains; outstanding Minors may still be listed for the orchestrator to fold in and do not
     block convergence.)
 
     **Findings:**
-    - [Major | Minor | Nit] [lens] [Task/Graph node X, Step Y]: [specific issue] - [why it matters for implementation]
+    - [Critical | Important | Minor] [lens] [Task/Graph node X, Step Y]: [specific issue] - [why it matters for implementation]
 
     **Recommendations (advisory, do not block convergence):**
     - [suggestions for improvement]
 ```
 
-**Reviewer returns:** Status (Converged (zero Major) | Major findings), Findings (each tagged with severity + lens), Recommendations
+**Severity scale:** defined once in `jj-superpowers:requesting-code-review` (Severity Scale); the template restates it so the reviewer subagent has it in context.
+
+**Reviewer returns:** Status (Converged (zero Critical/Important) | Blocking findings), Findings (each tagged with severity + lens), Recommendations
