@@ -14,13 +14,10 @@ A **class** is a tier *within a family*, not a parity claim across families.
 
 | Class | Claude Code | Codex (via MCP) |
 |---|---|---|
-| fast | `claude-sonnet-5-5` | `gpt-6.1-luna` |
-| standard | `claude-opus-5-5` | `gpt-6.1-terra` |
+| fast | `claude-haiku-5-5` | `gpt-6.1-luna` medium effort |
+| standard | `claude-sonnet-5-5` medium effort | `gpt-6.1-sol` low effort |
+| default | `claude-opus-5-5` low effort | `gpt-6.1-sol` low effort |
 | frontier | `claude-opus-5-5` at `high`+, only after `medium` hit a wall | `gpt-6.1-sol` |
-
-Opus 5.5 is the top Claude dispatch target; there is no separate frontier Claude model in this workflow.
-
-`claude-haiku-4-5` exists but is not a dispatch target for this workflow; use `claude-sonnet-5-5` at `low` for mechanical work.
 
 ## Availability
 

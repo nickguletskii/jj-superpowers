@@ -7,6 +7,8 @@ description: Use before running builds, test suites, logs, or broad searches —
 
 Command output is context; ask tools for the smallest output that answers the question. Tiny bounded commands don't need this.
 
+Before a build or test run, finish the coherent implementation chunk and check whether valid existing results already answer the question. Run earlier only when a concrete uncertainty blocks further work or an explicit requirement calls for it. See `jj-superpowers:verification-before-completion` for verification timing and evidence reuse.
+
 1. Name the question the command must answer.
 2. Use the narrowest form that answers it: selectors, quiet flags, JSON output, filters.
 3. If that isn't enough, expand only the failing package, test, file, or time range, capture full output for that scope, and say why you expanded.

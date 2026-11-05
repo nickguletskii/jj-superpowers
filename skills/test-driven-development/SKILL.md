@@ -1,20 +1,20 @@
 ---
 name: test-driven-development
-description: Use when implementing a feature, bugfix, refactor, or other behavior change, before writing the implementation code.
+description: Use when the user or project explicitly requires test-driven development, or when deciding test order and coverage for a behavior change.
 ---
 
 # Test-Driven Development
 
-Default to test-first for behavior changes: write the test, watch it fail, write the minimal code that makes it pass, then refactor. A test you never saw fail may not test what you think it does.
+Default to implementing behavior changes directly, then add meaningful coverage and run relevant checks. Tests may come afterward; an initial failing test is not a prerequisite for implementation or completion. Honor an explicit request to defer coverage.
 
-Skip it, after checking with your human partner, for throwaway prototypes, generated code, and configuration files. Not every behavior deserves a test at all: read `what-to-test.md` before writing one you're unsure about.
+Use the test-first cycle below when the user or project explicitly requires TDD. Otherwise, choose test order to suit the task without asking permission to implement first. Not every behavior deserves a test: read `what-to-test.md` before writing one you're unsure about.
 
-## The cycle
+## When TDD is required
 
 1. **Red.** Write one test for one behavior, with a name that says what should happen. Use real code; mock only what is slow or external.
 2. **Watch it fail.** It should fail (not error) with the expected message, because the feature is missing rather than because of a typo. If it passes, it tests existing behavior; fix the test.
 3. **Green.** Write the simplest code that passes. Don't add options or features the test didn't ask for.
-4. **Watch it pass,** along with the surrounding suite. If the new test fails, fix the code, not the test. Fix anything else you broke now, and keep the output free of new warnings.
+4. **Watch the focused test pass.** If it fails, investigate the code and test against the intended behavior. Run broader checks after the coherent implementation chunk, rather than the surrounding suite on every cycle.
 5. **Refactor** while green: remove duplication, improve names, extract helpers. Don't add behavior.
 
 ```typescript
@@ -33,11 +33,11 @@ test('retries failed operations 3 times', async () => {
 
 ## If the code came first
 
-Don't delete it. Write the test, revert the fix, and watch the test fail for the expected reason. Restore the code and watch it pass. A test that has never failed proves only that it agrees with the code.
+Keep the implementation. Add tests against independently established requirements, expected results, and meaningful edge cases, then run the relevant checks. A test passing on its first run is acceptable. Do not temporarily revert working code solely to manufacture a red.
 
 ## Bugs
 
-Reproduce the bug with a failing test before fixing it; the test proves the fix and guards against regression. For finding the cause, see `systematic-debugging`.
+Reproduce and understand the bug before fixing it; an automated failing test is useful when it helps establish the cause, but is not mandatory. Add regression coverage when it provides lasting value. For finding the cause, see `systematic-debugging`.
 
 ## Good tests
 
@@ -70,6 +70,6 @@ await expect(addServer(config)).rejects.toThrow(/already registered/);
 
 ## Common mistakes
 
-- Moving on from a test that passed on its first run; it was never shown to detect anything.
+- Treating a first-run pass as invalid solely because the test was written after implementation.
 - Treating a failure for the wrong reason (import error, typo, bad fixture) as a valid red.
-- Growing the implementation past what the current test requires, leaving untested branches.
+- Writing tests that merely echo the implementation instead of checking the intended behavior.

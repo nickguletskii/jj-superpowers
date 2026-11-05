@@ -31,9 +31,11 @@ Never attribute a change to an LLM, model, or agent (no `Co-Authored-By`, no "Ge
 
 Before acting, check whether a listed skill plausibly applies; if so, load it (Claude Code: the `Skill` tool, not Read on the skill file), and drop it if it turns out irrelevant. Load skills fresh rather than from memory; they change.
 
-When several apply, process skills come first (`brainstorming`, `systematic-debugging`) because they decide how to approach the task; execution and domain skills follow. "Add X" or "fix Y" says what to do, not that the workflow can be skipped. `test-driven-development` is the default for behavior changes, not a ritual for every edit. Before entering plan mode for design-bearing work, run `brainstorming` if you haven't.
+When several apply, process skills come first (`brainstorming`, `systematic-debugging`) because they decide how to approach the task; execution and domain skills follow. "Add X" or "fix Y" says what to do, not that the workflow can be skipped. Implement behavior changes directly by default, then add meaningful coverage and run relevant checks after a coherent implementation chunk. Batch related edits before checking; run earlier only to resolve a concrete blocking uncertainty or meet an explicit requirement. Use test-first development only when the user or project explicitly requires it; do not manufacture reds for tests added afterward. Before entering plan mode for design-bearing work, run `brainstorming` if you haven't.
 
-**Other harnesses.** Codex tool-name mapping: `references/codex-tools.md`. OpenCode: the plugin bootstrap maps common tools; use its native skill tool and `@mention` subagents. This is about running *inside* another harness; calling *out* to one for a second opinion belongs to `choosing-model-and-effort`.
+**Other harnesses.** Codex tool-name mapping: `references/codex-tools.md`. OpenCode: the plugin bootstrap maps common tools; use its native skill tool and `@mention` subagents.
+
+**Delegation boundary.** Use built-in subagent tools for delegation. Do not invoke coding harnesses through CLIs (for example, `opencode`, `codex`, or Claude Code's `claude`), directly or through scripts/wrappers, without explicit user permission to invoke that harness. A request for subagents, parallel work, or review is not that permission. If built-in subagent tools are unavailable, use the skill's local/no-subagent fallback; do not substitute a CLI harness.
 
 ## Routing map
 
@@ -43,7 +45,7 @@ When several apply, process skills come first (`brainstorming`, `systematic-debu
 - Later phases depend on artifacts earlier phases produce (not mere size) → `iterative-planning`
 - Executing a plan with `project-network.dot` now → `subagent-driven-development`
 - Executing a written plan in a separate session → `executing-plans`
-- Writing implementation code → `test-driven-development`
+- Explicit TDD requirement, or deciding test order and coverage → `test-driven-development`
 - Designing an API, interface, or state machine; a growing `if`/`match` → `designing-with-types-and-abstractions`
 
 **Something is wrong**
@@ -68,7 +70,7 @@ When several apply, process skills come first (`brainstorming`, `systematic-debu
 - Spec-vs-code drift → `spec-drift-detector`; layout manifest, `AGENTS.md`, project skills → `project-layout`
 
 **Running the agent**
-- Model or effort choice, hit a wall, second opinion → `choosing-model-and-effort`
+- Model or effort choice, hit a wall → `choosing-model-and-effort`
 - 2+ independent investigations, no plan graph → `dispatching-parallel-agents`
 - Builds, tests, logs, broad searches → `tool-output-discipline`
 - Python or `uv` → `uv-guide`; creating or editing a skill → `writing-skills`

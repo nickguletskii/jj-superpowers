@@ -32,7 +32,7 @@ The four phases below are guidance for how an investigation usually goes, not ga
 
 ## Phase 4: Implementation
 
-1. **Write a failing test** that reproduces the bug, or a one-off script where there is no test framework. See `jj-superpowers:test-driven-development`.
+1. **Establish a reliable reproduction** using a test, a one-off script, or concrete manual steps. A failing automated test is useful when it clarifies the bug, but is not required before implementing the fix. Add lasting regression coverage when valuable; see `jj-superpowers:test-driven-development`.
 2. **Make one fix** that addresses the root cause. Leave unrelated improvements and refactors for separately.
 3. **Verify:** the new test passes, nothing else broke, and the original symptom is gone (`jj-superpowers:verification-before-completion`).
 4. **If the fix doesn't work,** return to Phase 1 with what you learned.
