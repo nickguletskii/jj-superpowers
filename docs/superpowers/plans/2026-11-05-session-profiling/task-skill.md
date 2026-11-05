@@ -1,0 +1,1 @@
+Provide an explicitly invoked session-performance skill that analyzes recorded evidence, distinguishes measured/unknown timing, and proposes proportionate improvements without automatically editing workflow rules.

@@ -1,0 +1,1 @@
+Normalize supported harness hook/extension events to shared recorder API. Hooks are passive, fail-open, opt-in. Document setup, capabilities and background completion limitations. Capture detailed results only for detected Cargo/Bazel commands. Add fixture tests and avoid changing existing hook configuration without preserving it.

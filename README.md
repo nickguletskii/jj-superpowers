@@ -24,13 +24,13 @@ Next up, once you say "go", the plan is executed through `subagent-driven-develo
 
 ### Automated local installer
 
-For a cloned checkout, install global links/config for selected harnesses with the Deno installer:
+For a cloned checkout, install global links/config for selected harnesses with Node.js 22.18 or newer. Node runs the TypeScript installer directly without a build step:
 
 ```bash
-deno run -A scripts/install-harnesses.ts install --harness codex
-deno run -A scripts/install-harnesses.ts install --all
-deno run -A scripts/install-harnesses.ts status --all
-deno run -A scripts/install-harnesses.ts uninstall --harness codex
+node scripts/install-harnesses.ts install --harness codex
+node scripts/install-harnesses.ts install --all
+node scripts/install-harnesses.ts status --all
+node scripts/install-harnesses.ts uninstall --harness codex
 ```
 
 Supported harness IDs: `claude-code`, `codex`, `agy`, `pi`, `oh-my-pi`, `opencode`.
@@ -59,11 +59,15 @@ Then register in your `~/.claude/settings.json`:
 Fetch and follow instructions from https://raw.githubusercontent.com/nickguletskii/jj-superpowers/refs/heads/main/.codex/INSTALL.md
 ```
 
-### OpenCode
+### OpenCode V2
 
+From a local checkout with dependencies installed:
+
+```bash
+node scripts/install-harnesses.ts install --harness opencode
 ```
-Fetch and follow instructions from https://raw.githubusercontent.com/nickguletskii/jj-superpowers/refs/heads/main/.opencode/INSTALL.md
-```
+
+Restart OpenCode. V2 uses the `plugins` configuration array and loads the checkout's exported TypeScript plugin at `.opencode/plugins/superpowers/index.ts` (`@opencode/plugin` 2.2.5). V1 function plugins are incompatible with V2. See [installation and migration instructions](.opencode/INSTALL.md).
 
 ## The Basic Workflow
 
@@ -73,7 +77,7 @@ Fetch and follow instructions from https://raw.githubusercontent.com/nickguletsk
 
 3. **subagent-driven-development** or **executing-plans** - Activates with a plan. Dispatches fresh subagents through graph nodes with review gates, or executes in batches with human checkpoints.
 
-4. **test-driven-development** - Activates during implementation. Enforces RED-GREEN-REFACTOR: write failing test, watch it fail, write minimal code, watch it pass, commit. Deletes code written before tests.
+4. **Implementation and verification** - Implement a coherent chunk, add meaningful coverage, then run the relevant checks. Use **test-driven-development** when test-first work is explicitly required; keep existing implementations when adding tests afterward.
 
 5. **requesting-code-review** - Activates for ad hoc/manual review. Reviews against plan, reports issues by severity. Critical issues block progress.
 
@@ -81,11 +85,15 @@ Fetch and follow instructions from https://raw.githubusercontent.com/nickguletsk
 
 **The agent checks for relevant skills before any task.** Mandatory workflows, not suggestions.
 
+## Optional session profiling
+
+[Enable passive recording](docs/session-profiling.md) for Claude Code, Codex, Antigravity, or Oh My Pi. Export command, tool, model, and subagent timings to a Chrome trace for Perfetto, then invoke **session-performance** to investigate bottlenecks. Recording never skips or changes commands; missing timing stays unattributed.
+
 ## What's Inside
 
 ### Skills Library
 
-All 29 skills. `using-superpowers` carries a routing map from situation → skill.
+`using-superpowers` carries a routing map from situation → skill.
 
 **Design & planning**
 - **brainstorming** - Socratic design refinement before any creative work
@@ -103,7 +111,8 @@ All 29 skills. `using-superpowers` carries a routing map from situation → skil
 **Debugging & improvement**
 - **systematic-debugging** - 4-phase root cause process (root-cause-tracing, defense-in-depth, condition-based-waiting)
 - **hypothesis-driven-improvement** - Converge on open-ended objectives: flaky behavior, metric targets, adversarial review loops
-- **verification-before-completion** - Evidence before assertions; ensure it's actually fixed
+- **verification-before-completion** - Evidence before assertions; batch checks and reuse valid results
+- **session-performance** - Analyze recorded command, model, and subagent timing; propose workflow improvements
 
 **Review & integration**
 - **requesting-code-review** - Pre-review checklist
@@ -126,7 +135,7 @@ All 29 skills. `using-superpowers` carries a routing map from situation → skil
 
 **Meta**
 - **using-superpowers** - How to find and use skills; situation → skill routing map
-- **choosing-model-and-effort** - Pick the cheapest model/effort that clears the task; when an external harness is worth calling
+- **choosing-model-and-effort** - Pick the cheapest model/effort that clears the task
 - **dispatching-parallel-agents** - Ad hoc parallel investigations when subagents are authorized
 - **tool-output-discipline** - Ask tools for the smallest useful output; command output is context
 - **uv-guide** - Run Python with `uv`; packages, virtualenvs, sandbox/cache permissions

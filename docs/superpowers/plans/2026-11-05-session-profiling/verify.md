@@ -1,0 +1,1 @@
+Run node --test tests/session-profile.test.ts tests/profile-adapters.test.ts tests/skill-consolidation.test.ts after implementation fan-in. Run git diff --check. Review passive behavior, truthful timing, overlap accounting and preservation of existing settings. Do not claim live harness coverage from synthetic fixtures.

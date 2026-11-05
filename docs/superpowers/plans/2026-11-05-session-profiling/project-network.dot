@@ -1,0 +1,9 @@
+digraph {
+ recorder [kind="task", file="task-recorder.md", files="scripts/session-profile.ts tests/session-profile.test.ts"];
+ adapters [kind="task", file="task-adapters.md", files="scripts/profile-adapters.ts tests/profile-adapters.test.ts", scopes="hooks docs"];
+ skill [kind="task", file="task-skill.md", files="skills/session-performance/SKILL.md"];
+ verify [kind="verify", file="verify.md"];
+ recorder -> verify;
+ adapters -> verify;
+ skill -> verify;
+}
