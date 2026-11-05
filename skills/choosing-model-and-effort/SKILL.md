@@ -1,6 +1,6 @@
 ---
 name: choosing-model-and-effort
-description: Use when choosing which model or reasoning effort to dispatch a subagent with, when a task failed and you are tempted to retry with a stronger model or higher effort, when a model is unavailable, or when considering an external harness (Codex MCP, gemini, opencode).
+description: Use when choosing which model or reasoning effort to dispatch a subagent with, when a task failed and you are tempted to retry with a stronger model or higher effort, or when a model is unavailable.
 ---
 
 # Choosing Model and Effort
@@ -13,11 +13,13 @@ Pick the cheapest configuration that clears the task's bar. The point of this sk
 
 Concrete model ids, classes, and availability live in `models.md`; this file is the decision procedure.
 
+Use built-in subagent tools for dispatch. Invoking a coding harness through a CLI requires explicit user permission; model selection or escalation does not grant it. See `jj-superpowers:using-superpowers` for the delegation boundary.
+
 ## Dispatch Table (Claude Code)
 
 | Task shape | Model | Effort |
 |---|---|---|
-| Easy, well-specified, mechanical; named files and APIs | `claude-sonnet-5-5` | low |
+| Easy, well-specified, mechanical; named files and APIs | `claude-haiku-5-5` | low-medium |
 | Standard implementation | `claude-sonnet-5-5` or `claude-opus-5-5` | medium |
 | Subtle, cross-file, integration, ambiguous failure | `claude-opus-5-5` | medium |
 | Design judgment, graph repair, code-quality review | `claude-opus-5-5` | medium |
@@ -48,19 +50,6 @@ Any model can be unavailable.
 
 - Degrade to the nearest available option and say so. A silent downgrade on a hard task later looks like a genuine failure and gets misdiagnosed.
 - Don't substitute upward to a costlier model without permission; unavailability isn't a wall.
-
-## External Harnesses (Codex MCP)
-
-Use Codex as a reviewer, not to do the work. Its value is that a different model family makes different mistakes, catching errors a same-family retry would repeat.
-
-| Use | Gate |
-|---|---|
-| Ensemble review / second opinion — `jj-superpowers:brainstorming` step 9, `jj-superpowers:hypothesis-driven-improvement` | On by default when available; no permission needed. Skip silently if unavailable. |
-| Doing the work — implementation, capability offload | Off-label; ask the user. |
-
-Detection: the codex MCP tool (`mcp__codex__codex`); the `gemini` and `opencode` CLIs if installed. Suggested review configuration: `gpt-6.1-sol` at `high`.
-
-Codex is often cheaper than maxing out Opus, but the gate is about role, not cost — lower price isn't a reason to hand it the implementation.
 
 ## Subagents Don't Delegate
 

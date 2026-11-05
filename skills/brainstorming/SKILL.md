@@ -106,7 +106,6 @@ Propose Agile only for genuine design uncertainty, per the criterion in `iterati
 - Severity uses the scale in `requesting-code-review`. Critical/Important findings are fixed and re-reviewed. Minors are folded in the same round (cosmetic ones may be dropped) and don't trigger another round; a wrong finding of any severity can be refuted with justification.
 - Each round dispatches about 3 read-only reviewers with distinct lenses chosen from: correctness, completeness, ambiguity, API/design soundness, concurrency, parallelism, performance, duplication, extensibility, testability, over/under-engineering. Rotate lenses across rounds.
 - Converged = a round with zero Critical/Important. You edit the spec directly.
-- Then run the same lens review through each available external harness at the orchestrator level (`choosing-model-and-effort` owns detection, choice, and model/effort). Its Critical/Important findings reopen the subagent loop; its Minors don't. Done when an ensemble pass yields zero Critical/Important. No harness available: skip silently. The user may opt out.
 
 ## Two biases
 

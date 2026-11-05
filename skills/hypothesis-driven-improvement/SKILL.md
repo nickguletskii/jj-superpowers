@@ -38,8 +38,6 @@ The loop:
 3. **Correct** — resolve accepted Critical/Important findings; fold accepted Minors.
 4. **Repeat** until a round surfaces zero Critical/Important findings. Fold outstanding Minors on that round; no extra confirming round is needed for them.
 
-**Ensembling (optional, on by default when available):** after the subagent loop converges, run the same lens-based review through an available external harness. Its Critical/Important findings reopen the subagent loop; its Minors fold or drop. Skip silently if no harness is available. The combined loop ends when an ensemble pass yields zero Critical/Important. `jj-superpowers:brainstorming` is authoritative for the loop and `jj-superpowers:choosing-model-and-effort` for the harness (detection, choice, model/effort, reviewer-only gate).
-
 ## When to Use
 
 - One specific observed bug → `jj-superpowers:systematic-debugging`.

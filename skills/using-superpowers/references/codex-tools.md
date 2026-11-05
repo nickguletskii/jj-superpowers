@@ -30,9 +30,10 @@ and not MCP tools (e.g. `mcp__codex__codex`). Subagent dispatch must
 use the harness-native subagent tool, or the orchestrator must use the skill's
 local/no-subagent fallback.
 
-Calling *out* to an external harness for ensemble review is a different thing,
-governed by `jj-superpowers:choosing-model-and-effort`. It is a review channel,
-not a substitute for subagent dispatch.
+Invoking a coding harness CLI, directly or through a script/wrapper, requires
+explicit user permission to invoke that harness. A request for subagents,
+parallel work, or review does not grant that permission. Use built-in tools
+for subagents instead.
 
 Codex custom agents live in `.codex/agents/*.toml` for project-scoped agents or
 `~/.codex/agents/*.toml` for personal agents. Each file defines `name`,
