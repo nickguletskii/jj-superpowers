@@ -1,51 +1,15 @@
-#!/usr/bin/env -S deno run --allow-read --allow-write --allow-env --allow-run
+#!/usr/bin/env node
 
-const POSIX_SEPARATOR = "/";
+import * as fs from "node:fs/promises";
+import type { Stats } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 
-const path = {
-  delimiter: ":",
-  basename(value: string): string {
-    const normalized = value.replace(/\/+$/, "");
-    const lastSeparator = normalized.lastIndexOf(POSIX_SEPARATOR);
-    return lastSeparator === -1
-      ? normalized
-      : normalized.slice(lastSeparator + 1);
-  },
-  dirname(value: string): string {
-    const normalized = value.replace(/\/+$/, "");
-    const lastSeparator = normalized.lastIndexOf(POSIX_SEPARATOR);
-    if (lastSeparator <= 0) return POSIX_SEPARATOR;
-    return normalized.slice(0, lastSeparator);
-  },
-  join(...parts: string[]): string {
-    return normalizePath(
-      parts.filter((part) => part.length > 0).join(POSIX_SEPARATOR),
-    );
-  },
-  resolve(...parts: string[]): string {
-    const joined = parts.some((part) => part.startsWith(POSIX_SEPARATOR))
-      ? parts.join(POSIX_SEPARATOR)
-      : `${Deno.cwd()}${POSIX_SEPARATOR}${parts.join(POSIX_SEPARATOR)}`;
-    return normalizePath(joined);
-  },
-};
-
-function normalizePath(value: string): string {
-  const absolute = value.startsWith(POSIX_SEPARATOR);
-  const segments: string[] = [];
-  for (const segment of value.split(/\/+/)) {
-    if (segment.length === 0 || segment === ".") continue;
-    if (segment === "..") {
-      segments.pop();
-    } else {
-      segments.push(segment);
-    }
-  }
-  return (
-    `${absolute ? POSIX_SEPARATOR : ""}${segments.join(POSIX_SEPARATOR)}` ||
-    POSIX_SEPARATOR
-  );
-}
+const execFileAsync = promisify(execFile);
+const isNotFound = (error: unknown): boolean =>
+  error instanceof Error && "code" in error && error.code === "ENOENT";
 
 type CommandName = "list" | "status" | "install" | "uninstall";
 type HarnessId =
@@ -102,7 +66,7 @@ type ParsedArgs = {
   repoRoot: string;
 };
 
-const SCRIPT_DIR = path.dirname(decodeURI(new URL(import.meta.url).pathname));
+const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_REPO_ROOT = path.resolve(SCRIPT_DIR, "..");
 
 const HARNESS_IDS: HarnessId[] = [
@@ -115,7 +79,7 @@ const HARNESS_IDS: HarnessId[] = [
 ];
 
 function usage(): string {
-  return `Usage: deno run -A scripts/install-harnesses.ts <list|status|install|uninstall> [options]\n\nOptions:\n  --harness <id>  Select a harness; repeat for multiple harnesses\n  --all           Select all harnesses\n  --dry-run       Print operations without writing files\n  --force         Replace conflicting install targets\n  --repo <path>   Repository root (defaults to this checkout)\n`;
+  return `Usage: node scripts/install-harnesses.ts <list|status|install|uninstall> [options]\n\nOptions:\n  --harness <id>  Select a harness; repeat for multiple harnesses\n  --all           Select all harnesses\n  --dry-run       Print operations without writing files\n  --force         Replace conflicting install targets\n  --repo <path>   Repository root (defaults to this checkout)\n`;
 }
 
 function parseArgs(argv: string[]): ParsedArgs {
@@ -177,7 +141,7 @@ function isHarnessId(value: string): value is HarnessId {
 }
 
 function context(args: ParsedArgs): Context {
-  const home = Deno.env.get("HOME");
+  const home = process.env.HOME;
   if (!home) throw new Error("HOME is not set");
   return {
     repoRoot: args.repoRoot,
@@ -201,10 +165,10 @@ function harnessById(id: HarnessId): Harness {
 
 async function pathExists(target: string): Promise<boolean> {
   try {
-    await Deno.lstat(target);
+    await fs.lstat(target);
     return true;
   } catch (error) {
-    if (error instanceof Deno.errors.NotFound) return false;
+    if (isNotFound(error)) return false;
     throw error;
   }
 }
@@ -214,11 +178,11 @@ async function ensureDir(dir: string, ctx: Context): Promise<void> {
     console.log(`ensure-dir ${dir}`);
     return;
   }
-  await Deno.mkdir(dir, { recursive: true });
+  await fs.mkdir(dir, { recursive: true });
 }
 
 async function removePath(target: string): Promise<void> {
-  await Deno.remove(target, { recursive: true });
+  await fs.rm(target, { recursive: true });
 }
 
 async function ensureSymlink(spec: SymlinkSpec, ctx: Context): Promise<void> {
@@ -250,7 +214,7 @@ async function ensureSymlink(spec: SymlinkSpec, ctx: Context): Promise<void> {
     console.log(`symlink ${spec.source} -> ${spec.target}`);
     return;
   }
-  await Deno.symlink(spec.source, spec.target, { type: spec.targetKind });
+  await fs.symlink(spec.source, spec.target, spec.targetKind);
 }
 
 async function removeManagedLink(
@@ -263,7 +227,7 @@ async function removeManagedLink(
     console.log(`remove ${spec.target}`);
     return;
   }
-  await Deno.remove(spec.target);
+  await fs.unlink(spec.target);
 }
 
 async function assertSourceExists(source: string): Promise<void> {
@@ -273,20 +237,20 @@ async function assertSourceExists(source: string): Promise<void> {
 }
 
 async function classifySymlink(spec: SymlinkSpec): Promise<ArtifactStatus> {
-  let stat: Deno.FileInfo;
+  let stat: Stats;
   try {
-    stat = await Deno.lstat(spec.target);
+    stat = await fs.lstat(spec.target);
   } catch (error) {
-    if (error instanceof Deno.errors.NotFound) return "missing";
+    if (isNotFound(error)) return "missing";
     throw error;
   }
 
-  if (!stat.isSymlink) return "conflict";
+  if (!stat.isSymbolicLink()) return "conflict";
 
   try {
     const [targetReal, sourceReal] = await Promise.all([
-      Deno.realPath(spec.target),
-      Deno.realPath(spec.source),
+      fs.realpath(spec.target),
+      fs.realpath(spec.source),
     ]);
     return targetReal === sourceReal ? "installed" : "conflict";
   } catch {
@@ -298,7 +262,7 @@ async function readJsonObject(
   filePath: string,
 ): Promise<Record<string, unknown>> {
   if (!(await pathExists(filePath))) return {};
-  const raw = await Deno.readTextFile(filePath);
+  const raw = await fs.readFile(filePath, "utf8");
   if (!raw.trim()) return {};
   const parsed = JSON.parse(raw);
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
@@ -317,22 +281,25 @@ async function writeJsonObject(
     console.log(`write-json ${filePath}`);
     return;
   }
-  await Deno.writeTextFile(filePath, `${JSON.stringify(value, null, 2)}\n`);
+  await fs.writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`);
 }
 
-function getStringArray(
+function getConfigArray(
   config: Record<string, unknown>,
   key: string,
-): string[] {
+): unknown[] {
   const current = config[key];
   if (current === undefined) return [];
   if (
-    !Array.isArray(current) ||
-    current.some((item) => typeof item !== "string")
+    !Array.isArray(current)
   ) {
-    throw new Error(`expected ${key} to be an array of strings`);
+    throw new Error(`expected ${key} to be an array`);
   }
-  return [...current] as string[];
+  return [...current];
+}
+
+function entryPackage(entry: unknown): unknown {
+  return entry && typeof entry === "object" && "package" in entry ? entry.package : entry;
 }
 
 async function ensureJsonArrayEntry(
@@ -340,8 +307,8 @@ async function ensureJsonArrayEntry(
   ctx: Context,
 ): Promise<void> {
   const config = await readJsonObject(spec.path);
-  const entries = getStringArray(config, spec.key);
-  if (!entries.includes(spec.value)) {
+  const entries = getConfigArray(config, spec.key);
+  if (!entries.some(entry => entryPackage(entry) === spec.value)) {
     config[spec.key] = [...entries, spec.value];
     await writeJsonObject(spec.path, config, ctx);
   }
@@ -353,8 +320,8 @@ async function removeJsonArrayEntry(
 ): Promise<void> {
   if (!(await pathExists(spec.path))) return;
   const config = await readJsonObject(spec.path);
-  const entries = getStringArray(config, spec.key);
-  const next = entries.filter((entry) => entry !== spec.value);
+  const entries = getConfigArray(config, spec.key);
+  const next = entries.filter((entry) => entryPackage(entry) !== spec.value);
   if (next.length !== entries.length) {
     config[spec.key] = next;
     await writeJsonObject(spec.path, config, ctx);
@@ -364,15 +331,15 @@ async function removeJsonArrayEntry(
 async function jsonArrayStatus(spec: JsonArraySpec): Promise<ArtifactStatus> {
   if (!(await pathExists(spec.path))) return "missing";
   const config = await readJsonObject(spec.path);
-  const entries = getStringArray(config, spec.key);
-  return entries.includes(spec.value) ? "installed" : "missing";
+  const entries = getConfigArray(config, spec.key);
+  return entries.some(entry => entryPackage(entry) === spec.value) ? "installed" : "missing";
 }
 
 async function listFiles(dir: string, suffix: string): Promise<string[]> {
   await assertSourceExists(dir);
   const result: string[] = [];
-  for await (const entry of Deno.readDir(dir)) {
-    if (entry.isFile && entry.name.endsWith(suffix)) result.push(entry.name);
+  for await (const entry of await fs.readdir(dir, { withFileTypes: true })) {
+    if (entry.isFile() && entry.name.endsWith(suffix)) result.push(entry.name);
   }
   result.sort();
   return result;
@@ -385,8 +352,8 @@ async function skillLinks(
   const sourceDir = path.join(ctx.repoRoot, "skills");
   await assertSourceExists(sourceDir);
   const links: SymlinkSpec[] = [];
-  for await (const entry of Deno.readDir(sourceDir)) {
-    if (!entry.isDirectory && !entry.isSymlink) continue;
+  for await (const entry of await fs.readdir(sourceDir, { withFileTypes: true })) {
+    if (!entry.isDirectory() && !entry.isSymbolicLink()) continue;
     const source = path.join(sourceDir, entry.name);
     if (!(await pathExists(path.join(source, "SKILL.md")))) continue;
     links.push({
@@ -500,21 +467,47 @@ function claudeSettingsSpec(ctx: Context): JsonArraySpec {
 function opencodeSpec(ctx: Context): JsonArraySpec {
   return {
     path: path.join(ctx.home, ".config", "opencode", "opencode.json"),
-    key: "plugin",
-    value: `jj-superpowers@file:${ctx.repoRoot}`,
+    key: "plugins",
+    value: ctx.repoRoot,
   };
 }
 
+async function installOpenCodeConfig(ctx: Context): Promise<void> {
+  const spec = opencodeSpec(ctx);
+  const config = await readJsonObject(spec.path);
+  const legacyManaged = `jj-superpowers@file:${ctx.repoRoot}`;
+  const normalize = (entry: unknown): unknown => {
+    if (entry === legacyManaged) return spec.value;
+    if (Array.isArray(entry) && typeof entry[0] === "string") {
+      return { package: entry[0] === legacyManaged ? spec.value : entry[0], options: entry[1] ?? {} };
+    }
+    if (entry && typeof entry === "object" && "package" in entry && entry.package === legacyManaged) {
+      return { ...entry, package: spec.value };
+    }
+    return entry;
+  };
+  const entries = getConfigArray(config, "plugins").map(normalize);
+  for (const entry of getConfigArray(config, "plugin").map(normalize)) {
+    const managedAlreadyPresent = entryPackage(entry) === spec.value
+      && entries.some(existing => entryPackage(existing) === spec.value);
+    if (!managedAlreadyPresent && !entries.some(existing => JSON.stringify(existing) === JSON.stringify(entry))) entries.push(entry);
+  }
+  if (!entries.some(entry => entryPackage(entry) === spec.value)) entries.push(spec.value);
+  config.plugins = entries;
+  delete config.plugin;
+  await writeJsonObject(spec.path, config, ctx);
+}
+
 async function commandExists(command: string): Promise<boolean> {
-  const pathEnv = Deno.env.get("PATH") ?? "";
+  const pathEnv = process.env.PATH ?? "";
   for (const dir of pathEnv.split(path.delimiter)) {
     if (!dir) continue;
     const candidate = path.join(dir, command);
     try {
-      const stat = await Deno.stat(candidate);
-      if (stat.isFile || stat.isSymlink) return true;
+      const stat = await fs.stat(candidate);
+      if (stat.isFile() || stat.isSymbolicLink()) return true;
     } catch (error) {
-      if (!(error instanceof Deno.errors.NotFound)) throw error;
+      if (!(isNotFound(error))) throw error;
     }
   }
   return false;
@@ -529,15 +522,11 @@ async function runCommand(
     console.log(`${command} ${args.join(" ")}`);
     return;
   }
-  const result = await new Deno.Command(command, {
-    args,
-    stdout: "piped",
-    stderr: "piped",
-  }).output();
-  if (!result.success) {
-    const stderr = new TextDecoder().decode(result.stderr).trim();
-    const stdout = new TextDecoder().decode(result.stdout).trim();
-    throw new Error(`${command} ${args.join(" ")} failed: ${stderr || stdout}`);
+  try {
+    await execFileAsync(command, args, { encoding: "utf8", maxBuffer: 16 * 1024 * 1024 });
+  } catch (error) {
+    const failure = error as Error & { stderr?: string; stdout?: string };
+    throw new Error(`${command} ${args.join(" ")} failed: ${failure.stderr?.trim() || failure.stdout?.trim() || failure.message}`);
   }
 }
 
@@ -626,11 +615,12 @@ const HARNESSES: Harness[] = [
     description: "Add the local package plugin reference to opencode.json.",
     async install(ctx) {
       await applyLinks(commonToolLinks(ctx), ctx);
-      await ensureJsonArrayEntry(opencodeSpec(ctx), ctx);
+      await installOpenCodeConfig(ctx);
     },
     async uninstall(ctx) {
       await removeLinks(commonToolLinks(ctx), ctx);
       await removeJsonArrayEntry(opencodeSpec(ctx), ctx);
+      await removeJsonArrayEntry({ ...opencodeSpec(ctx), key: "plugin", value: `jj-superpowers@file:${ctx.repoRoot}` }, ctx);
     },
     async status(ctx) {
       const spec = opencodeSpec(ctx);
@@ -772,9 +762,9 @@ async function run(argv: string[]): Promise<void> {
 }
 
 try {
-  await run(Deno.args);
+  await run(process.argv.slice(2));
 } catch (error) {
   const message = error instanceof Error ? error.message : String(error);
   console.error(message);
-  Deno.exit(1);
+  process.exitCode = 1;
 }

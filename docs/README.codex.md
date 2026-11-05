@@ -27,7 +27,7 @@ Fetch and follow instructions from https://raw.githubusercontent.com/nickguletsk
 2. Install flat skill links and bundled Codex custom agents:
    ```bash
    cd ~/.codex/jj-superpowers
-   deno run -A scripts/install-harnesses.ts install --harness codex
+   node scripts/install-harnesses.ts install --harness codex
    ```
 
 3. Restart Codex.
@@ -119,7 +119,7 @@ Skills update instantly through the per-skill symlinks.
 
 ```bash
 cd ~/.codex/jj-superpowers
-deno run -A scripts/install-harnesses.ts uninstall --harness codex
+node scripts/install-harnesses.ts uninstall --harness codex
 ```
 
 Optionally delete the clone: `rm -rf ~/.codex/jj-superpowers` (Windows: `Remove-Item -Recurse -Force "$env:USERPROFILE\.codex\jj-superpowers"`).

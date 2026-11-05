@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 
-import { analyzeLogs } from '../scripts/find-permission-friction.mjs';
+import { analyzeLogs } from '../scripts/find-permission-friction.ts';
 
 function writeJsonl(filePath, rows) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });

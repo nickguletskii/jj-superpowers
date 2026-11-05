@@ -117,8 +117,8 @@ Use a small inline `dot` flowchart only for non-obvious decision points, loops w
 See `graphviz-conventions.dot` for style rules. To render a skill's flowcharts to SVG for your human partner:
 
 ```bash
-./render-graphs.js ../some-skill           # Each diagram separately
-./render-graphs.js ../some-skill --combine # All diagrams in one SVG
+./render-graphs.ts ../some-skill           # Each diagram separately
+./render-graphs.ts ../some-skill --combine # All diagrams in one SVG
 ```
 
 ## Code Examples

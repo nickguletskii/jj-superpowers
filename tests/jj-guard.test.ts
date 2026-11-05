@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 
 const guard = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
-  "../skills/jujutsu/scripts/jj-guard.mjs",
+  "../skills/jujutsu/scripts/jj-guard.ts",
 );
 const hasJj = spawnSync("jj", ["--version"]).status === 0;
 
@@ -19,7 +19,7 @@ function freshRepo() {
 }
 
 function guardAsync(cwd, args) {
-  return new Promise((resolve) => {
+  return new Promise<{ status: number | null; stdout: string }>((resolve) => {
     const child = spawn("node", [guard, ...args], { cwd });
     let stdout = "";
     child.stdout.on("data", (d) => (stdout += d));

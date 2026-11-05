@@ -28,7 +28,7 @@ Do not read source files, make code decisions, modify files, infer graph structu
 
 ## Consolidation forms
 
-Run every mutation through the guard the orchestrator names (`G="node <jujutsu-skill>/scripts/jj-guard.mjs"`), and pass `--ignore-working-copy` to every read. The orchestrator supplies the change ids implementers reported; never search the repo by description to find them.
+Run every mutation through the guard the orchestrator names (`G="node <jujutsu-skill>/scripts/jj-guard.ts"`), and pass `--ignore-working-copy` to every read. The orchestrator supplies the change ids implementers reported; never search the repo by description to find them.
 
 **Consolidate a task** (after its spec review passed) — fold its ids into the newest one, then describe it:
 

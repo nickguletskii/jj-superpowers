@@ -6,12 +6,36 @@ import path from 'node:path';
 import readline from 'node:readline';
 import { fileURLToPath } from 'node:url';
 
+type LogLocation = { file: string; line: number };
+type CommandLocation = LogLocation & { command: string };
+type FrictionSample = Partial<LogLocation> & {
+  source?: string;
+  reasons?: string[];
+  command?: string;
+  text?: string;
+  commandFile?: string;
+  commandLine?: number;
+  justification?: string;
+  prefixRule?: unknown;
+};
+type PrefixCount = { prefix: string[]; count: number };
+type SampleKind = "codexEscalationRequests" | "permissionErrors" | "claudePermissionMessages" | "riskyCommands";
+type FrictionReport = {
+  roots: { codex: string; claude: string };
+  totals: { codexFiles: number; codexLines: number; claudeFiles: number; claudeLines: number };
+  counts: Record<SampleKind, number>;
+  samples: Record<SampleKind, FrictionSample[]>;
+  prefixCounts?: Map<string, PrefixCount>;
+  repeatedPrefixes: PrefixCount[];
+};
+export type AnalyzeOptions = { codexRoot?: string; claudeRoot?: string; limit?: number };
+
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 const PERMISSION_TEXT =
   /permission denied|operation not permitted|\bEPERM\b|requires approval|required approval|blocked by sandbox|command blocked|require_escalated|injection detected|prompt injection/i;
 
-function parseArgs(argv) {
+function parseArgs(argv: string[]) {
   const options = {
     codexRoot: path.join(os.homedir(), '.codex', 'sessions'),
     claudeRoot: path.join(os.homedir(), '.claude', 'projects'),
@@ -49,7 +73,7 @@ function parseArgs(argv) {
   return options;
 }
 
-function* walkJsonlFiles(root) {
+function* walkJsonlFiles(root: string): Generator<string> {
   if (!root || !fs.existsSync(root)) return;
   const stack = [root];
   while (stack.length > 0) {
@@ -71,8 +95,8 @@ function* walkJsonlFiles(root) {
   }
 }
 
-function parseMaybeJson(value) {
-  if (typeof value !== 'string') return value ?? {};
+function parseMaybeJson(value: unknown): Record<string, unknown> {
+  if (typeof value !== 'string') return value && typeof value === 'object' ? value as Record<string, unknown> : {};
   try {
     return JSON.parse(value);
   } catch {
@@ -80,18 +104,18 @@ function parseMaybeJson(value) {
   }
 }
 
-function sampleText(text, max = 240) {
+function sampleText(text: unknown, max = 240): string {
   const normalized = String(text ?? '').replace(/\s+/g, ' ').trim();
   if (normalized.length <= max) return normalized;
   return `${normalized.slice(0, max - 3)}...`;
 }
 
-function addSample(samples, key, value, limit) {
+function addSample(samples: FrictionReport["samples"], key: SampleKind, value: FrictionSample, limit: number): void {
   if (limit === 0) return;
   if (samples[key].length < limit) samples[key].push(value);
 }
 
-function commandRiskReasons(command) {
+function commandRiskReasons(command: unknown): string[] {
   const reasons = [];
   const text = String(command ?? '');
   if (!text) return reasons;
@@ -104,7 +128,7 @@ function commandRiskReasons(command) {
   return [...new Set(reasons)];
 }
 
-function commandPrefix(command, length = 3) {
+function commandPrefix(command: unknown, length = 3): string[] {
   return String(command ?? '')
     .trim()
     .split(/\s+/)
@@ -112,7 +136,7 @@ function commandPrefix(command, length = 3) {
     .slice(0, length);
 }
 
-function recordCommand(report, source, command, location, limit) {
+function recordCommand(report: FrictionReport, source: string, command: unknown, location: LogLocation, limit: number): void {
   if (!command) return;
   const prefix = commandPrefix(command);
   if (prefix.length > 0) {
@@ -133,7 +157,7 @@ function recordCommand(report, source, command, location, limit) {
   );
 }
 
-function claudePermissionSample(filePath, lineNumber, text, recentCommand) {
+function claudePermissionSample(filePath: string, lineNumber: number, text: string, recentCommand: CommandLocation | null): FrictionSample {
   const sample = { file: filePath, line: lineNumber, text: sampleText(text) };
   if (!recentCommand?.command) return sample;
   return {
@@ -144,7 +168,7 @@ function claudePermissionSample(filePath, lineNumber, text, recentCommand) {
   };
 }
 
-function textFromClaudeContent(content) {
+function textFromClaudeContent(content: unknown): string {
   if (typeof content === 'string') return content;
   if (!Array.isArray(content)) return '';
   return content
@@ -157,7 +181,7 @@ function textFromClaudeContent(content) {
     .join('\n');
 }
 
-async function scanCodex(report, root, limit) {
+async function scanCodex(report: FrictionReport, root: string, limit: number): Promise<void> {
   for (const filePath of walkJsonlFiles(root)) {
     report.totals.codexFiles += 1;
     const rl = readline.createInterface({
@@ -217,7 +241,7 @@ async function scanCodex(report, root, limit) {
   }
 }
 
-async function scanClaude(report, root, limit) {
+async function scanClaude(report: FrictionReport, root: string, limit: number): Promise<void> {
   for (const filePath of walkJsonlFiles(root)) {
     report.totals.claudeFiles += 1;
     const rl = readline.createInterface({
@@ -225,7 +249,7 @@ async function scanClaude(report, root, limit) {
       crlfDelay: Infinity,
     });
     let lineNumber = 0;
-    let recentCommand = null;
+    let recentCommand: CommandLocation | null = null;
     for await (const line of rl) {
       lineNumber += 1;
       report.totals.claudeLines += 1;
@@ -279,8 +303,8 @@ async function scanClaude(report, root, limit) {
   }
 }
 
-export async function analyzeLogs(options = {}) {
-  const report = {
+export async function analyzeLogs(options: AnalyzeOptions = {}): Promise<FrictionReport> {
+  const report: FrictionReport = {
     roots: {
       codex: options.codexRoot ?? path.join(os.homedir(), '.codex', 'sessions'),
       claude: options.claudeRoot ?? path.join(os.homedir(), '.claude', 'projects'),
@@ -303,7 +327,7 @@ export async function analyzeLogs(options = {}) {
       claudePermissionMessages: [],
       riskyCommands: [],
     },
-    prefixCounts: new Map(),
+    prefixCounts: new Map<string, PrefixCount>(),
     repeatedPrefixes: [],
   };
 
@@ -320,7 +344,7 @@ export async function analyzeLogs(options = {}) {
   return report;
 }
 
-function renderText(report) {
+function renderText(report: FrictionReport): string {
   const lines = [];
   lines.push('Permission friction report');
   lines.push('');

@@ -2,6 +2,18 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+type Preamble = { core: string; editing: string };
+type Frontmatter = {
+  [key: string]: string | boolean;
+  name?: string;
+  description?: string;
+  model?: string;
+  codex_sandbox_mode?: string;
+  opencode_tools_write?: boolean;
+  opencode_tools_edit?: boolean;
+};
+type Agent = { frontmatter: Frontmatter; body: string };
+
 const repoRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   "..",
@@ -35,7 +47,7 @@ export const READ_ONLY_AGENTS = new Set([
 // Returns { core, editing }. The core is prepended to every agent body: byte-identical
 // and first-in-prompt across all agents, so it forms a shared prefix that providers can
 // serve from cache. The editing section follows it only for editing agents.
-export function loadPreamble(text = fs.readFileSync(preamblePath, "utf8")) {
+export function loadPreamble(text = fs.readFileSync(preamblePath, "utf8")): Preamble {
   const stripped = text.replace(/^<!--[\s\S]*?-->\n*/, "");
   const parts = stripped.split(EDITING_MARKER);
   if (parts.length !== 2) {
@@ -44,7 +56,7 @@ export function loadPreamble(text = fs.readFileSync(preamblePath, "utf8")) {
   return { core: parts[0].trim(), editing: parts[1].trim() };
 }
 
-export function preambleFor(name, { core, editing }) {
+export function preambleFor(name: string, { core, editing }: Preamble): string {
   return READ_ONLY_AGENTS.has(name) ? core : `${core}\n\n${editing}`;
 }
 
@@ -52,7 +64,7 @@ export function preambleFor(name, { core, editing }) {
 // them. So the preamble is SYNCED into the source bodies (between markers) rather than
 // only injected downstream — otherwise Claude would be the one platform missing it.
 // Idempotent: re-running replaces the marked block instead of stacking copies.
-function withPreamble(body, preamble) {
+function withPreamble(body: string, preamble: string): string {
   const block = `${PREAMBLE_START}\n\n${preamble}\n\n${PREAMBLE_END}`;
   const existing = new RegExp(
     `${escapeRegExp(PREAMBLE_START)}[\\s\\S]*?${escapeRegExp(PREAMBLE_END)}`,
@@ -63,11 +75,11 @@ function withPreamble(body, preamble) {
   return `${block}\n\n${body}`;
 }
 
-function escapeRegExp(value) {
+function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-function parseAgentFile(filePath) {
+export function parseAgentFile(filePath: string): Agent {
   const raw = fs.readFileSync(filePath, "utf8");
   const match = raw.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
   if (!match) {
@@ -80,8 +92,8 @@ function parseAgentFile(filePath) {
   };
 }
 
-function parseFrontmatter(frontmatter, filePath) {
-  const result = {};
+function parseFrontmatter(frontmatter: string, filePath: string): Frontmatter {
+  const result: Frontmatter = {};
   const lines = frontmatter.split("\n");
 
   for (let i = 0; i < lines.length; i += 1) {
@@ -111,23 +123,23 @@ function parseFrontmatter(frontmatter, filePath) {
   return result;
 }
 
-function parseScalar(value) {
+function parseScalar(value: string): string | boolean {
   const trimmed = value.trim();
   if (trimmed === "true") return true;
   if (trimmed === "false") return false;
   return trimmed.replace(/^["']|["']$/g, "");
 }
 
-function tomlString(value) {
+function tomlString(value: unknown): string {
   return JSON.stringify(String(value));
 }
 
-function tomlMultiline(value) {
+function tomlMultiline(value: unknown): string {
   const escaped = String(value).replace(/"""/g, '\\"\\"\\"');
   return `"""${escaped}\n"""`;
 }
 
-function renderCodexAgent(agent) {
+function renderCodexAgent(agent: Agent): string {
   const { frontmatter, body } = agent;
   const lines = [
     `name = ${tomlString(frontmatter.name)}`,
@@ -142,7 +154,7 @@ function renderCodexAgent(agent) {
   return `${lines.join("\n")}\n`;
 }
 
-function renderOpenCodeAgent(agent) {
+function renderOpenCodeAgent(agent: Agent): string {
   const { frontmatter, body } = agent;
   const lines = [
     "---",

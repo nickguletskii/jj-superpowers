@@ -1,92 +1,44 @@
-# Installing jj-superpowers for OpenCode
+# Installing jj-superpowers for OpenCode V2
 
-## Prerequisites
+Requires OpenCode V2 and Node.js 22.18 or newer. The plugin targets `@opencode/plugin` 2.2.5.
 
-- [OpenCode.ai](https://opencode.ai) installed
-
-## Installation
-
-Add jj-superpowers to the `plugin` array in your `opencode.json` (global or project-level):
-
-```json
-{
-  "plugin": ["jj-superpowers@git+https://github.com/nickguletskii/jj-superpowers.git"]
-}
-```
-
-Restart OpenCode. That's it — the plugin auto-installs and registers all skills
-and bundled subagents.
-
-Verify by asking: "Tell me about your jj-superpowers"
-
-## Migrating from the old symlink-based install
-
-If you previously installed jj-superpowers using `git clone` and symlinks, remove the old setup:
+## Install a local checkout
 
 ```bash
-# Remove old symlinks
-rm -f ~/.config/opencode/plugins/jj-superpowers.js
-rm -rf ~/.config/opencode/skills/jj-superpowers
-
-# Optionally remove the cloned repo
-rm -rf ~/.config/opencode/jj-superpowers
-
-# Remove skills.paths from opencode.json if you added one for jj-superpowers
+git clone https://github.com/nickguletskii/jj-superpowers.git
+cd jj-superpowers
+npm install
+node scripts/install-harnesses.ts install --harness opencode
 ```
 
-Then follow the installation steps above.
-
-## Usage
-
-Use OpenCode's native `skill` tool:
-
-```
-use skill tool to list skills
-use skill tool to load jj-superpowers/brainstorming
-```
-
-## Updating
-
-jj-superpowers updates automatically when you restart OpenCode.
-
-To pin a specific version:
+Restart OpenCode. The installer registers the checkout in the global configuration. To configure it manually, add the directory to `opencode.json` or `opencode.jsonc`:
 
 ```json
 {
-  "plugin": ["jj-superpowers@git+https://github.com/nickguletskii/jj-superpowers.git#v5.0.3"]
+  "plugins": ["/absolute/path/jj-superpowers"]
 }
 ```
 
-## Troubleshooting
+Use `plugins` (plural). The checkout's package exports load `.opencode/plugins/superpowers/index.ts`; configured local paths must name directories, not individual `.ts` files.
 
-### Plugin not loading
+Ask OpenCode to list available skills and check for jj-superpowers. Use the native `skill`, `subagent`, and `shell` tools; do not assume `todowrite` is enabled.
 
-1. Check logs: `opencode run --print-logs "hello" 2>&1 | grep -i jj-superpowers`
-2. Verify the plugin line in your `opencode.json`
-3. Make sure you're running a recent version of OpenCode
+## Migrate an older installation
 
-### Skills not found
+V1 function plugins are incompatible with V2. Use the implementation in the updated checkout, remove obsolete entries from the old `plugin` array, and register the checkout under `plugins`.
 
-1. Use `skill` tool to list what's discovered
-2. Check that the plugin is loading (see above)
+If old files at `~/.config/opencode/plugins/jj-superpowers.js` or `jj-superpowers.ts` are symlinks from the previous installation, remove those links with `unlink`. Inspect project-local `.opencode/plugins/` for duplicate legacy links too. Preserve the checkout and unrelated plugins, skills, and configuration.
 
-### Tool mapping
+See the [OpenCode V1 migration guide](https://opencode.ai/v2/docs/build/plugins/migrate-v1/).
 
-When skills reference Claude Code tools:
-- `TodoWrite` → `todowrite`
-- `Task` with subagents → `@mention` syntax or Task tool with the named subagent
-- `Skill` tool → OpenCode's native `skill` tool
-- File operations → your native tools
+## Update or uninstall
 
-Bundled `subagent-driven-development` roles:
+Update the checkout using your normal version-control workflow, install updated dependencies, and restart OpenCode. Restarting does not fetch a new checkout revision.
 
-- `@sdd-implementer`
-- `@sdd-spec-reviewer`
-- `@sdd-verifier`
-- `@sdd-quality-reviewer`
-- `@sdd-jj-coordinator`
+To remove the installer's managed registration:
 
-## Getting Help
+```bash
+node scripts/install-harnesses.ts uninstall --harness opencode
+```
 
-- Report issues: https://github.com/nickguletskii/jj-superpowers/issues
-- Full documentation: https://github.com/nickguletskii/jj-superpowers/blob/main/docs/README.opencode.md
+For troubleshooting and usage, see [the OpenCode guide](../docs/README.opencode.md).

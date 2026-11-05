@@ -8,9 +8,9 @@
 // `--ignore-working-copy` so reads never snapshot.
 //
 // Usage:
-//   jj-guard.mjs commit -m <message> <path>...   commit exactly these paths; prints the new change id
-//   jj-guard.mjs run <jj args>...                run any other mutating jj command under the lock
-//   jj-guard.mjs check [--prefix <scaffold>] [--all]
+//   jj-guard.ts commit -m <message> <path>...   commit exactly these paths; prints the new change id
+//   jj-guard.ts run <jj args>...                run any other mutating jj command under the lock
+//   jj-guard.ts check [--prefix <scaffold>] [--all]
 //                                                report divergent/conflicted changes (and scaffolds) in
 //                                                the work under any workspace, or all mutable changes
 
@@ -26,13 +26,15 @@ const HEARTBEAT_MS = 2_000;
 const STALE_MS = 15_000;
 
 class GuardError extends Error {
-  constructor(message, code) {
+  code: number;
+  constructor(message: string, code: number) {
     super(message);
     this.code = code;
   }
 }
 
-function jj(args) {
+type CommandResult = { status: number | null; stdout: string; stderr: string };
+function jj(args: string[]): Promise<CommandResult> {
   return new Promise((resolve, reject) => {
     const child = spawn("jj", ["--no-pager", ...args]);
     let stdout = "";
@@ -116,7 +118,7 @@ async function updateStaleIfNeeded() {
 // Unrelated branches may already hold conflicted changes, so a mutation fails only on
 // problems it introduced; `check` covers the work in progress in every workspace.
 // Rows are JSON lines (via `escape_json`) so descriptions cannot corrupt parsing.
-async function problems({ prefix, scope = "mutable()" } = {}) {
+async function problems({ prefix, scope = "mutable()" }: { prefix?: string; scope?: string } = {}) {
   const parts = ["divergent()", "conflicts()"];
   if (prefix) parts.push(`description(substring:${JSON.stringify(prefix)})`);
   const revset = `(${scope}) & (${parts.join(" | ")})`;
@@ -144,7 +146,7 @@ async function guarded(context, mutate) {
   }
 }
 
-async function main([cmd, ...rest]) {
+async function main([cmd, ...rest]: string[]) {
   if (cmd === "commit") {
     const mIdx = rest.indexOf("-m");
     if (mIdx < 0 || !rest[mIdx + 1]) throw new GuardError("commit needs -m <message>", 2);
@@ -181,7 +183,7 @@ async function main([cmd, ...rest]) {
       process.exitCode = 4;
     }
   } else {
-    throw new GuardError("usage: jj-guard.mjs commit -m <msg> <path>... | run <jj args>... | check [--prefix <p>] [--all]", 2);
+    throw new GuardError("usage: jj-guard.ts commit -m <msg> <path>... | run <jj args>... | check [--prefix <p>] [--all]", 2);
   }
 }
 

@@ -4,15 +4,23 @@
 
 ### Added
 
-- `choosing-model-and-effort` skill: dispatch model/effort selection, the Fable provenance rule, wall-vs-speculative escalation, and the external-harness (Codex MCP) review gate. Carries a `models.md` reference with two benchmark frontiers.
-- Deno harness installer for global jj-superpowers links/config across Claude Code, Codex, Agy, Pi, Oh My Pi, and OpenCode.
+- `choosing-model-and-effort` skill: dispatch model/effort selection, the Fable provenance rule, and wall-vs-speculative escalation. Carries a `models.md` reference with two benchmark frontiers.
+- Node.js TypeScript harness installer for global jj-superpowers links/config across Claude Code, Codex, Agy, Pi, Oh My Pi, and OpenCode.
 
 ### Changed
+
+- Coding harness CLI invocation now requires explicit user permission; subagent delegation uses built-in tools, with local fallbacks when unavailable.
+
+- OpenCode support now targets v2: native SDK registries/context hooks, a directory plugin export, and option-preserving migration to `plugins` configuration.
+
+- Maintained JavaScript scripts, hooks, plugins, and tests now use TypeScript, executed directly by Node.js 22.18+. Added `pnpm typecheck` and `pnpm test`.
 
 - `subagent-driven-development` no longer says "Implementations: strongest model"; model and effort are chosen per `choosing-model-and-effort`.
 - The no-nested-harness rule now covers **any** delegation channel, not just the shell — MCP tools (e.g. `mcp__codex__codex`) are explicitly included.
 
 ### Removed
+
+- Guidance to use external harnesses for reviews, including default ensemble passes and harness-selection references.
 
 - `capturing-workflow-friction` skill and its activation prompts.
 

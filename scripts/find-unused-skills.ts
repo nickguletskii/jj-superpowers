@@ -4,9 +4,14 @@ import path from 'node:path';
 import readline from 'node:readline';
 import { fileURLToPath } from 'node:url';
 
+type SkillUsage = { codex: number; claude: number; weekly: Map<string, number> };
+type Usage = Map<string, SkillUsage>;
+type SkillDetectors = { pathPattern: RegExp; namePattern: RegExp | null };
+type UsedSkill = { skill: string; codex: number; claude: number; total: number; weekly: Record<string, number> };
+
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-function parseArgs(argv) {
+function parseArgs(argv: string[]) {
   const options = {
     skillsRoot: path.join(repoRoot, 'skills'),
     codexRoot: path.join(os.homedir(), '.codex', 'sessions'),
@@ -38,7 +43,7 @@ function parseArgs(argv) {
   return options;
 }
 
-function listSkillNames(skillsRoot) {
+function listSkillNames(skillsRoot: string): string[] {
   if (!fs.existsSync(skillsRoot)) {
     throw new Error(`Skills root not found: ${skillsRoot}`);
   }
@@ -51,7 +56,7 @@ function listSkillNames(skillsRoot) {
     .sort();
 }
 
-function* walkJsonlFiles(root) {
+function* walkJsonlFiles(root: string): Generator<string> {
   if (!fs.existsSync(root)) return;
 
   const stack = [root];
@@ -75,11 +80,11 @@ function* walkJsonlFiles(root) {
   }
 }
 
-function escapeRegExp(value) {
+function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-function createSkillDetectors(skillNames) {
+function createSkillDetectors(skillNames: string[]): SkillDetectors {
   const pathPattern = /\/skills\/([A-Za-z0-9._-]+)\/SKILL\.md/g;
   const union = skillNames.map(escapeRegExp).join('|');
   const namePattern = union
@@ -88,9 +93,9 @@ function createSkillDetectors(skillNames) {
   return { pathPattern, namePattern };
 }
 
-function detectSkillsFromText(text, detectors, knownSkills, allowNameMatch) {
+function detectSkillsFromText(text: string, detectors: SkillDetectors, knownSkills: Set<string>, allowNameMatch: boolean): string[] {
   if (!text) return [];
-  const found = new Set();
+  const found = new Set<string>();
 
   detectors.pathPattern.lastIndex = 0;
   for (;;) {
@@ -116,7 +121,7 @@ function detectSkillsFromText(text, detectors, knownSkills, allowNameMatch) {
   return [...found];
 }
 
-function normalizeTimestampMs(value) {
+function normalizeTimestampMs(value: unknown): number | null {
   if (typeof value === 'number' && Number.isFinite(value)) {
     return value > 1e12 ? value : value * 1000;
   }
@@ -127,7 +132,7 @@ function normalizeTimestampMs(value) {
   return null;
 }
 
-function isoWeekKey(timestampMs) {
+function isoWeekKey(timestampMs: number | null): string | null {
   if (timestampMs == null) return null;
   const date = new Date(timestampMs);
   if (Number.isNaN(date.getTime())) return null;
@@ -146,7 +151,7 @@ function isoWeekKey(timestampMs) {
   return `${year}-W${String(week).padStart(2, '0')}`;
 }
 
-function markUsage(usage, source, skills, weekKey) {
+function markUsage(usage: Usage, source: "codex" | "claude", skills: string[], weekKey: string | null): void {
   for (const skill of skills) {
     const record = usage.get(skill);
     if (!record) continue;
@@ -158,7 +163,7 @@ function markUsage(usage, source, skills, weekKey) {
   }
 }
 
-async function scanCodex(codexRoot, usage, detectors, knownSkills) {
+async function scanCodex(codexRoot: string, usage: Usage, detectors: SkillDetectors, knownSkills: Set<string>) {
   let files = 0;
   let lines = 0;
   for (const filePath of walkJsonlFiles(codexRoot)) {
@@ -191,7 +196,7 @@ async function scanCodex(codexRoot, usage, detectors, knownSkills) {
   return { files, lines };
 }
 
-async function scanClaude(claudeRoot, usage, detectors, knownSkills) {
+async function scanClaude(claudeRoot: string, usage: Usage, detectors: SkillDetectors, knownSkills: Set<string>) {
   let files = 0;
   let lines = 0;
   for (const filePath of walkJsonlFiles(claudeRoot)) {
@@ -226,9 +231,9 @@ async function scanClaude(claudeRoot, usage, detectors, knownSkills) {
   return { files, lines };
 }
 
-function summarize(usage) {
-  const used = [];
-  const unused = [];
+function summarize(usage: Usage) {
+  const used: UsedSkill[] = [];
+  const unused: string[] = [];
   for (const [skill, record] of usage.entries()) {
     const total = record.codex + record.claude;
     const weekly = Object.fromEntries(
@@ -245,13 +250,13 @@ function summarize(usage) {
   return { used, unused };
 }
 
-function buildHistogramBar(value, maxValue, width = 24) {
+function buildHistogramBar(value: number, maxValue: number, width = 24): string {
   if (value <= 0 || maxValue <= 0) return '';
   const filled = Math.max(1, Math.round((value / maxValue) * width));
   return '#'.repeat(filled);
 }
 
-function renderWeeklyHistogram(usage, skillNames) {
+function renderWeeklyHistogram(usage: Usage, skillNames: string[]): void {
   process.stdout.write('\nPer-week skill histogram (ISO weeks):\n');
   for (const skill of skillNames) {
     const record = usage.get(skill);
@@ -274,8 +279,8 @@ function renderWeeklyHistogram(usage, skillNames) {
 async function main() {
   const options = parseArgs(process.argv.slice(2));
   const skillNames = listSkillNames(options.skillsRoot);
-  const usage = new Map(
-    skillNames.map((name) => [name, { codex: 0, claude: 0, weekly: new Map() }]),
+  const usage: Usage = new Map(
+    skillNames.map((name) => [name, { codex: 0, claude: 0, weekly: new Map<string, number>() }]),
   );
   const knownSkills = new Set(skillNames);
   const detectors = createSkillDetectors(skillNames);

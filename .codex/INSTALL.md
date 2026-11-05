@@ -1,11 +1,11 @@
 # Installing jj-superpowers for Codex
 
-Enable jj-superpowers skills in Codex via native skill discovery. Clone the repo, then run the local Deno installer to create flat skill links.
+Enable jj-superpowers skills in Codex via native skill discovery. Clone the repo, then run the local Node.js installer to create flat skill links.
 
 ## Prerequisites
 
 - Git
-- Deno
+- Node.js 22.18 or newer
 
 ## Installation
 
@@ -17,7 +17,7 @@ Enable jj-superpowers skills in Codex via native skill discovery. Clone the repo
 2. **Install flat skill links and named subagent roles:**
    ```bash
    cd ~/.codex/jj-superpowers
-   deno run -A scripts/install-harnesses.ts install --harness codex
+   node scripts/install-harnesses.ts install --harness codex
    ```
 
 3. **Restart Codex** (quit and relaunch the CLI) to discover the skills and agents.
@@ -67,7 +67,7 @@ Skills update instantly through the symlink.
 
 ```bash
 cd ~/.codex/jj-superpowers
-deno run -A scripts/install-harnesses.ts uninstall --harness codex
+node scripts/install-harnesses.ts uninstall --harness codex
 ```
 
 Optionally delete the clone: `rm -rf ~/.codex/jj-superpowers`.

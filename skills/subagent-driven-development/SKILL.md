@@ -71,7 +71,7 @@ Pass dynamic context as paths, never pasted task text: node id, task or verify f
 | `final` | — | Finish checks, then ask what to integrate. |
 | jj filing | `sdd-jj-coordinator` | see Change Consolidation. |
 
-Without named agents, dispatch a general-purpose agent with `agents/_preamble.md` + the body of `agents/<name>.md` + dynamic context. Named agents ship as `agents/*.md` (Claude Code `subagent_type`), `.codex/agents/*.toml` (Codex: `using-superpowers/references/codex-tools.md`), and `.opencode/agents/*.md` (OpenCode `@<name>` or Task). Verification commands and reports follow `tool-output-discipline`.
+Without named agents, dispatch a general-purpose agent with `agents/_preamble.md` + the body of `agents/<name>.md` + dynamic context. Named agents ship as `agents/*.md` (Claude Code `subagent_type`), `.codex/agents/*.toml` (Codex: `using-superpowers/references/codex-tools.md`), and `.opencode/agents/*.md` (OpenCode v2 native `subagent` tool). Verification commands and reports follow `tool-output-discipline`.
 
 ## Change Consolidation
 
@@ -82,7 +82,7 @@ Consolidate as you go. Deferring cleanup to the end leaves one change per implem
 At graph start, pick a run id: plan slug plus four random characters (`parser-k3f9`). It namespaces scaffolds so concurrent runs never match each other's changes. Implementers file through the guard (`jujutsu` safety rule 7), naming paths explicitly:
 
 ```sh
-node <jujutsu-skill>/scripts/jj-guard.mjs commit -m 'wip(<run>/<node_id>): [what changed]' <paths>...
+node <jujutsu-skill>/scripts/jj-guard.ts commit -m 'wip(<run>/<node_id>): [what changed]' <paths>...
 ```
 
 They report every change id the guard prints. The `wip(<run>/<node_id>)` description is a scaffold, destroyed at consolidation; the orchestrator writes the real description once the work is known-correct.
@@ -92,7 +92,7 @@ They report every change id the guard prints. The `wip(<run>/<node_id>)` descrip
 The coordinator squashes the task's reported ids into the newest and describes it (Change Description Rules in `jujutsu`):
 
 ```sh
-G="node <jujutsu-skill>/scripts/jj-guard.mjs"
+G="node <jujutsu-skill>/scripts/jj-guard.ts"
 $G run squash --from '<id1> | <id2>' --into <id3> --use-destination-message
 $G run describe -r <id3> -m 'feat(parser): parse input with empty-input handling'
 ```
@@ -108,7 +108,7 @@ The orchestrator decides; `sdd-jj-coordinator` executes through the guard. Imple
 Scaffolds are `wip(<run>/<node>)` (implementers) and `todo:` (the DAG builder in `jj-organizing-history`). `final` isn't reached until all agents have stopped and both of these print nothing:
 
 ```sh
-node <jujutsu-skill>/scripts/jj-guard.mjs check --prefix 'wip(<run>/'
+node <jujutsu-skill>/scripts/jj-guard.ts check --prefix 'wip(<run>/'
 jj diff --ignore-working-copy --stat     # @ holds no unfiled edits
 ```
 

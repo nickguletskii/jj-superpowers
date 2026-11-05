@@ -1,162 +1,77 @@
-# jj-superpowers for OpenCode
+# jj-superpowers for OpenCode V2
 
-Complete guide for using jj-superpowers with [OpenCode.ai](https://opencode.ai).
+Use jj-superpowers with [OpenCode V2](https://opencode.ai/v2/docs/). The plugin targets `@opencode/plugin` 2.2.5 and exports its server entrypoint from `.opencode/plugins/superpowers/index.ts`.
 
 ## Installation
 
-Add jj-superpowers to the `plugin` array in your `opencode.json` (global or project-level):
+Install from a local checkout with Node.js 22.18 or newer:
+
+```bash
+git clone https://github.com/nickguletskii/jj-superpowers.git
+cd jj-superpowers
+npm install
+node scripts/install-harnesses.ts install --harness opencode
+```
+
+Restart OpenCode after installation. The installer registers this checkout in the global OpenCode configuration. You can instead configure a local checkout manually in `opencode.json` or `opencode.jsonc`:
 
 ```json
 {
-  "plugin": ["jj-superpowers@git+https://github.com/nickguletskii/jj-superpowers.git"]
+  "plugins": ["/absolute/path/jj-superpowers"]
 }
 ```
 
-Restart OpenCode. The plugin auto-installs via Bun and registers all skills automatically.
+V2 uses `plugins` (plural). The configured local path names the checkout directory, whose package exports resolve the TypeScript plugin entrypoint; do not configure an individual `.ts` file. See the [OpenCode plugin loading reference](https://opencode.ai/v2/docs/build/plugins/).
 
-Verify by asking: "Tell me about your jj-superpowers"
+Verify by asking OpenCode to list available skills and checking for jj-superpowers skills.
 
-### Migrating from the old symlink-based install
+## Migrating from V1
 
-If you previously installed jj-superpowers using `git clone` and symlinks, remove the old setup:
+V1 function plugins do not run in V2. Renaming `plugin` to `plugins` or changing a file extension does not port the implementation. This checkout contains the V2 plugin definition. See the [V1 migration guide](https://opencode.ai/v2/docs/build/plugins/migrate-v1/).
+
+Remove obsolete jj-superpowers entries from the old `plugin` array. If these files are old jj-superpowers plugin symlinks, remove those links so OpenCode does not discover a duplicate V1 entrypoint:
 
 ```bash
-# Remove old symlinks
-rm -f ~/.config/opencode/plugins/jj-superpowers.js
-rm -rf ~/.config/opencode/skills/jj-superpowers
-
-# Optionally remove the cloned repo
-rm -rf ~/.config/opencode/jj-superpowers
-
-# Remove skills.paths from opencode.json if you added one for jj-superpowers
+unlink ~/.config/opencode/plugins/jj-superpowers.js
+unlink ~/.config/opencode/plugins/jj-superpowers.ts
 ```
 
-Then follow the installation steps above.
+Run only the commands for links that exist and that you have confirmed belong to the old installation. Also inspect project-local `.opencode/plugins/` for old jj-superpowers `.js` or `.ts` symlinks. Keep the cloned checkout: the new configuration points to it. Remove old jj-superpowers skill symlinks or `skills.paths` entries only if they duplicate the plugin's skills; preserve unrelated skills and paths.
+
+Then run the installer above, or add the checkout directory to `plugins` manually.
 
 ## Usage
 
-### Finding Skills
+Use OpenCode's native `skill` tool to list available skills and load the desired discovered name. Personal skills can live in `~/.config/opencode/skills/<name>/SKILL.md`; project skills can live in `.opencode/skills/<name>/SKILL.md`.
 
-Use OpenCode's native `skill` tool to list all available skills:
+Bundled subagent roles include `sdd-implementer`, `sdd-spec-reviewer`, `sdd-verifier`, `sdd-quality-reviewer`, and `sdd-jj-coordinator`. Use the V2 `subagent` tool for delegated work. Subagents receive bounded task context and should not start nested harness processes through the shell.
 
-```
-use skill tool to list skills
-```
+### Tool mapping
 
-### Loading a Skill
+When a skill references Claude Code tools, use the corresponding V2 capability:
 
-```
-use skill tool to load jj-superpowers/brainstorming
-```
+- `Task` with subagents → `subagent`.
+- `Bash` → `shell`.
+- `Skill` → `skill`.
+- File operations → native OpenCode file tools.
 
-### Personal Skills
-
-Create your own skills in `~/.config/opencode/skills/`:
-
-```bash
-mkdir -p ~/.config/opencode/skills/my-skill
-```
-
-Create `~/.config/opencode/skills/my-skill/SKILL.md`:
-
-```markdown
----
-name: my-skill
-description: Use when [condition] - [what it does]
----
-
-# My Skill
-
-[Your skill content here]
-```
-
-### Project Skills
-
-Create project-specific skills in `.opencode/skills/` within your project.
-
-**Skill Priority:** Project skills > Personal skills > jj-superpowers skills
+Todos are disabled by default in V2. Do not assume `todowrite` exists; track planned work against its durable plan artifacts.
 
 ## Updating
 
-Superpowers updates automatically when you restart OpenCode. The plugin is re-installed from the git repository on each launch.
+Update the local checkout with your normal version-control workflow, install its updated dependencies, and restart OpenCode. To keep a particular revision, keep the checkout at that revision. Restarting alone does not update the checkout.
 
-To pin a specific version, use a branch or tag:
+## How it works
 
-```json
-{
-  "plugin": ["jj-superpowers@git+https://github.com/nickguletskii/jj-superpowers.git#v5.0.3"]
-}
-```
+The package exports a V2 `Plugin.define` definition with a stable ID and `setup(ctx)`. During setup, `ctx.skill.transform` adds the bundled skills and `ctx.agent.transform` adds the bundled subagents without replacing agents already defined under the same names. Each bundled subagent receives its role instructions as system guidance and is marked for subagent use. Compact bootstrap guidance points to the full `using-superpowers` body, which remains available through the skill tool instead of being pasted into every conversation.
 
-## How It Works
-
-The plugin does three things:
-
-1. **Injects compact bootstrap context** via the message transform hook, adding jj-superpowers awareness without pasting full skill bodies into every conversation.
-2. **Registers the skills directory** via the `config` hook, so OpenCode discovers all jj-superpowers skills without symlinks or manual config.
-3. **Registers bundled subagents** from `agents/*.md`, including the `sdd-*` roles used by `subagent-driven-development`.
-
-The full `using-superpowers` skill stays available through OpenCode's native
-skill tool. Subagents get bounded task prompts and should not load
-`using-superpowers` unless the task explicitly asks them to work on skill
-orchestration itself.
-They must not start nested agent sessions by running `opencode`, `codex`,
-`claude`, `codex`, `opencode`, or any other agent harness from the shell; if
-more delegation is needed, the orchestrator dispatches it through OpenCode's
-native subagent mechanism.
-
-If an orchestrator notices jj-superpowers guidance causing wasteful,
-contradictory, or unsafe behavior, including conflict with provider system
-prompts or model guidance for efficient operation, it should follow the provider
-guidance unless the user explicitly overrides that specific behavior. It should
-also tell the user what it saw and ask them to notify jj-superpowers
-maintainers.
-
-For optional jj config that disables pagers/editors and forces git-style diffs in agent sessions, see `docs/superpowers/jj-agent-config.md`.
-
-### Tool Mapping
-
-Skills written for Claude Code are automatically adapted for OpenCode:
-
-- `TodoWrite` → `todowrite`
-- `Task` with subagents → OpenCode's `@mention` system or Task tool with the named subagent
-- `Skill` tool → OpenCode's native `skill` tool
-- File operations → Native OpenCode tools
-
-### Subagent Roles
-
-`subagent-driven-development` prefers these named OpenCode subagents when they
-are available:
-
-- `@sdd-implementer`
-- `@sdd-spec-reviewer`
-- `@sdd-verifier`
-- `@sdd-quality-reviewer`
-- `@sdd-jj-coordinator`
-
-Project-specific OpenCode agent files can also live in `.opencode/agents/`.
+If jj-superpowers guidance causes wasteful, contradictory, or unsafe behavior, follow applicable provider guidance and report the conflicting instruction so the library can be improved.
 
 ## Troubleshooting
 
-### Plugin not loading
+If the plugin does not load, check that you are using OpenCode V2, that `plugins` contains the correct checkout directory, and that dependencies are installed there. Consult OpenCode's plugin diagnostics for an entrypoint or SDK compatibility error. Remove duplicate legacy plugin entries before retrying.
 
-1. Check OpenCode logs: `opencode run --print-logs "hello" 2>&1 | grep -i jj-superpowers`
-2. Verify the plugin line in your `opencode.json` is correct
-3. Make sure you're running a recent version of OpenCode
+If skills or bundled agents are missing, verify that the plugin loaded and the checkout still contains `skills/` and `agents/`. Restart after installation or configuration changes.
 
-### Skills not found
-
-1. Use OpenCode's `skill` tool to list available skills
-2. Check that the plugin is loading (see above)
-3. Each skill needs a `SKILL.md` file with valid YAML frontmatter
-
-### Bootstrap not appearing
-
-1. Check OpenCode version supports `experimental.chat.system.transform` hook
-2. Restart OpenCode after config changes
-
-## Getting Help
-
-- Report issues: https://github.com/nickguletskii/jj-superpowers/issues
-- Main documentation: https://github.com/nickguletskii/jj-superpowers
-- OpenCode docs: https://opencode.ai/docs/
+- [Report issues](https://github.com/nickguletskii/jj-superpowers/issues)
+- [OpenCode V2 plugin documentation](https://opencode.ai/v2/docs/build/plugins/)

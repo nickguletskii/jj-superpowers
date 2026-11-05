@@ -1,13 +1,13 @@
 <!--
 Shared preamble prepended verbatim to every generated agent (Claude, Codex, OpenCode)
-by scripts/generate-agents.mjs. Not an agent itself — the leading underscore keeps the
+by scripts/generate-agents.ts. Not an agent itself — the leading underscore keeps the
 generator from treating it as one.
 
 Two parts, split by the EDITING AGENTS ONLY marker below:
 - The core (above the marker) goes to every agent.
 - The editing section (below the marker) is appended only for agents that edit shared
   files or write change descriptions. Read-only agents are listed in READ_ONLY_AGENTS in
-  scripts/generate-agents.mjs; any agent not listed gets both parts.
+  scripts/generate-agents.ts; any agent not listed gets both parts.
 
 Why one shared file rather than paragraphs repeated in each agent:
 

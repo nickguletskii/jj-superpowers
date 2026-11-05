@@ -69,20 +69,15 @@ function makeSourceRepo() {
   );
   fs.writeFileSync(
     path.join(root, "package.json"),
-    '{"name":"jj-superpowers","main":".opencode/plugins/superpowers.js"}\n',
+    '{"name":"jj-superpowers","main":".opencode/plugins/superpowers/index.ts"}\n',
   );
   return root;
 }
 
-function runInstaller(home, args, options = {}) {
+function runInstaller(home, args, options: { path?: string } = {}) {
   return spawnSync(
-    "deno",
+    process.execPath,
     [
-      "run",
-      "--allow-read",
-      "--allow-write",
-      "--allow-env",
-      "--allow-run",
       script,
       ...args,
     ],
@@ -259,7 +254,7 @@ test("opencode install and uninstall patch plugin config", () => {
     path.join(source, "tools", "scip-query"),
   );
   const installed = JSON.parse(fs.readFileSync(configPath, "utf8"));
-  assert.deepEqual(installed.plugin, [`jj-superpowers@file:${source}`]);
+  assert.deepEqual(installed.plugins, [source]);
 
   const uninstall = runInstaller(home, [
     "uninstall",
@@ -274,5 +269,59 @@ test("opencode install and uninstall patch plugin config", () => {
     false,
   );
   const uninstalled = JSON.parse(fs.readFileSync(configPath, "utf8"));
-  assert.deepEqual(uninstalled.plugin, []);
+  assert.deepEqual(uninstalled.plugins, []);
+});
+
+test("oh-my-pi invokes the plugin command and surfaces failures", () => {
+  const home = tempDir();
+  const source = makeSourceRepo();
+  const bin = tempDir();
+  const omp = path.join(bin, "omp");
+  fs.writeFileSync(omp, '#!/bin/sh\nprintf "%s\\n" "$@" > "$HOME/omp-args"\n', { mode: 0o755 });
+  const args = ["install", "--harness", "oh-my-pi", "--repo", source];
+  const installed = runInstaller(home, args, { path: bin });
+  assert.equal(installed.status, 0, installed.stderr || installed.error?.message);
+  assert.match(installed.stdout, /oh-my-pi installed/);
+  assert.equal(fs.readFileSync(path.join(home, "omp-args"), "utf8"), `plugin\nlink\n${source}\n`);
+  fs.writeFileSync(omp, '#!/bin/sh\necho "plugin link failed" >&2\nexit 7\n');
+  const failed = runInstaller(home, args, { path: bin });
+  assert.notEqual(failed.status, 0);
+  assert.match(failed.stderr, /plugin link failed/);
+});
+
+test("OpenCode v2 migrates managed legacy entry and preserves unrelated plugin options", () => {
+  const home=tempDir(), source=makeSourceRepo();
+  const configPath=path.join(home,'.config','opencode','opencode.json');
+  fs.mkdirSync(path.dirname(configPath),{recursive:true});
+  fs.writeFileSync(configPath,JSON.stringify({plugin:[`jj-superpowers@file:${source}`,'legacy-other',['legacy-options',{enabled:false}]],plugins:[{package:'native-other',options:{mode:'review'}}],model:'keep/model'}));
+  const result=runInstaller(home,['install','--harness','opencode','--repo',source]);
+  assert.equal(result.status,0,result.stderr || result.error?.message);
+  const config=JSON.parse(fs.readFileSync(configPath,'utf8'));
+  assert.equal(config.model,'keep/model');
+  assert.equal(config.plugin,undefined);
+  assert.deepEqual(config.plugins,[{package:'native-other',options:{mode:'review'}},source,'legacy-other',{package:'legacy-options',options:{enabled:false}}]);
+  const again=runInstaller(home,['install','--harness','opencode','--repo',source]);
+  assert.equal(again.status,0,again.stderr);
+  assert.deepEqual(JSON.parse(fs.readFileSync(configPath,'utf8')),config);
+  const removed=runInstaller(home,['uninstall','--harness','opencode','--repo',source]);
+  assert.equal(removed.status,0,removed.stderr);
+  assert.deepEqual(JSON.parse(fs.readFileSync(configPath,'utf8')).plugins,config.plugins.filter(entry => entry !== source));
+});
+
+test("OpenCode v2 retains managed plugin options in legacy tuples and native objects", () => {
+  for (const native of [false,true]) {
+    const home=tempDir(), source=makeSourceRepo();
+    const configPath=path.join(home,'.config','opencode','opencode.json');
+    fs.mkdirSync(path.dirname(configPath),{recursive:true});
+    const options={enabled:false,label:'keep'};
+    fs.writeFileSync(configPath,JSON.stringify(native
+      ? {plugins:[{package:source,options}]}
+      : {plugin:[[ `jj-superpowers@file:${source}`,options]]}));
+    const result=runInstaller(home,['install','--harness','opencode','--repo',source]);
+    assert.equal(result.status,0,result.stderr || result.error?.message);
+    assert.deepEqual(JSON.parse(fs.readFileSync(configPath,'utf8')).plugins,[{package:source,options}]);
+    const status=runInstaller(home,['status','--harness','opencode','--repo',source]);
+    assert.equal(status.status,0,status.stderr);
+    assert.match(status.stdout,/opencode installed/);
+  }
 });

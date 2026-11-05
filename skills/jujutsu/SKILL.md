@@ -133,10 +133,10 @@ jj log -r 'parents(@) | @' --no-graph --no-pager
 
 jj never locks the repo. Every jj command snapshots the working copy first, and two operations that rewrite the same commit concurrently leave it **divergent** — this includes a plain `jj log` snapshotting `@` while another agent commits. Whenever more than one agent (or the user) may be running jj against this repo:
 
-- **Every mutation goes through the guard** — the skill-relative `scripts/jj-guard.mjs`. It holds a repo-wide lock (covering every workspace), repairs a stale workspace, and exits non-zero if the operation left a divergent or conflicted change.
-  - `node <skill>/scripts/jj-guard.mjs commit -m '<msg>' <path>...` — **paths are required**; a bare `jj commit` files every agent's edits. Prints the new change id.
-  - `node <skill>/scripts/jj-guard.mjs run <jj args>...` — any other mutation (`squash`, `describe`, `rebase`, `workspace add`).
-  - `node <skill>/scripts/jj-guard.mjs check [--prefix <scaffold>] [--all]` — divergent, conflicted, or leftover-scaffold changes under any workspace (`--all`: every mutable change). Mutations fail only on problems they introduced, so unrelated conflicted branches do not block work.
+- **Every mutation goes through the guard** — the skill-relative `scripts/jj-guard.ts`. It holds a repo-wide lock (covering every workspace), repairs a stale workspace, and exits non-zero if the operation left a divergent or conflicted change.
+  - `node <skill>/scripts/jj-guard.ts commit -m '<msg>' <path>...` — **paths are required**; a bare `jj commit` files every agent's edits. Prints the new change id.
+  - `node <skill>/scripts/jj-guard.ts run <jj args>...` — any other mutation (`squash`, `describe`, `rebase`, `workspace add`).
+  - `node <skill>/scripts/jj-guard.ts check [--prefix <scaffold>] [--all]` — divergent, conflicted, or leftover-scaffold changes under any workspace (`--all`: every mutable change). Mutations fail only on problems they introduced, so unrelated conflicted branches do not block work.
 - **Every read passes `--ignore-working-copy`** (`jj log --ignore-working-copy ...`). It reads the last recorded state without snapshotting. Run a snapshotting read only when no other agent is active.
 - **No `jj git fetch`, `jj git push`, or bookmark moves while agents are running.**
 
@@ -145,7 +145,7 @@ Two execution modes, chosen per run by the orchestrator:
 | Mode | When | How |
 |---|---|---|
 | **Shared working copy** (default) | Short tasks, shared build cache matters | All agents edit `@`; file scopes are disjoint; implementers `commit` their own paths through the guard. |
-| **Workspace per implementer** | Long or noisy tasks, or a task needs its own build/run state | `jj-guard.mjs run workspace add --name <run>-<node> -r <base> <dir>`; the implementer works and commits inside it; after consolidation the coordinator rebases the task's change into the main line (`run rebase -r <id> -B @`) and runs `run workspace forget <run>-<node>`. |
+| **Workspace per implementer** | Long or noisy tasks, or a task needs its own build/run state | `jj-guard.ts run workspace add --name <run>-<node> -r <base> <dir>`; the implementer works and commits inside it; after consolidation the coordinator rebases the task's change into the main line (`run rebase -r <id> -B @`) and runs `run workspace forget <run>-<node>`. |
 
 Either way, consolidation targets **change ids reported by the guard**, never a description search across the whole repo.
 

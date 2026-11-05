@@ -4,8 +4,8 @@
  * Render graphviz diagrams from a skill's SKILL.md to SVG files.
  *
  * Usage:
- *   ./render-graphs.js <skill-directory>           # Render each diagram separately
- *   ./render-graphs.js <skill-directory> --combine # Combine all into one diagram
+ *   ./render-graphs.ts <skill-directory>           # Render each diagram separately
+ *   ./render-graphs.ts <skill-directory> --combine # Combine all into one diagram
  *
  * Extracts all ```dot blocks from SKILL.md and renders to SVG.
  * Useful for helping your human partner visualize the process flows.
@@ -13,9 +13,9 @@
  * Requires: graphviz (dot) installed on system
  */
 
-const fs = require('fs');
-const path = require('path');
-const { execSync } = require('child_process');
+import fs from 'node:fs';
+import path from 'node:path';
+import { execSync } from 'node:child_process';
 
 function extractDotBlocks(markdown) {
   const blocks = [];
@@ -87,14 +87,14 @@ function main() {
   const skillDirArg = args.find(a => !a.startsWith('--'));
 
   if (!skillDirArg) {
-    console.error('Usage: render-graphs.js <skill-directory> [--combine]');
+    console.error('Usage: render-graphs.ts <skill-directory> [--combine]');
     console.error('');
     console.error('Options:');
     console.error('  --combine    Combine all diagrams into one SVG');
     console.error('');
     console.error('Example:');
-    console.error('  ./render-graphs.js ../subagent-driven-development');
-    console.error('  ./render-graphs.js ../subagent-driven-development --combine');
+    console.error('  ./render-graphs.ts ../subagent-driven-development');
+    console.error('  ./render-graphs.ts ../subagent-driven-development --combine');
     process.exit(1);
   }
 

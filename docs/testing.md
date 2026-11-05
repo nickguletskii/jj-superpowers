@@ -301,3 +301,17 @@ Session transcripts are JSONL (JSON Lines) files where each line is a JSON objec
 ```
 
 The `agentId` field links to subagent sessions, and the `usage` field contains token usage for that specific subagent invocation.
+
+## TypeScript and Node.js
+
+Use Node.js 22.18 or newer. Maintained scripts, plugins, hooks, and tests use `.ts` files with native Node type stripping; running the installer needs no compilation or dependency install. Type stripping does not type-check code.
+
+For development checks, install the dev dependencies and run:
+
+```sh
+pnpm install
+pnpm typecheck
+pnpm test
+```
+
+`tsconfig.json` enforces erasable TypeScript syntax with no emitted JavaScript. Avoid enums, parameter properties, and runtime namespaces.

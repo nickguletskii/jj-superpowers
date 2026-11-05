@@ -46,7 +46,7 @@ function preambleBlock(name) {
 }
 
 test("preamble core is a byte-identical prefix; editing section only for editing agents", async () => {
-  const { loadPreamble, READ_ONLY_AGENTS } = await import("../scripts/generate-agents.mjs");
+  const { loadPreamble, READ_ONLY_AGENTS } = await import("../scripts/generate-agents.ts");
   const { core, editing } = loadPreamble();
 
   assert.match(core, /--ignore-working-copy/, "jj rule belongs in the core");
