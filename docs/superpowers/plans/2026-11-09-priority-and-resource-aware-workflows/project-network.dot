@@ -1,0 +1,15 @@
+digraph {
+  task_01 [kind="task", file="task-01-shared-policy.md", files="skills/using-superpowers/SKILL.md skills/verification-before-completion/SKILL.md"];
+  task_02 [kind="task", file="task-02-execution-contract.md", files="skills/subagent-driven-development/SKILL.md skills/executing-plans/SKILL.md skills/writing-plans/SKILL.md skills/writing-plans/project-network-validation-scenarios.md skills/writing-plans/plan-document-reviewer-prompt.md"];
+  task_03 [kind="task", file="task-03-review-and-authoring.md", files="skills/brainstorming/SKILL.md skills/requesting-code-review/SKILL.md skills/using-superpowers/references/autonomy.md skills/writing-skills/SKILL.md skills/writing-skills/testing-skills-with-subagents.md"];
+  task_04 [kind="task", file="task-04-integration.md", files="agents/sdd-implementer.md agents/sdd-spec-reviewer.md agents/sdd-quality-reviewer.md agents/sdd-verifier.md agents/sdd-jj-coordinator.md agents/sdd-design-reviewer.md agents/sdd-simplifier.md agents/code-reviewer.md skills/tool-output-discipline/SKILL.md CHANGELOG.md README.md", scopes=".codex/agents .opencode/agents skills"];
+  task_05 [kind="task", file="task-05-decision-simulations.md", files="docs/superpowers/plans/2026-11-09-priority-and-resource-aware-workflows/evaluation.md"];
+  verify_01 [kind="verify", file="verify-01-suite.md"];
+
+  task_01 -> task_02;
+  task_01 -> task_03;
+  task_02 -> task_04;
+  task_03 -> task_04;
+  task_04 -> task_05;
+  task_05 -> verify_01;
+}
