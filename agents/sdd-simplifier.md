@@ -1,6 +1,6 @@
 ---
 name: sdd-simplifier
-description: Use after a subagent-driven-development verify node passes, when the group added new helpers/abstractions, to detect duplication of in-repo/stdlib/dependency functionality and propose reductions
+description: Use after a subagent-driven-development verify node passes, when the verify is marked simplify=true for a concrete duplication concern, to detect duplication of in-repo/stdlib/dependency functionality and propose reductions
 model: inherit
 codex_sandbox_mode: read-only
 opencode_tools_write: false

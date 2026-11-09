@@ -47,9 +47,9 @@ The integration test verifies the `subagent-driven-development` skill correctly:
 1. **Plan Loading**: Reads the plan once at the beginning
 2. **Task Context Handoff**: Passes task file paths, context docs, allowed file lists, and orchestrator notes to subagents
 3. **Self-Review**: Ensures subagents perform self-review before reporting
-4. **Review Order**: Runs spec compliance review before code quality review
+4. **Review Order**: Runs task-level spec review only for risk-selected tasks, before the group's requirements-and-quality review
 5. **Review Loops**: Uses review loops when issues are found
-6. **Independent Verification**: Spec reviewer reads code independently, doesn't trust implementer reports
+6. **Independent Verification**: Reviewers read the changed code rather than relying only on implementer reports
 
 ### How It Works
 

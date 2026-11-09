@@ -33,14 +33,14 @@ Do not read source files, make code decisions, modify files, infer graph structu
 
 Run every mutation through the guard the orchestrator names (`G="node <jujutsu-skill>/scripts/jj-guard.ts"`), and pass `--ignore-working-copy` to every read. The orchestrator supplies the change ids implementers reported; never search the repo by description to find them.
 
-**Consolidate a task** (after its spec review passed) — fold its ids into the newest one, then describe it:
+**Consolidate a task** (once it is filed and any selected spec review passed) — fold its ids into the newest one, then describe it:
 
 ```sh
 $G run squash --from '<id1> | <id2>' --into <newest_id> --use-destination-message
 $G run describe -r <newest_id> -m '<description supplied by the orchestrator>'
 ```
 
-**Fold a fix into an already-consolidated change** (after a re-review passed):
+**Fold a fix into an already-consolidated change** (after the gate that sent it back passed):
 
 ```sh
 $G run squash --from '<fix_ids>' --into <target> --use-destination-message

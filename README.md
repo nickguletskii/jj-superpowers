@@ -20,6 +20,8 @@ After you've signed off on the design, your agent can put together a graph-based
 
 Next up, once you say "go", the plan is executed through `subagent-driven-development` or `executing-plans`, with agents working through graph nodes, inspecting and reviewing their work, and continuing forward through the verification gates.
 
+Effort goes where it changes outcomes. Work is ordered to unblock as much as possible as early as possible, with polish last; new reports are triaged without derailing the current work unless they matter more. Related changes are checked together, expensive runs need a reason, and independent review is reserved for real risk — security, data integrity, concurrency, shared interfaces, or doubtful correctness.
+
 ## Installation
 
 ### Automated local installer

@@ -7,7 +7,7 @@ description: Use before running builds, test suites, logs, or broad searches —
 
 Command output is context; ask tools for the smallest output that answers the question. Tiny bounded commands don't need this.
 
-Before a build or test run, finish the coherent implementation chunk and check whether valid existing results already answer the question. Run earlier only when a concrete uncertainty blocks further work or an explicit requirement calls for it. See `jj-superpowers:verification-before-completion` for verification timing and evidence reuse.
+Before a build or test run, finish the coherent implementation chunk and check whether valid existing results already answer the question. Run earlier only when a concrete uncertainty blocks further work or an explicit requirement calls for it. Prefer one command over overlapping check, build, and test commands that repeat compilation; one owner runs a contended check and others reuse its result. See `jj-superpowers:verification-before-completion` for verification timing, evidence reuse, and when a historical run is justified.
 
 1. Name the question the command must answer.
 2. Use the narrowest form that answers it: selectors, quiet flags, JSON output, filters.

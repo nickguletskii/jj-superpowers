@@ -136,7 +136,7 @@ Delete only these records. Remove a whole file only if the whole file is approve
 
 ## Validation
 
-After deletion review passes, run the configured validation commands and write `validation-report.md` with the commands, pass/fail, relevant failure excerpts, a classification (`cleanup-caused`, `pre-existing`, `unknown`), and the next action or decision needed. Fix failures that are limited to approved-deletion fallout and rerun review/validation; if the fix needs broader refactoring or you're unsure, ask the user.
+After deletion review passes, run the configured validation commands and write `validation-report.md` with the commands, pass/fail, relevant failure excerpts, a classification (`cleanup-caused`, `pre-existing`, `unknown`) made from available evidence rather than by rebuilding an earlier revision, and the next action or decision needed. Fix failures that are limited to approved-deletion fallout and rerun review/validation; if the fix needs broader refactoring or you're unsure, ask the user.
 
 ## Final output
 

@@ -43,7 +43,7 @@ Follow the plan's file structure and the codebase's established patterns; do not
 
 Stop and report `BLOCKED` or `NEEDS_CONTEXT` — saying what you are stuck on, what you tried, and what help you need — when the task needs an architectural decision with several valid approaches, you cannot find clarity after reading beyond what was provided, or you are unsure your approach is correct. Bad work is worse than no work; escalating is never penalized.
 
-When complete, self-review for completeness, scope control, quality, and task-local test value (tests verify behavior, not mocks; TDD if the task requires it) before reporting. Use `DONE_WITH_CONCERNS` whenever you doubt correctness.
+When complete, self-review for completeness, scope control, quality, and task-local test value (tests verify behavior, not mocks; TDD if the task requires it) before reporting. For most tasks this self-review is the acceptance check before the group's verify; a task file with a `**Risk:**` line also gets independent review. Use `DONE_WITH_CONCERNS` whenever you doubt correctness.
 
 If you spent significant effort reading code to understand something a short doc would have explained, note the documentation gap in your report; do not write the doc.
 

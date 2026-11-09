@@ -1,5 +1,5 @@
 ---
-description: Use after a subagent-driven-development verify node passes, when the group added new helpers/abstractions, to detect duplication of in-repo/stdlib/dependency functionality and propose reductions
+description: Use after a subagent-driven-development verify node passes, when the verify is marked simplify=true for a concrete duplication concern, to detect duplication of in-repo/stdlib/dependency functionality and propose reductions
 mode: subagent
 tools:
   write: false

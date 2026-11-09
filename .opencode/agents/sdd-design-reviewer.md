@@ -1,5 +1,5 @@
 ---
-description: Use to review a subagent-driven-development API-stub task's surface for coherence — after the stub task's spec review passes and before any consumer task starts
+description: Use to review a subagent-driven-development API-stub task's surface for coherence — after the stub task is filed (self-reviewed and through any selected spec review) and before any consumer task starts
 mode: subagent
 tools:
   write: false

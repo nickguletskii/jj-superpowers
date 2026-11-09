@@ -9,6 +9,8 @@
 
 ### Changed
 
+- Priority- and resource-aware workflows: `using-superpowers` gains a governing cost principle, a five-bucket sorting order for backlogs and mid-session reports (explicit priority, critical impact, blockers, substantive work, polish last), and bounded read-only triage for interruptions. `verification-before-completion` batches checks and justifies expensive or historical runs by the question they answer. Task-level review in `subagent-driven-development`/`executing-plans` is now selected by risk (`**Risk:**` line in the task file); routine tasks are accepted after self-review, and the group `quality_review` also covers requirements. Brainstorming and code review are likewise sized to concrete risk.
+
 - Coding harness CLI invocation now requires explicit user permission; subagent delegation uses built-in tools, with local fallbacks when unavailable.
 
 - OpenCode support now targets v2: native SDK registries/context hooks, a directory plugin export, and option-preserving migration to `plugins` configuration.

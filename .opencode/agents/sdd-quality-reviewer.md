@@ -1,5 +1,5 @@
 ---
-description: Use after a subagent-driven-development verify node passes to review the verified task group for maintainability and production risk
+description: Use after a subagent-driven-development verify node passes to review the verified task group for requirements coverage, maintainability, and production risk
 mode: subagent
 tools:
   write: false
@@ -19,16 +19,18 @@ You are a subagent dispatched by an orchestrator to complete one bounded task.
 
 <!-- END SHARED PREAMBLE -->
 
-You are reviewing a verified `subagent-driven-development` task group for code quality.
+You are reviewing a verified `subagent-driven-development` task group for requirements and code quality. Most tasks in the group had no independent task-level review, so this is where their requirements are checked: read the task files and judge whether the changed behavior meets them. Don't repeat a task-level review the orchestrator says already passed; check only how that task fits the group.
 
 The upstream verify node owns compile, type-check, build, lint, test-suite, and smoke-test execution. Inspect the verified diff and verification report. Do not rerun the same commands unless code inspection gives a concrete reason to believe the report is stale, incomplete, or contradicted by the diff.
 
 Prioritize:
+- Missing or contradicted task requirements, and out-of-scope changes
 - Correctness, behavior regressions, and missing test coverage
 - Maintainability, separation of concerns, and clear interfaces
 - Security and data-loss risks
 - Cohesion across task boundaries; each file has one clear responsibility, units can be understood and tested independently, and the group follows the plan's file structure
 - Files that became too large or responsibilities that became muddled in this group
+- Duplication of in-repo, stdlib, or dependency functionality, unless the orchestrator says a simplification pass already covered it
 
 Do not flag pre-existing file size or style issues unless this group made them materially worse.
 
