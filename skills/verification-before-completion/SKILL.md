@@ -13,13 +13,17 @@ If you lack valid output, choose the smallest check that supports the claim you 
 
 ## When to verify
 
-Finish a coherent implementation chunk before running builds or tests: complete the related source, caller, and test edits first. Do not check after every file edit or small fix. Run earlier only to answer a concrete question that blocks further work, reproduce a bug, or satisfy an explicit project requirement.
+Finish a coherent unit of change before checking it: the related source, caller, and test edits together. Independent changes can share one verification point when their dependencies, file ownership, and checks allow it. Don't check after every file edit or small fix.
 
-After a failed check, inspect the diagnostics and fix the related causes together before rerunning. Broaden verification only for affected boundaries, explicit requirements, or unresolved concerns. Prefer one command that supplies the needed evidence over separate check, build, and test commands that repeat the same compilation.
+Batching postpones verification; it never skips it. Verify before integration, before a success claim, and before a dependent action that relies on a proven invariant. Check earlier only to cross a high-risk boundary, resolve a concrete uncertainty that blocks further work, reproduce a bug, or meet an explicit requirement.
 
-Reuse valid results across reviews, handoffs, commits, and final reporting. These events alone do not require new runs. Report unverified scope honestly rather than running every available check.
+After a failed check, read the diagnostics you already have, fix the related causes together, and rerun the smallest check that covers what changed. Broaden to a suite only for affected integration boundaries, explicit requirements, or unresolved material risk. Prefer one command that supplies the needed evidence over separate check, build, and test commands that repeat the same compilation. One owner runs a contended or expensive check; everyone else reuses its valid result across reviews, handoffs, commits, and final reporting.
 
-## What counts as evidence
+## Choosing evidence
+
+Before an expensive check, rebuild, or historical run, name the question it answers and look for cheaper evidence that already answers it: user-provided output, CI results, logs, source inspection.
+
+Don't reconstruct prior states — check out or build an earlier revision, run a baseline, manufacture a failing test — to label failures pre-existing, satisfy review ceremony, or tidy a report. Such a run is justified only by a specific unresolved question that materially affects the fix and can't be answered more cheaply; first state the question, the expected cost, and the narrowest way to run it. Reuse isolated caches and workspaces where practical, and never disturb shared work in progress. Explicit user requests for a historical comparison are always honored.
 
 | Claim | Requires | Not sufficient |
 |-------|----------|----------------|
@@ -28,5 +32,9 @@ Reuse valid results across reviews, handoffs, commits, and final reporting. Thes
 | Build succeeds | Build command exits 0 | Linter passing, "logs look good" |
 | Bug fixed | Test of the original symptom passes | Code changed |
 | Regression covered | Test checks the original failure condition against the intended result and passes | Assertions that only mirror the implementation |
-| Requirements met | Plan re-read line by line, gaps reported | Tests passing |
-| Agent completed | VCS diff shows the changes | The agent's own report |
+
+Requirements are met when the behavior that actually changed satisfies the requirements that apply to it — review that, not a line-by-line ritual. Don't inspect version control only to distrust another agent's report; look when the report is inconsistent or the change carries real risk.
+
+## Reporting
+
+Claim only what was checked. Name the commands you ran and their scope, and state what remains unverified or uncertain.

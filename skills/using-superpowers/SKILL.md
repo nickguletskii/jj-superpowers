@@ -31,11 +31,50 @@ Never attribute a change to an LLM, model, or agent (no `Co-Authored-By`, no "Ge
 
 Before acting, check whether a listed skill plausibly applies; if so, load it (Claude Code: the `Skill` tool, not Read on the skill file), and drop it if it turns out irrelevant. Load skills fresh rather than from memory; they change.
 
-When several apply, process skills come first (`brainstorming`, `systematic-debugging`) because they decide how to approach the task; execution and domain skills follow. "Add X" or "fix Y" says what to do, not that the workflow can be skipped. Implement behavior changes directly by default, then add meaningful coverage and run relevant checks after a coherent implementation chunk. Batch related edits before checking; run earlier only to resolve a concrete blocking uncertainty or meet an explicit requirement. Use test-first development only when the user or project explicitly requires it; do not manufacture reds for tests added afterward. Before entering plan mode for design-bearing work, run `brainstorming` if you haven't.
+When several apply, process skills come first (`brainstorming`, `systematic-debugging`) because they decide how to approach the task; execution and domain skills follow. "Add X" or "fix Y" says what to do, not that the workflow can be skipped. Implement behavior changes directly by default, then add meaningful coverage; when and how much to check is in `verification-before-completion`. Use test-first development only when the user or project explicitly requires it; do not manufacture reds for tests added afterward. Before entering plan mode for design-bearing work, run `brainstorming` if you haven't.
 
 **Other harnesses.** Codex tool-name mapping: `references/codex-tools.md`. OpenCode: the plugin bootstrap maps common tools; use its native skill tool and `@mention` subagents.
 
 **Delegation boundary.** Use built-in subagent tools for delegation. Do not invoke coding harnesses through CLIs (for example, `opencode`, `codex`, or Claude Code's `claude`), directly or through scripts/wrappers, without explicit user permission to invoke that harness. A request for subagents, parallel work, or review is not that permission. If built-in subagent tools are unavailable, use the skill's local/no-subagent fallback; do not substitute a CLI harness.
+
+## Governing principle
+
+Whether to interrupt, when to check, how much to review, and what evidence to collect all come down to one test: take an action when the impact it protects or the uncertainty it resolves outweighs its cost in time, compute, contention, and context switching, and use the cheapest action that settles the question. When no rule covers a case, apply the test directly rather than stretching the nearest rule. Safety, explicit user or project requirements, and honest reporting are never traded against cost.
+
+Ordering work has its own goal, below.
+
+## Sorting work
+
+One ordering serves a collected backlog and reports that arrive mid-session. The goal is to release waiting work as early as possible and finish everything in the least total time. These are defaults: depart from them when the context calls for it, and say why in a sentence.
+
+Record priorities and deferred items in whatever already tracks the work (conversation, plan, graph), not in a separate ledger.
+
+**Buckets, first match wins:**
+
+1. **Explicit priority** from the user or project. Explicitly requested polish goes here.
+2. **Critical impact:** an outage, data loss or corruption, a security exposure — urgent even if nothing waits on it.
+3. **Blockers:** current or queued work waits on it. Rank by how much work each releases.
+4. **Substantive work:** wrong behavior, missing functionality, anything that matters to users or correctness.
+5. **Polish:** wording, cosmetic and stylistic improvements, naming, refactors for taste rather than need.
+
+**Within a bucket, roughly in this order:**
+
+- **Root cause before symptoms.** Group symptoms under their suspected cause and fix the cause once.
+- **Foundational work first** — shared interfaces, data shapes, infrastructure, conventions that other items will build on — except when nothing planned needs it yet, when its shape depends on what consumers turn out to need (build a thin end-to-end slice first), or when a Critical item is waiting.
+- **Critical path first:** the item heading the longest dependency chain.
+- **Batch by shared context:** items touching the same files, subsystem, or check go together, so switching and verification costs are paid once.
+- **Higher impact first**, on the severity scale in `requesting-code-review`.
+- **Arrival order** as the last resort.
+
+**Never sort by** ease, speed, visibility, which component or layer an item touches, who reported it, or how recently it arrived. Cost decides only whether an interruption is worth it and how to batch, not order.
+
+Before starting an item, check it isn't waiting on unfinished work; if it is, do the prerequisite or reorder. With parallel workers, start the critical path, then fill spare capacity with independent items whose files nobody else is touching. Re-sort when a triage result arrives, an item finishes, or a dependency appears — not continuously.
+
+## Interruptions
+
+When a new issue arrives mid-work, acknowledge it, keep it, and continue the current work while a bounded triage pass establishes severity, scope, dependencies, and likely cost, and places it with the sorting rules. Triage is read-only: no edits, no expensive checks, no widened scope. Group related reports into one pass; settle duplicates and trivial placement inline; delegate triage only when that costs less than the interruption it saves, and do it briefly inline when subagents are unavailable.
+
+Switch only when the user explicitly redirects, or triage shows clearly greater impact after counting the cost of interrupting, or finds a blocker to the current work. When you switch, keep completed edits, record a short resume point and the reason, and leave unrelated useful agents running. If impact is unclear, keep the current priority and ask only when the tradeoff needs the user's judgment. Permission to reorder never authorizes destructive operations or wider scope.
 
 ## Routing map
 
@@ -70,6 +109,7 @@ When several apply, process skills come first (`brainstorming`, `systematic-debu
 - Spec-vs-code drift → `spec-drift-detector`; layout manifest, `AGENTS.md`, project skills → `project-layout`
 
 **Running the agent**
+- Ordering a backlog, or a new report arrives mid-work → Sorting work and Interruptions above
 - Model or effort choice, hit a wall → `choosing-model-and-effort`
 - 2+ independent investigations, no plan graph → `dispatching-parallel-agents`
 - Builds, tests, logs, broad searches → `tool-output-discipline`
