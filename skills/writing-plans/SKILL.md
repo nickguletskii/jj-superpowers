@@ -32,7 +32,7 @@ Edges mean "source must succeed before target may run." Parallelism comes from g
 - **`scopes`** — directories where the implementer may touch supporting files (imports, `mod.rs`, re-exports, local tests). `files` and `scopes` live only on the graph node; the orchestrator injects them, so don't restate them in task files.
 - **A verify node's group** is every task that reaches it — this is where you choose which tasks batch together and which commands run.
 - **API first.** The earliest task(s) establish new public surfaces (types, schemas, traits) as stubs (`todo!()`, `throw new Error("Not implemented")`) marked `stub=true`, so consumers compile immediately; this triggers `design_review`. Independent leaf tasks with no shared surface have no stub node.
-- **`simplify=true`** on a verify node only when its group introduced new helpers or abstractions; it triggers `simplification`, the single owner of duplication detection.
+- **`simplify=true`** on a verify node only for a concrete abstraction concern — a group whose new helpers likely duplicate in-repo, stdlib, or dependency functionality. It triggers `simplification`. Without it, the group's `quality_review` covers duplication; a new helper alone isn't a reason.
 - **Cleanup.** A plan that refactors, changes internal structures, or deprecates functionality includes a cleanup task before its verify node to remove dead code, obsolete tests, and unused imports, asking the user before deleting.
 - **Contended commands** belong in verify nodes (SDD Verification Ownership). Write commands per `tool-output-discipline`.
 
@@ -41,14 +41,14 @@ digraph {
   task_00 [kind="task", file="task-00-api-stubs.md", files="src/api/mod.rs", stub=true];
   task_01 [kind="task", file="task-01-backend.md", files="src/backend.rs"];
   task_02 [kind="task", file="task-02-client.md", files="src/client.rs"];
-  verify_01 [kind="verify", file="verify-01-group.md", simplify=true];
+  verify_01 [kind="verify", file="verify-01-group.md"];
 
   task_00 -> task_01 -> verify_01;
   task_00 -> task_02 -> verify_01;
 }
 ```
 
-Here the design review of `task_00`'s surface gates the start of both consumers, so a bad API is caught before anyone implements against it; simplification runs after `verify_01` and before quality review.
+Here the design review of `task_00`'s surface gates the start of both consumers, so a bad API is caught before anyone implements against it. The two consumers get no task-level review unless their task files name a risk; `verify_01` checks them together and one `quality_review` covers the group.
 
 ### Spec sync
 
@@ -102,6 +102,8 @@ Implementer prompts are assembled most-stable-first: agent role → `context/*.m
 
 **Purpose:** [what this changes and why]
 
+**Risk:** [optional — only when the task needs independent task-level review, per the triggers in `requesting-code-review` → When. Name the concrete risk. Not for a `stub=true` task's interface risk; `design_review` covers that.]
+
 **Reuse:** [existing helpers/types in the codebase, stdlib, or dependencies the implementer should use; or "none exists" explicitly]
 
 **Interfaces and Invariants (signatures only):**
@@ -118,7 +120,9 @@ Implementer prompts are assembled most-stable-first: agent role → `context/*.m
 - [ ] Test success and error behavior.
 ````
 
-Include a `Task-local checks` section only to name a specific narrow command; by default the implementer runs nothing contended. A `stub=true` task names its narrow scoped type-check (e.g. `cargo check -p <crate> -q`) and why it's safe — the one exception in Verification Ownership.
+Write the `**Risk:**` line only for a real risk; routine tasks omit it and are covered by self-review and their group's verify and quality review. The executor may still select review for a risk the plan missed.
+
+Checks are split by owner (Verification Ownership in `subagent-driven-development`): a task file names at most a narrow, non-contended task-local check; everything that compiles, tests, lints, or builds the group goes in a verify file. Include a `Task-local checks` section only to name such a command; by default the implementer runs nothing contended. A `stub=true` task names its narrow scoped type-check (e.g. `cargo check -p <crate> -q`) and why it's safe — the one exception in Verification Ownership.
 
 **No placeholders, no bodies.** Each step carries what the implementer needs to act. Plan failures: "TBD"/"TODO"; "add error handling" or "write tests" without saying what; "similar to Task N"; references to types not defined in this task or an upstream dependency; compatibility shims nobody asked for. Give complete public signatures, types, invariants, high-level algorithms, helper choices, and commands — but not function bodies, rendering code, styling, or full algorithm logic. Those are the implementer's job, and pre-writing them turns review into rubber-stamping.
 
@@ -135,7 +139,7 @@ Include a `Task-local checks` section only to name a specific narrow command; by
 **Failure diagnostics:**
 - On compile errors: `cargo check --message-format json-diagnostic-short -q | jq -crM 'select(.message.level == "error")'`
 
-**Expected result:** Primary commands exit 0. Diagnostics are for concise reporting and may not preserve exit status. A task-owned failure returns to that task's implementer and re-runs its spec review before this node runs again.
+**Expected result:** Primary commands exit 0. Diagnostics are for concise reporting and may not preserve exit status. A task-owned failure returns to that task's implementer, and this node reruns only the affected commands once related fixes land.
 ````
 
 A filtered pipeline is never the only pass/fail signal unless it preserves the exit status; full-log commands sit behind an explicit escalation note.
@@ -145,7 +149,7 @@ A filtered pipeline is never the only pass/fail signal unless it preserves the e
 Check and fix inline:
 
 1. Every requirement maps to a task or verify node.
-2. Only `task`/`verify` nodes; no cycles; every task reaches a verify; `stub`/`simplify` set where they apply.
+2. Only `task`/`verify` nodes; no cycles; every task reaches a verify; `stub`/`simplify` and `**Risk:**` lines set only where they apply.
 3. No parallel-ready tasks with overlapping `files`.
 4. Build/test/lint/type-check commands live in verify files.
 5. Shared material is in `context/`; no transcribed upstream interfaces.
@@ -161,7 +165,7 @@ Phase-scoped invocations skip this: `iterative-planning` decides execution once 
 In Waterfall, after saving, offer:
 
 > Plan saved to `docs/superpowers/plans/<dir>/`. Execute with:
-> 1. **Subagent-driven (recommended)** — `project-network.dot` with task fan-out, per-task spec review, verification fan-in, and group quality review.
+> 1. **Subagent-driven (recommended)** — `project-network.dot` with task fan-out, risk-selected task review, verification fan-in, and group review.
 > 2. **Inline** — this session via `executing-plans`, with checkpoints at verify and review nodes.
 
 Then load `subagent-driven-development` or `executing-plans`. Under Rush, don't ask; resolve per `using-superpowers` `references/autonomy.md`.

@@ -29,7 +29,7 @@ Agent tool (subagent_type: general-purpose):
     | Completeness | TODOs, placeholders, incomplete tasks, missing steps |
     | Spec Alignment | Plan covers spec requirements, no major scope creep |
     | Task Decomposition | Tasks have clear boundaries, file scopes are explicit, steps are actionable |
-    | Graph Validity | Only `task` and `verify` nodes are authored — review gates are implied and do not appear as nodes. No cycles, no orphan tasks, every `task` reaches a `verify`. A consumed API-stub task carries `stub=true`; a verify whose task group introduced new helpers/abstractions carries `simplify=true`. See `subagent-driven-development` Graph Validation for the canonical list |
+    | Graph Validity | Only `task` and `verify` nodes are authored — review gates are implied and do not appear as nodes. No cycles, no orphan tasks, every `task` reaches a `verify`. A consumed API-stub task carries `stub=true`; `simplify=true` only where the plan names a concrete duplication concern; a `**Risk:**` line only on tasks with a real risk (security or data integrity, concurrency or architecture, shared interface, correctness doubt). See `subagent-driven-development` Graph Validation for the canonical list |
     | File Contention | Parallel-ready task nodes do not touch overlapping files |
     | Verification Ownership | Compile/test/lint/build/type-check commands live in verify files, not implementer tasks |
     | Buildability | Could an engineer follow this plan without getting stuck? |

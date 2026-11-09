@@ -2,7 +2,7 @@
 
 Use these scenarios before deploying changes to `writing-plans` or `subagent-driven-development`.
 
-The graph authors only `task` and `verify` nodes. `spec_review`, `design_review`, `simplification`, `quality_review`, and `final` are **implied**: they always run, and the executor derives each one's trigger and scope. Most of these scenarios therefore check two things at once — that the plan **authors** the right two-node graph, and that the executor **derives** the right gates from it.
+The graph authors only `task` and `verify` nodes. `spec_review`, `design_review`, `simplification`, `quality_review`, and `final` are **implied**: the executor derives each one's trigger and scope. `design_review`, `quality_review`, and `final` follow from the graph alone; `spec_review` runs only for a task whose risk requires it (a `**Risk:**` line, a risk the executor finds, or an explicit requirement); `simplification` runs only on `simplify=true`. Most of these scenarios therefore check two things at once — that the plan **authors** the right two-node graph, and that the executor **derives** the right gates from it.
 
 ## 1. One-Task Change
 
@@ -12,7 +12,7 @@ Expected behavior:
 - Triage runs first. A genuinely trivial one-file change (single obvious file, no new abstraction, verification nameable in one command, no design risk) is triaged to the Trivial or Small tier and goes **off-graph**: no `plan.md`, no `project-network.dot`, no task files. The change is handled inline (Trivial) or via 1–2 direct `sdd-implementer` dispatches (Small), with the orchestrator running the named verify command.
 - The full graph appears **only when the change is Full-tier** (new architecture, new public API surface, cross-file design risk, or anything benefiting from a written, reviewable spec/plan).
 - A Full-tier one-task change produces a **two-node** graph: `task -> verify`. No gate nodes are authored.
-- The executor still runs the task's spec review, the group quality review, and `final` — deriving each from those two nodes. No `stub=true` and no `simplify=true` means no design review and no simplification.
+- The executor runs the group quality review and `final`, deriving each from those two nodes. A routine task with no `**Risk:**` line gets self-review only before verify. No `stub=true` and no `simplify=true` means no design review and no simplification.
 - There is no separate `simple` or `chain` workflow mode.
 
 ## 2. Two Independent Tasks
@@ -21,8 +21,8 @@ Prompt: "Write a plan for two independent pages that touch disjoint files."
 
 Expected behavior:
 - Two `task` nodes fan out in parallel; both have edges into one `verify` node.
-- Each task gets a spec review — derived, not authored.
-- One quality review covers the derived task group `{task_01, task_02}` — every task reaching that verify.
+- Neither task carries a risk, so neither gets an independent task review; each is accepted after self-review and filing.
+- One verify run and one quality review (requirements and quality) cover the derived task group `{task_01, task_02}` — every task reaching that verify.
 - No `stub=true` node (the pages share no API surface), so no design review.
 
 ## 3. Shared-File Conflict
@@ -51,8 +51,9 @@ Expected behavior:
 - Implementer does not run `cargo check`, `cargo build`, `cargo test`, or other contended group verification commands.
 - Implementer runs only named task-local checks that are genuinely narrow and non-contended.
 - Verify node runs `cargo test`.
-- Spec reviewer does not run group verification commands.
-- Code-quality reviewer reads the verification report instead of rerunning commands.
+- Spec reviewer, when selected, does not run group verification commands.
+- Quality reviewer reads the verification report instead of rerunning commands.
+- Nobody checks out or builds an earlier revision to label a failure pre-existing.
 
 ## 6. Concise Verification Commands
 
@@ -90,7 +91,7 @@ Prompt: "Write a plan where Task 1 modifies `src/parser.rs` and needs to update 
 Expected behavior:
 - The `task` node carries `files="src/parser.rs"` and `scopes="src/parser/"`.
 - The **task file does not restate them.** A "Target Files" or "Allowed Scopes" section in the task file is a plan defect — it is a second surface that drifts.
-- The orchestrator injects `files` and `scopes` into the implementer's prompt from the graph node, and into the spec reviewer's prompt so containment can be checked.
+- The orchestrator injects `files` and `scopes` into the implementer's prompt from the graph node, and checks containment against them — through the spec reviewer when one is selected, otherwise against the filed paths.
 - The collision check runs only on `files`, so parallel tasks may share a directory scope for supporting updates (imports, re-exports) while owning disjoint target files.
 - The implementer may edit supporting files within `scopes` without a scope block.
 
@@ -118,7 +119,7 @@ Expected behavior:
 Prompt: "Execute a graph where a `stub=true` task (`task_00`) is depended on by two tasks, and the stub has a fixable local API flaw — a private detail no dependent references."
 
 Expected behavior:
-- The design review is derived from `stub=true`, runs after `task_00`'s spec review, and gates the *start* of both dependents; they are not dispatched before it passes.
+- The design review is derived from `stub=true`, runs once `task_00` is filed, and gates the *start* of both dependents; they are not dispatched before it passes.
 - The reviewer judges coherence only (does not re-run type-checking; the stub's narrow task-local type-check already confirmed it compiles). Its rubric is always `designing-with-types-and-abstractions` — there is no node attribute to override.
 - The flaw touches no type, signature, or symbol that a dependent's task file references (e.g. an internal type, documentation, a private helper, or a trait method no consumer cites). It is classified **local**.
 - The orchestrator **re-dispatches the stub implementer** with the findings to fix and re-stub. No consumer task files are edited; **no user round-trip**. Reviewer/implementer separation holds — the reviewer never edits files.
@@ -137,13 +138,13 @@ Expected behavior:
 
 ## 14. `simplify=true`
 
-Prompt: "Write a plan for a group that introduces new helpers, and a second group that introduces none."
+Prompt: "Write a plan for a group whose new helpers likely duplicate existing utilities, and a second group that adds a small private helper."
 
 Expected behavior:
-- The verify node of the group that adds new helpers is marked **`simplify=true`**; the other is not. Neither graph contains a `simplification` node.
-- On the `simplify=true` verify, the executor runs simplification **after verification passes and before quality review**, scoped to that verify's derived task group.
-- The other group goes straight from verify to quality review.
-- Duplication detection is owned by simplification (single owner). Quality review covers maintainability only and does NOT also flag duplication.
+- Only the verify node of the group with the concrete duplication concern is marked **`simplify=true`**. A new helper alone is not a reason. Neither graph contains a `simplification` node.
+- On the `simplify=true` verify, the executor runs simplification **after verification passes and before quality review**, scoped to that verify's derived task group, and quality review does not repeat duplication detection.
+- The other group goes straight from verify to quality review, which includes the duplication check.
+- An existing plan with an explicitly authored `simplify=true` is honored as written.
 - Simplification is a reviewer gate; its findings route back to an implementer, and the group then re-verifies.
 
 ## 15. Malformed Graphs
@@ -168,3 +169,30 @@ Expected behavior:
 - Choosing the lightest adequate tier is the correct default, not a risk. Design risk forces Full (the design-review gate lives only there, riding on `stub=true`).
 - **Off-graph tiers still invoke `spec-code-sync` before any source edit** when `.agents/layout.yaml` exists (candidate-spec lookup on touched paths, route amendments per its rules) — skipping plan files must not silently skip the spec-sync gate.
 - Any tier hitting unexpected uncertainty mid-flight **re-triages upward**; escalating Trivial/Small to Full means writing the spec/graph then, and the orchestrator names that cost.
+
+## 17. Risk-Selected Task Review
+
+Prompt: "Execute a graph with two routine tasks and one task whose file has `**Risk:** changes the delete path for persisted records`, all feeding one verify; a consumer task depends on the risky one."
+
+Expected behavior:
+- The routine tasks are accepted after self-review and filing; no spec reviewer is dispatched for them.
+- The risky task gets `spec_review` focused on the named risk, and its consumer does not start until that review passes.
+- Each task is consolidated when filed (after self-review, plus the risky task's `spec_review`), not at an unconditional spec review.
+- One verify run and one quality review cover the whole group; the risky task's review is not repeated there.
+
+## 18. Executor-Found Risk
+
+Prompt: "Execute a graph where a task without a `**Risk:**` line returns `DONE_WITH_CONCERNS` about a race in a shared cache."
+
+Expected behavior:
+- The executor selects `spec_review` for that task, records the reason in the dispatch context, and holds its consumers until it passes.
+- The plan is not edited to add a risk form or score.
+
+## 19. Mid-Run Report
+
+Prompt: "While a graph is running, the user mentions a cosmetic wording problem in an unrelated page, then later reports that the login endpoint is returning 500s in production."
+
+Expected behavior:
+- The wording problem is acknowledged, queued in the polish bucket, and does not interrupt running nodes or dispatch new work ahead of ready graph nodes.
+- The outage is triaged (bounded, read-only), lands in the Critical bucket, and preempts: completed work is filed, running agents on unrelated nodes are left alone, and a resume point is recorded.
+- If the user explicitly redirects instead, the switch happens without waiting for triage.
