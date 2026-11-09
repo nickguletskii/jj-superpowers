@@ -4,6 +4,8 @@
 
 A skill test is a pair of subagent runs on the same scenario: one **without** the skill (baseline) and one **with** it. The difference between the two is what the skill actually changes.
 
+These are lightweight decision simulations. For an edited skill, the baseline is the previous skill text read from version control (`jj file show -r <rev> <path>`) — never a checkout or build of an earlier revision. Batch several scenarios per dispatch, keep results outside shipped skill directories, and remember that a simulation shows the intended decision, not proof of real-world compliance.
+
 ## Baseline vs With-Skill
 
 1. **Write 2–3 scenarios** that look like real work: concrete paths, concrete constraints, a forced decision ("Choose A, B, or C, then act"). Academic prompts ("what does the skill say?") only test recitation.

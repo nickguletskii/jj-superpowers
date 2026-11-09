@@ -1,6 +1,6 @@
 ---
 name: requesting-code-review
-description: Use when finishing substantial ad hoc work, before merging or publishing a change, when the user asks for a code review, or when a fresh perspective would help after a hard bug or before a refactor.
+description: Use when deciding whether a change needs independent review — before merging or publishing risky work (security, data integrity, concurrency, shared interfaces, doubtful correctness), when the user asks for a code review, or when a fresh perspective would help after a hard bug or before a refactor.
 ---
 
 # Requesting Code Review
@@ -9,10 +9,15 @@ Dispatch the `jj-superpowers:code-reviewer` subagent with a focused request buil
 
 ## When
 
-- Before merge, integration, or publishing a change.
-- After substantial ad hoc work that hasn't passed a planned review gate.
-- When the user asks for review.
-- Optionally: when stuck, before a refactor (baseline), or after a complex bug fix.
+Select review by concrete risk, not by the amount of work (the Governing principle in `using-superpowers`). This list is the canonical set of review triggers; other skills point here. Request independent review for:
+
+- security or data-integrity risk;
+- substantial concurrency or architectural change;
+- shared or public interfaces others will build on;
+- material doubt about correctness;
+- an explicit user or project requirement, which is never skipped.
+
+A routine localized change gets your own self-review plus targeted checks. Optionally request review when stuck, before a risky refactor, or after a complex bug fix. After fixes, re-review the areas that changed or were affected, not the whole change.
 
 In planned graph execution, quality review belongs to `quality_review` nodes (the `sdd-quality-reviewer` agent) at the cadence the graph defines; this skill is not required after every graph task.
 

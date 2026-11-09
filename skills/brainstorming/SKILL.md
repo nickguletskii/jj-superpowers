@@ -25,7 +25,7 @@ Track progress against this checklist, not the harness task list (see `using-sup
 | 6 Triage tier | ✅ | ✅ | ✅ |
 | 7 Write design doc | skip | skip | ✅ |
 | 8 Spec self-review | skip | skip | ✅ |
-| 9 Adversarial spec review | skip | skip | ✅ |
+| 9 Adversarial spec review | skip | skip | ✅ (sized to risk) |
 | 10 User reviews written spec | skip | skip | ✅ |
 | 11 Transition to implementation | ✅ | ✅ | ✅ |
 
@@ -104,7 +104,8 @@ Propose Agile only for genuine design uncertainty, per the criterion in `iterati
 **Adversarial review (step 9).** Run `hypothesis-driven-improvement`'s Simple In-Line Mode over the spec.
 
 - Severity uses the scale in `requesting-code-review`. Critical/Important findings are fixed and re-reviewed. Minors are folded in the same round (cosmetic ones may be dropped) and don't trigger another round; a wrong finding of any severity can be refuted with justification.
-- Each round dispatches about 3 read-only reviewers with distinct lenses chosen from: correctness, completeness, ambiguity, API/design soundness, concurrency, parallelism, performance, duplication, extensibility, testability, over/under-engineering. Rotate lenses across rounds.
+- Aim review at the design's actual risks. Dispatch one read-only reviewer by default, and more only when the design carries distinct material risks that one reviewer can't cover well — each with its own lens from: correctness, completeness, ambiguity, API/design soundness, concurrency, parallelism, performance, duplication, extensibility, testability, over/under-engineering. Rotate lenses across rounds.
+- Routine policy or documentation edits need no reviewer panel; self-review and user review suffice unless a concrete risk says otherwise.
 - Converged = a round with zero Critical/Important. You edit the spec directly.
 
 ## Two biases

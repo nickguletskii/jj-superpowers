@@ -152,7 +152,7 @@ When an agent finds a gap, fix the wording that caused it. Prefer a clear rule w
 
 ## Checklist
 
-Track against this list, not the harness task tracker — testing dispatches subagents, and the harness task list doesn't survive subagent dispatch (see `jj-superpowers:using-superpowers`). Finish the checklist for one skill before starting the next.
+Track against this list, not the harness task tracker — testing dispatches subagents, and the harness task list doesn't survive subagent dispatch (see `jj-superpowers:using-superpowers`). When a change edits several skills, batch their scenarios into a few dispatches rather than one per file.
 
 - [ ] Name: letters, numbers, hyphens only
 - [ ] Description: "Use when...", third person, triggers/symptoms only, no workflow summary

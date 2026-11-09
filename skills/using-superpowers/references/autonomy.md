@@ -7,7 +7,7 @@ The **recommended option** ("lead", "default") is the one presented first at a c
 - **`Manual`** (default) — every checkpoint pauses and asks.
 - **`Rush`** — take the recommended option without pausing unless the safety floor trips. The floor also applies to actions outside checkpoints (e.g. an irrecoverable deletion mid-implementation).
 
-Rush resolves user checkpoints only. Automated reviews and verify nodes still run; Rush removes only the wait for human sign-off.
+Rush resolves user checkpoints only. Automated reviews and verify nodes still run; Rush removes only the wait for human sign-off. Reviews are selected by risk the same way as in `Manual` — Rush neither adds reviews nor drops risk-required or user- or project-mandated ones.
 
 **Safety floor — halts and asks even in Rush:**
 
